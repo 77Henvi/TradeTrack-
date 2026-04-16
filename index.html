@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackTrade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <script>
+    const theme = localStorage.getItem("theme");
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+    }
+  </script>
+
+<!-- NOISE OVERLAY -->
+<div class="noise"></div>
+
+<!-- BACKGROUND GRID -->
+<div class="bg-grid"></div>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker"></div>
+</div>
+
+<!-- Custom cursor -->
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div class="header-left">
+    <div class="logo-block">
+      <span class="logo-mark">▲</span>
+      <div>
+        <div class="logo-title">TrackTrade!</div>
+        <div class="logo-sub">Track your fucking retirement</div>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="theme-toggle" id="themeToggle">
+      <div class="toggle-ball"></div>
+    </div>
+    <div class="live-dot"></div>
+    <span class="live-label" id="liveTime">—</span>
+  </div>
+  
+</header>
+
+<!-- ===== EQUITY CURVE ===== -->
+<section class="equity-section">
+  <div class="equity-label">EQUITY CURVE</div>
+  <canvas id="equityCanvas"></canvas>
+  <div class="equity-stats" id="equityStats"></div>
+</section>
+
+<!-- ===== METRICS ROW ===== -->
+<section class="metrics-row" id="metricsRow"></section>
+
+<!-- ===== MAIN LAYOUT ===== -->
+<main>
+
+  <!-- LEFT: TRADE LOG TABLE -->
+  <div class="panel panel-log">
+    <div class="panel-header">
+      <div class="panel-title">TRADE LOG</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost" onclick="exportCSV()">↓ CSV</button>
+        <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
+        <button class="btn-accent" onclick="openModal()">+ NEW TRADE</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">ALL</button>
+      <button class="filter-btn" data-filter="Long" onclick="setFilter('Long',this)">LONG</button>
+      <button class="filter-btn" data-filter="Short" onclick="setFilter('Short',this)">SHORT</button>
+      <button class="filter-btn" data-filter="win" onclick="setFilter('win',this)">WINS</button>
+      <button class="filter-btn" data-filter="loss" onclick="setFilter('loss',this)">LOSSES</button>
+      <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL..." oninput="renderTable()">
+    </div>
+
+    <div class="table-scroll">
+      <table class="trade-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('date')">DATE <span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('sym')">SYM <span class="sort-icon">↕</span></th>
+            <th>DIR</th>
+            <th onclick="sortBy('entry')">ENTRY <span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('exit')">EXIT <span class="sort-icon">↕</span></th>
+            <th>SIZE</th>
+            <th onclick="sortBy('pnl')">P&L <span class="sort-icon">↕</span></th>
+            <th>%</th>
+            <th>SETUP</th>
+            <th>TAG</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tradeBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-icon">◎</div>
+        <div>NO TRADES FOUND</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- WIN/LOSS BREAKDOWN -->
+    <div class="panel panel-sm">
+      <div class="panel-header">
+        <div class="panel-title">BREAKDOWN</div>
+      </div>
+      <div id="breakdown"></div>
+    </div>
+
+    <!-- SYMBOL PERFORMANCE -->
+    <div class="panel panel-sm">
+      <div class="panel-header">
+        <div class="panel-title">SYMBOL PERFORMANCE</div>
+      </div>
+      <div id="symPerf"></div>
+    </div>
+
+    <!-- STREAK -->
+    <div class="panel panel-sm">
+      <div class="panel-header">
+        <div class="panel-title">STREAK TRACKER</div>
+      </div>
+      <div id="streakBlock"></div>
+    </div>
+
+    <!-- CALENDAR HEATMAP -->
+    <div class="panel panel-sm">
+      <div class="panel-header">
+        <div class="panel-title">MONTHLY HEATMAP</div>
+      </div>
+      <div id="heatmap"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ===== ADD TRADE MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">NEW TRADE ENTRY</div>
+      <button class="btn-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full">
+          <label>SYMBOL</label>
+          <input type="text" id="f-sym" placeholder="BTC, ETH, AAPL..." autocomplete="off">
+        </div>
+        <div class="field">
+          <label>DATE</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label>DIRECTION</label>
+          <div class="dir-toggle">
+            <button class="dir-btn active" id="btn-long" onclick="setDir('Long')">▲ LONG</button>
+            <button class="dir-btn" id="btn-short" onclick="setDir('Short')">▼ SHORT</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>ENTRY PRICE</label>
+          <input type="number" id="f-entry" step="any" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>EXIT PRICE</label>
+          <input type="number" id="f-exit" step="any" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>POSITION SIZE</label>
+          <input type="number" id="f-size" step="any" placeholder="1">
+        </div>
+        <div class="field">
+          <label>ACCOUNT ($)</label>
+          <input type="number" id="f-account" step="any" placeholder="10000">
+        </div>
+        <div class="field full">
+          <label>SETUP / NOTES</label>
+          <input type="text" id="f-note" placeholder="Breakout, Support bounce, Trend follow...">
+        </div>
+        <div class="field full">
+          <label>TAG</label>
+          <div class="tag-options" id="tagOptions">
+            <button class="tag-btn" onclick="toggleTag(this,'Scalp')">SCALP</button>
+            <button class="tag-btn" onclick="toggleTag(this,'Swing')">SWING</button>
+            <button class="tag-btn" onclick="toggleTag(this,'Position')">POSITION</button>
+            <button class="tag-btn" onclick="toggleTag(this,'News')">NEWS</button>
+            <button class="tag-btn" onclick="toggleTag(this,'Breakout')">BREAKOUT</button>
+            <button class="tag-btn" onclick="toggleTag(this,'Reversal')">REVERSAL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE P&L PREVIEW -->
+      <div class="pnl-preview" id="pnlPreview">
+        <div class="preview-label">ESTIMATED P&L</div>
+        <div class="preview-val" id="previewVal">—</div>
+        <div class="preview-rr" id="previewRR"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModalDirect()">CANCEL</button>
+      <button class="btn-accent" onclick="saveTrade()">SAVE TRADE ▸</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOTION EXPORT MODAL ===== -->
+<div class="modal-overlay" id="notionOverlay" onclick="closeNotion(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">EXPORT FOR NOTION</div>
+      <button class="btn-close" onclick="document.getElementById('notionOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px">คัดลอก → เปิด Notion → สร้าง Table → Ctrl+V วางได้เลย</p>
+      <textarea id="notionText" readonly></textarea>
+      <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()">COPY TO CLIPBOARD</button>
+      <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s">✓ COPIED!</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

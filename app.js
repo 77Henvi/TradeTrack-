@@ -10,7 +10,7 @@ try {
   trades = [];
 }
 
-let nextId = Math.max(...trades.map(t => t.id)) + 1;
+let nextId = trades.length ? Math.max(...trades.map(t => t.id)) + 1 : 1;
 let currentFilter = 'all';
 let currentSort = { key: 'date', dir: -1 };
 let selectedDir = 'Long';
@@ -61,6 +61,12 @@ function animateCursor() {
     if (ring) ring.style.cssText += `left:${rx}px;top:${ry}px;`;
     requestAnimationFrame(animateCursor);
 }
+/* Pause Function*/ 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cancelAnimationFrame(animateCursor);
+  else animateCursor();
+});
+
 animateCursor();
 
 // ─── LIVE TIME ────────────────────────────────────────────────────────────────
@@ -71,26 +77,208 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
-// ─── TICKER TAPE ─────────────────────────────────────────────────────────────
-function buildTicker() {
-  const items = [
-    { sym: 'BTC', price: 94200,  chg: +2.4 },
-    { sym: 'ETH', price: 3180,   chg: -1.1 },
-    { sym: 'SOL', price: 182,    chg: +4.2 },
-    { sym: 'BNB', price: 610,    chg: +0.8 },
-    { sym: 'XRP', price: 0.623,  chg: -0.5 },
-    { sym: 'ADA', price: 0.44,   chg: +1.3 },
-    { sym: 'AVAX',price: 28.4,   chg: -2.1 },
-    { sym: 'DOT', price: 6.82,   chg: +0.6 },
-    { sym: 'LINK',price: 14.5,   chg: +3.1 },
-    { sym: 'MATIC',price: 0.55,  chg: -1.8 },
-  ];
-  const html = [...items, ...items].map(i =>
-    `<span class="ticker-item"><span class="sym">${i.sym}</span><span>${fmtAbs(i.price)}</span><span class="chg ${i.chg >= 0 ? 'pos' : 'neg'}">${i.chg >= 0 ? '▲' : '▼'} ${Math.abs(i.chg)}%</span></span><span class="ticker-sep">|</span>`
-  ).join('');
+// ─── GECKO TIKER TAPE ────────────────────────────────────────────────────────────────
+// CoinGecko ID map  (symbol → id ที่ API ต้องการ)
+const COIN_IDS = {
+  BTC:   'bitcoin',         ETH:   'ethereum',       SOL:   'solana',
+  BNB:   'binancecoin',     XRP:   'ripple',          ADA:   'cardano',
+  AVAX:  'avalanche-2',     DOT:   'polkadot',        LINK:  'chainlink',
+  MATIC: 'matic-network',   DOGE:  'dogecoin',        TON:   'the-open-network',
+  SUI:   'sui',             APT:   'aptos',           OP:    'optimism',
+  ARB:   'arbitrum',        ATOM:  'cosmos',          LTC:   'litecoin',
+  UNI:   'uniswap',         PEPE:  'pepe',
+};
+
+// coins ที่เปิดใช้งาน — โหลดจาก localStorage หรือ default
+let selectedCoins = JSON.parse(localStorage.getItem('ticker_coins') || 'null')
+  || ['BTC','ETH','SOL','BNB','XRP','ADA','AVAX','LINK'];
+
+let tickerPriceCache = {}; // เก็บราคาล่าสุดไว้ใช้ตอน rebuild
+let tickerInterval = null;
+
+// ── STEP 1: fetch ราคาจาก CoinGecko ──────────────────────────────────────────
+// รับ array ของ symbols เช่น ['BTC','ETH','SOL']
+// ส่งคืน object: { BTC: { price: 94200, chg: 2.4 }, ... }
+async function fetchCoinPrices(symbols) {
+  // แปลง symbols → CoinGecko IDs  (กรอง coin ที่ไม่มีใน map ออก)
+  const ids = symbols.map(s => COIN_IDS[s]).filter(Boolean).join(',');
+  if (!ids) return {};
+
+  // เรียก CoinGecko Simple Price endpoint
+  // include_24hr_change=true  → ได้ % เปลี่ยนแปลง 24h มาด้วย
+  const url = `https://api.coingecko.com/api/v3/simple/price`
+            + `?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error('CoinGecko API error: ' + res.status);
+  const data = await res.json();
+
+  // แปลงกลับเป็น symbol-keyed object ให้ง่ายต่อการใช้งาน
+  const result = {};
+  symbols.forEach(sym => {
+    const id = COIN_IDS[sym];
+    if (data[id]) {
+      result[sym] = {
+        price: data[id].usd,
+        chg:   +(data[id].usd_24h_change || 0).toFixed(2),
+      };
+    }
+  });
+  return result;
+}
+
+// ── STEP 2: สร้าง HTML ของ ticker จากข้อมูลจริง ──────────────────────────────
+function buildTicker(priceData) {
+  // ถ้ายังไม่มีข้อมูล (กำลัง load) แสดง skeleton
+  if (!priceData || Object.keys(priceData).length === 0) {
+    document.getElementById('ticker').innerHTML =
+      '<span class="ticker-item" style="opacity:0.5;letter-spacing:2px">LOADING LIVE PRICES...</span>';
+    return;
+  }
+
+  // สร้าง items เฉพาะ coin ที่ fetch สำเร็จ
+  const items = selectedCoins
+    .filter(s => priceData[s])
+    .map(s => ({ sym: s, ...priceData[s] }));
+
+  // ทำซ้ำ 2 รอบเพื่อให้ ticker วนต่อเนื่องไม่สะดุด
+  const html = [...items, ...items].map(i => {
+    const priceStr = i.price >= 1
+      ? i.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : i.price.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+    return `<span class="ticker-item">
+      <span class="sym">${i.sym}</span>
+      <span>$${priceStr}</span>
+      <span class="chg ${i.chg >= 0 ? 'pos' : 'neg'}">${i.chg >= 0 ? '▲' : '▼'} ${Math.abs(i.chg)}%</span>
+    </span><span class="ticker-sep">◆</span>`;
+  }).join('');
+
   document.getElementById('ticker').innerHTML = html;
 }
-buildTicker();
+
+// ── STEP 3: refresh — fetch แล้ว rebuild ticker ──────────────────────────────
+async function refreshTicker() {
+  // อัปเดต status dot บน ticker
+  const statusDot = document.getElementById('tickerStatus');
+  if (statusDot) { statusDot.style.opacity = '0.4'; }
+
+  try {
+    tickerPriceCache = await fetchCoinPrices(selectedCoins);
+    buildTicker(tickerPriceCache);
+    if (statusDot) { statusDot.style.opacity = '1'; statusDot.style.background = '#3cffa0'; }
+    document.getElementById('lastUpdate').textContent =
+      'LIVE · ' + new Date().toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  } catch (err) {
+    console.warn('Ticker fetch failed:', err);
+    // fallback — ถ้า API ล้มเหลวให้แสดงข้อมูล cache เดิม
+    if (Object.keys(tickerPriceCache).length) buildTicker(tickerPriceCache);
+    if (statusDot) { statusDot.style.background = '#ff4560'; statusDot.style.opacity = '1'; }
+  }
+}
+
+// ── STEP 4: ตั้ง interval fetch ทุก 60 วิ ────────────────────────────────────
+function startTickerRefresh() {
+  if (tickerInterval) clearInterval(tickerInterval);
+  refreshTicker();                          // fetch ทันทีตอนโหลด
+  tickerInterval = setInterval(refreshTicker, 60000); // แล้ว fetch ซ้ำทุก 60 วิ
+}
+
+// ── SETTINGS PANEL ───────────────────────────────────────────────────────────
+function openTickerSettings() {
+  document.getElementById('tickerSettingsOverlay').classList.add('open');
+  // sync status dot + last update time into modal
+  const modalDot = document.getElementById('tickerModalStatus');
+  const mainDot  = document.getElementById('tickerStatus');
+  if (modalDot && mainDot) modalDot.style.background = mainDot.style.background || '#3cffa0';
+  const lu = document.getElementById('lastUpdate');
+  const mt = document.getElementById('tickerModalTime');
+  if (lu && mt) mt.textContent = lu.textContent;
+  renderCoinPicker();
+}
+
+function closeTickerSettings(e) {
+  if (!e || e.target === document.getElementById('tickerSettingsOverlay'))
+    document.getElementById('tickerSettingsOverlay').classList.remove('open');
+}
+
+function renderCoinPicker() {
+  const allCoins = Object.keys(COIN_IDS);
+  document.getElementById('coinPickerGrid').innerHTML = allCoins.map(sym => {
+    const active = selectedCoins.includes(sym);
+    return `<button class="coin-pick-btn ${active ? 'active' : ''}" onclick="toggleCoin('${sym}',this)">
+      ${sym}
+    </button>`;
+  }).join('');
+  updateSelectedCount();
+}
+
+function toggleCoin(sym, el) {
+  if (selectedCoins.includes(sym)) {
+    if (selectedCoins.length <= 2) { toast('ต้องเลือกอย่างน้อย 2 coins', 'error'); return; }
+    selectedCoins = selectedCoins.filter(s => s !== sym);
+    el.classList.remove('active');
+  } else {
+    if (selectedCoins.length >= 15) { toast('เลือกได้สูงสุด 15 coins', 'error'); return; }
+    selectedCoins.push(sym);
+    el.classList.add('active');
+  }
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  document.getElementById('selectedCount').textContent = selectedCoins.length + ' selected';
+}
+
+function applyTickerSettings() {
+  localStorage.setItem('ticker_coins', JSON.stringify(selectedCoins));
+  closeTickerSettings();
+  buildTicker({}); // แสดง loading
+  startTickerRefresh();
+  toast('Ticker updated — fetching live prices ✓');
+}
+
+// ── RATE-LIMIT-PROTECTION TICKER ───────────────────────────────────────────────────────────
+async function fetchCoinPrices(symbols) {
+  try {
+    const ids = symbols.map(s => COIN_IDS[s]).filter(Boolean).join(',');
+    if (!ids) return {};
+
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+
+    if (!res.ok) throw new Error();
+
+    const data = await res.json();
+
+    const result = {};
+    symbols.forEach(sym => {
+      const id = COIN_IDS[sym];
+      if (data[id]) {
+        result[sym] = {
+          price: data[id].usd,
+          chg: +(data[id].usd_24h_change || 0).toFixed(2),
+        };
+      }
+    });
+
+    return result;
+
+  } catch {
+    await new Promise(r => setTimeout(r, 1500)); // retry delay
+    return tickerPriceCache; // fallback
+  }
+}
+
+// kick off!
+startTickerRefresh();
+
+// ─── FLASH TICKER─────────────────────────────────────────────────────────────
+function flashTicker() {
+  const el = document.querySelector('.ticker-wrap');
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 150);
+}
+
+flashTicker();
 
 // ─── THEME BUTTON ─────────────────────────────────────────────────────────────
 const toggle = document.getElementById("themeToggle");

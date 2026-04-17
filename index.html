@@ -26,7 +26,14 @@
 
 <!-- TICKER TAPE -->
 <div class="ticker-wrap">
-  <div class="ticker" id="ticker"></div>
+  <div class="ticker-left-ui">
+    <span id="tickerStatus" class="ticker-status-dot"></span>
+    <span id="lastUpdate" class="ticker-update-label">CONNECTING...</span>
+    <button class="ticker-settings-btn" onclick="openTickerSettings()" title="Customize ticker">⚙</button>
+  </div>
+  <div class="ticker-scroll-area">
+    <div class="ticker" id="ticker"></div>
+  </div>
 </div>
 
 <!-- Custom cursor -->
@@ -40,7 +47,7 @@
       <span class="logo-mark">▲</span>
       <div>
         <div class="logo-title">TrackTrade!</div>
-        <div class="logo-sub">Track your fucking retirement</div>
+        <div class="logo-sub">Track your retirement</div>
       </div>
     </div>
   </div>
@@ -234,6 +241,50 @@
       <textarea id="notionText" readonly></textarea>
       <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()">COPY TO CLIPBOARD</button>
       <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s">✓ COPIED!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TICKER SETTINGS MODAL ===== -->
+<div class="modal-overlay" id="tickerSettingsOverlay" onclick="closeTickerSettings(event)">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div class="modal-title">TICKER SETTINGS</div>
+      <button class="btn-close" onclick="closeTickerSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="ticker-info-box">
+        <div class="tib-row">
+          <span class="tib-dot" id="tickerModalStatus"></span>
+          <span class="tib-label">DATA SOURCE</span>
+          <span class="tib-val">CoinGecko API — Free · No key required</span>
+        </div>
+        <div class="tib-row">
+          <span class="tib-label" style="margin-left:18px">REFRESH RATE</span>
+          <span class="tib-val">Every 60 seconds</span>
+        </div>
+        <div class="tib-row">
+          <span class="tib-label" style="margin-left:18px">LAST UPDATE</span>
+          <span class="tib-val" id="tickerModalTime">—</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted)">SELECT COINS TO DISPLAY</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--accent)" id="selectedCount">— selected</div>
+      </div>
+
+      <div class="coin-picker-grid" id="coinPickerGrid"></div>
+
+      <p style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.8">
+        เลือก 2–15 coins · กด APPLY เพื่อ fetch ราคาจริงจาก CoinGecko<br>
+        ราคาจะ refresh อัตโนมัติทุก 60 วินาที — ไม่ต้อง API key
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeTickerSettings()">CANCEL</button>
+      <button class="btn-accent" onclick="applyTickerSettings()">APPLY & FETCH LIVE ▸</button>
     </div>
   </div>
 </div>

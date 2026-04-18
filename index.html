@@ -28,10 +28,6 @@
   </div>
 </div>
 
-<!-- hidden status refs for JS — ไม่แสดงผล -->
-<span id="tickerStatus" style="display:none"></span>
-<span id="lastUpdate" style="display:none"></span>
-
 <!-- Custom cursor -->
 <div class="cursor-dot"></div>
 <div class="cursor-ring"></div>
@@ -43,7 +39,7 @@
       <span class="logo-mark">▲</span>
       <div>
         <div class="logo-title">TrackTrade!</div>
-        <div class="logo-sub">Track your fucking retirement</div>
+        <div class="logo-sub">Track your retirement</div>
       </div>
     </div>
   </div>
@@ -74,11 +70,19 @@
 
 <!-- ===== MAIN LAYOUT ===== -->
 <main>
+
   <!-- LEFT: TRADE LOG TABLE -->
   <div class="panel panel-log">
+
+    <!-- PORTFOLIO TABS — ยื่นขึ้นด้านบนแบบแฟ้มเอกสาร -->
+    <div class="portfolio-tabs-wrap">
+      <div class="portfolio-tabs" id="portfolioTabs"></div>
+    </div>
+
     <div class="panel-header">
       <div class="panel-title">TRADE LOG</div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost btn-icon" onclick="openPortfolioSettings()" title="Portfolio settings">⚙</button>
         <button class="btn-ghost" onclick="exportCSV()">↓ CSV</button>
         <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
         <button class="btn-accent" onclick="openModal()">+ NEW TRADE</button>
@@ -139,6 +143,7 @@
       <div id="heatmap"></div>
     </div>
   </div>
+
 </main>
 
 <!-- ===== ADD TRADE MODAL ===== -->
@@ -231,7 +236,7 @@
   <div class="modal" style="width:560px">
     <div class="modal-header">
       <div class="modal-title">TICKER SETTINGS</div>
-      <button class="btn-close" onclick="document.getElementById('tickerSettingsOverlay').classList.remove('open')">✕</button>
+      <button class="btn-close" onclick="closeTickerSettings()">✕</button>
     </div>
     <div class="modal-body">
       <div class="ticker-info-box">
@@ -260,8 +265,96 @@
       </p>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="document.getElementById('tickerSettingsOverlay').classList.remove('open')">CANCEL</button>
+      <button class="btn-ghost" onclick="closeTickerSettings()">CANCEL</button>
       <button class="btn-accent" onclick="applyTickerSettings()">APPLY & FETCH LIVE ▸</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WELCOME MODAL (first time) ===== -->
+<div class="modal-overlay" id="welcomeOverlay">
+  <div class="modal modal-welcome">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">WELCOME TO TRACKTRADE</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px">LET'S SET UP YOUR FIRST PORTFOLIO</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-family:var(--mono);font-size:11px;line-height:1.9;margin-bottom:24px">
+        ตั้งชื่อพอร์ตและ balance เริ่มต้น<br>
+        ระบบจะคำนวณ return % และ current balance ให้อัตโนมัติ
+      </p>
+      <div class="form-grid">
+        <div class="field full">
+          <label>PORTFOLIO NAME</label>
+          <input type="text" id="w-name" placeholder="Crypto Main, Stock US, Futures...">
+        </div>
+        <div class="field full">
+          <label>STARTING BALANCE ($)</label>
+          <input type="number" id="w-balance" step="any" placeholder="10000">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:stretch">
+      <button class="btn-accent" style="width:100%;padding:12px" onclick="saveWelcome()">CREATE MY PORTFOLIO ▸</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW PORTFOLIO MODAL ===== -->
+<div class="modal-overlay" id="newPortfolioOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">NEW PORTFOLIO</div>
+      <button class="btn-close" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full">
+          <label>PORTFOLIO NAME</label>
+          <input type="text" id="np-name" placeholder="Crypto Main, Stock US...">
+        </div>
+        <div class="field full">
+          <label>STARTING BALANCE ($)</label>
+          <input type="number" id="np-balance" step="any" placeholder="10000">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')">CANCEL</button>
+      <button class="btn-accent" onclick="saveNewPortfolio()">CREATE ▸</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PORTFOLIO SETTINGS MODAL ===== -->
+<div class="modal-overlay" id="portfolioSettingsOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">PORTFOLIO SETTINGS</div>
+      <button class="btn-close" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full">
+          <label>PORTFOLIO NAME</label>
+          <input type="text" id="ps-name">
+        </div>
+        <div class="field full">
+          <label>STARTING BALANCE ($)</label>
+          <input type="number" id="ps-balance" step="any">
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <button class="btn-ghost" style="color:var(--red);border-color:var(--red-dim)" onclick="deletePortfolio()">
+          DELETE THIS PORTFOLIO
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')">CANCEL</button>
+      <button class="btn-accent" onclick="savePortfolioSettings()">SAVE ▸</button>
     </div>
   </div>
 </div>

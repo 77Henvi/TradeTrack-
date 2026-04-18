@@ -87,61 +87,68 @@ body {
 
 /* ─── CUSTOM CURSOR ──────────────────────────────────────────────────────── */
 .cursor-dot, .cursor-ring {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%, -50%);
-  transition: opacity 0.2s;
+  position: fixed; pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%); transition: opacity 0.2s;
 }
 .cursor-dot {
   width: 6px; height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
+  background: var(--accent); border-radius: 50%;
   box-shadow: 0 0 8px var(--accent-glow);
 }
 .cursor-ring {
   width: 24px; height: 24px;
   border: 1.5px solid var(--accent);
-  border-radius: 50%;
-  opacity: 0.6;
+  border-radius: 50%; opacity: 0.6;
 }
 
 /* ─── TICKER TAPE ────────────────────────────────────────────────────────── */
 .ticker-wrap {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 42px;
+  height: 30px;
   display: flex; align-items: center; overflow: hidden;
-  background: linear-gradient(180deg, #d9ff66 0%, #b7e82e 100%);
-  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15), 0 0 24px rgba(200,240,60,0.35);
+  background: #0c0e12;
+  border-bottom: 1px solid rgba(245,158,11,0.4);
+  box-shadow: 0 1px 0 rgba(245,158,11,0.12);
 }
 
-/* scanlines on ticker */
 .ticker-wrap::after {
   content: '';
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; pointer-events: none;
   background: repeating-linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 1px,
-    transparent 2px, transparent 4px
+    90deg,
+    rgba(255,255,255,0.015) 0px,
+    transparent 1px,
+    transparent 48px
   );
-  pointer-events: none;
 }
 
 .ticker-left-ui {
-  display: flex; align-items: center; gap: 7px;
-  padding: 0 10px 0 12px;
-  background: rgba(0,0,0,0.15);
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px 0 14px;
+  background: rgba(245,158,11,0.07);
   height: 100%; flex-shrink: 0;
-  border-right: 1px solid rgba(0,0,0,0.15);
+  border-right: 1px solid rgba(245,158,11,0.25);
   position: relative; z-index: 1;
 }
 
+.ticker-live-label {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  color: #f59e0b; letter-spacing: 2px; white-space: nowrap;
+}
+
+.market-badge {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 1.5px; padding: 2px 7px;
+  background: rgba(34,197,94,0.1); color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.3); border-radius: 2px;
+  white-space: nowrap;
+}
+
 .ticker-status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #3cffa0;
-  box-shadow: 0 0 6px #3cffa0;
-  flex-shrink: 0;
-  animation: pulseDot 1.5s ease-in-out infinite;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #22c55e; flex-shrink: 0;
+  box-shadow: 0 0 5px #22c55e;
+  animation: pulseDot 2s ease-in-out infinite;
 }
 
 @keyframes pulseDot {
@@ -151,25 +158,17 @@ body {
 
 .ticker-update-label {
   font-family: var(--mono); font-size: 9px; font-weight: 700;
-  color: rgba(8,10,14,0.6); letter-spacing: 1px; white-space: nowrap;
-}
-
-.ticker-settings-btn {
-  background: none; border: none; cursor: pointer;
-  font-size: 13px; color: rgba(8,10,14,0.55);
-  padding: 2px 4px; line-height: 1;
-  border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
-}
-.ticker-settings-btn:hover {
-  color: #080a0e;
-  background: rgba(0,0,0,0.12);
+  color: rgba(255,255,255,0.35); letter-spacing: 1px; white-space: nowrap;
 }
 
 .ticker-scroll-area {
   flex: 1; overflow: hidden; height: 100%;
   display: flex; align-items: center;
   position: relative; z-index: 1;
+}
+
+.ticker-scroll-area:hover .ticker {
+  animation-play-state: paused;
 }
 
 .ticker {
@@ -180,17 +179,16 @@ body {
 }
 
 .ticker-item {
-  font-family: var(--mono); font-size: 14px; font-weight: 700;
-  letter-spacing: 1.5px; font-variant-numeric: tabular-nums;
-  color: #080a0e; padding: 0 24px;
-  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.5px; font-variant-numeric: tabular-nums;
+  color: #e2e8f0; padding: 0 18px;
+  display: flex; align-items: center; gap: 8px;
 }
-.ticker-item .sym { font-weight: 700; font-size: 15px; }
-.ticker-item .chg.pos { color: #1a5020; }
-.ticker-item .chg.neg { color: #5a1020; }
-.ticker-sep { color: rgba(8,10,14,0.2); font-size: 10px; }
+.ticker-item .sym { font-weight: 700; color: #f59e0b; letter-spacing: 1px; }
+.ticker-item .chg.pos { color: #22c55e; }
+.ticker-item .chg.neg { color: #ef4444; }
+.ticker-sep { color: rgba(255,255,255,0.15); font-size: 10px; }
 
-/* sparkline inside ticker */
 .spark { margin-left: 4px; opacity: 0.75; display: flex; align-items: center; }
 .spark svg { display: block; }
 
@@ -199,7 +197,6 @@ body {
   100% { transform: translateX(-50%); }
 }
 
-/* flash on refresh */
 @keyframes tickerFlash {
   0% { filter: brightness(1); }
   50% { filter: brightness(1.3); }
@@ -207,15 +204,16 @@ body {
 }
 .ticker-wrap.flash { animation: tickerFlash 0.3s ease; }
 
-/* ─── TICKER INFO BOX (inside settings modal) ────────────────────────────── */
+/* ─── TICKER INFO BOX ────────────────────────────────────────────────────── */
 .ticker-info-box {
   background: var(--bg3); border: 1px solid var(--border);
+  border-left: 3px solid #f59e0b;
   border-radius: 4px; padding: 14px 16px;
   display: flex; flex-direction: column; gap: 8px;
 }
 .tib-row { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; }
 .tib-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); flex-shrink: 0; }
-.tib-label { color: var(--muted); letter-spacing: 1px; }
+.tib-label { color: var(--muted); letter-spacing: 1px; min-width: 110px; }
 .tib-val { color: var(--text); }
 
 /* ─── COIN PICKER ────────────────────────────────────────────────────────── */
@@ -232,11 +230,11 @@ body {
   cursor: pointer; text-align: center;
   transition: all 0.15s;
 }
-.coin-pick-btn:hover { border-color: var(--border2); color: var(--text); }
+.coin-pick-btn:hover { border-color: rgba(245,158,11,0.4); color: var(--text); background: rgba(245,158,11,0.04); }
 .coin-pick-btn.active {
-  background: var(--accent-dim); color: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 10px var(--accent-glow);
+  background: rgba(245,158,11,0.1); color: #f59e0b;
+  border-color: #f59e0b;
+  box-shadow: inset 0 0 0 1px rgba(245,158,11,0.2);
 }
 
 /* ─── HEADER ─────────────────────────────────────────────────────────────── */
@@ -245,7 +243,7 @@ header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 28px 32px 16px;
   border-bottom: 1px solid var(--border);
-  margin-top: 42px;
+  margin-top: 30px;
 }
 .logo-block { display: flex; align-items: center; gap: 14px; }
 .logo-mark {
@@ -265,7 +263,6 @@ header {
 .logo-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 4px; }
 .header-right { display: flex; align-items: center; gap: 12px; }
 
-/* Theme toggle */
 .theme-toggle {
   width: 44px; height: 22px;
   background: var(--bg3); border: 1px solid var(--border2);
@@ -288,29 +285,17 @@ header {
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .live-label { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
-/* Header divider */
-.header-divider {
-  width: 1px; height: 18px;
-  background: var(--border2);
-}
+.header-divider { width: 1px; height: 18px; background: var(--border2); }
 
-/* Ticker settings button in header */
 .header-ticker-btn {
   display: flex; align-items: center; gap: 6px;
   font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
   padding: 6px 12px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  color: var(--muted);
-  cursor: pointer;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; color: var(--muted); cursor: pointer;
   transition: all 0.15s;
 }
-.header-ticker-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-dim);
-}
+.header-ticker-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 .header-ticker-btn:active { transform: scale(0.96); }
 .header-ticker-icon { font-size: 12px; transition: transform 0.3s; }
 .header-ticker-btn:hover .header-ticker-icon { transform: rotate(60deg); }
@@ -340,8 +325,7 @@ header {
   gap: 1px;
   margin: 24px 32px;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 4px; overflow: hidden;
 }
 .metric-card {
   background: var(--panel); padding: 16px 20px;
@@ -385,6 +369,77 @@ main {
 }
 .panel-title { font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--muted); }
 .sidebar { display: flex; flex-direction: column; gap: 1px; }
+
+/* ─── PORTFOLIO TABS ─────────────────────────────────────────────────────── */
+.portfolio-tabs-wrap {
+  padding: 12px 20px 0;
+  display: flex;
+  position: relative;
+  z-index: 2;
+  margin-bottom: -1px;
+}
+
+.portfolio-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.portfolio-tabs::-webkit-scrollbar { display: none; }
+
+.portfolio-tab {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  padding: 7px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  position: relative;
+  top: 0;
+}
+
+.portfolio-tab:hover {
+  color: var(--text);
+  background: var(--bg2);
+}
+
+.portfolio-tab.active {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--border);
+  border-bottom-color: var(--panel);
+  top: 1px;
+  z-index: 3;
+}
+
+.portfolio-tab-add {
+  font-family: var(--mono);
+  font-size: 16px;
+  line-height: 1;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px dashed var(--border2);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: 4px;
+  align-self: flex-end;
+  padding-bottom: 7px;
+}
+
+.portfolio-tab-add:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 /* ─── FILTER BAR ─────────────────────────────────────────────────────────── */
 .filter-bar {
@@ -490,10 +545,7 @@ main {
 .sym-pnl.neg { color: var(--red); }
 
 .streak-block { padding: 20px; text-align: center; }
-.streak-num {
-  font-family: var(--display); font-size: 64px; line-height: 1;
-  transition: color 0.3s;
-}
+.streak-num { font-family: var(--display); font-size: 64px; line-height: 1; transition: color 0.3s; }
 .streak-num.win { color: var(--green); text-shadow: 0 0 30px rgba(60,255,160,0.25); }
 .streak-num.loss { color: var(--red); text-shadow: 0 0 30px rgba(255,69,96,0.25); }
 .streak-label { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-top: 4px; }
@@ -507,10 +559,7 @@ main {
   display: grid; grid-template-columns: repeat(7, 1fr);
   gap: 3px; padding: 16px 20px;
 }
-.hmap-cell {
-  aspect-ratio: 1; border-radius: 2px;
-  cursor: default; transition: transform 0.15s;
-}
+.hmap-cell { aspect-ratio: 1; border-radius: 2px; cursor: default; transition: transform 0.15s; }
 .hmap-cell:hover { transform: scale(1.3); z-index: 10; }
 .hmap-label {
   display: grid; grid-template-columns: repeat(7, 1fr);
@@ -537,6 +586,8 @@ main {
 .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
 .btn-ghost:active { transform: scale(0.96); }
 
+.btn-icon { padding: 7px 10px; font-size: 13px; }
+
 /* ─── MODAL ──────────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 500;
@@ -555,6 +606,10 @@ main {
   transition: transform 0.3s cubic-bezier(.16,1,.3,1);
 }
 .modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-welcome {
+  border-top: 2px solid var(--accent);
+}
 
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;

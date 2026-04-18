@@ -1,6 +1,7 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let portfolios = [];
 let activePortfolioId = null;
+let heatmapDate = new Date();
 
 try {
   const saved = JSON.parse(localStorage.getItem('tradelog_v3'));
@@ -19,6 +20,7 @@ let currentFilter = 'all';
 let currentSort   = { key: 'date', dir: -1 };
 let selectedDir   = 'Long';
 let selectedTag   = '';
+let editingId = null; 
 
 // ─── PORTFOLIO HELPERS ────────────────────────────────────────────────────────
 function getActivePortfolio() {
@@ -499,6 +501,19 @@ function drawEquity() {
     ctx.fill();
   });
 
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '10px "Space Mono"';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fmtNum(max, 0), W - pad, ys(max) + (max === points[points.length-1] ? -10 : 10));
+  if (min !== max) {
+    ctx.fillText(fmtNum(min, 0), W - pad, ys(min) - 10);
+  }
+  if (min < 0 && max > 0) {
+    ctx.fillText('0', W - pad, zeroY - 6);
+  }
+
+  const totalPnl = running;
   const wins  = trades.filter(t => pnl(t) > 0);
   const wr    = trades.length ? (wins.length / trades.length * 100).toFixed(1) : '0.0';
   const maxDD = calcMaxDrawdown(points);
@@ -532,32 +547,32 @@ window.addEventListener('resize', drawEquity);
 
 // ─── METRICS ──────────────────────────────────────────────────────────────────
 function renderMetrics() {
-  const trades      = getActiveTrades();
-  const portfolio   = getActivePortfolio();
-  const startBal    = portfolio?.balance || 0;
-  const wins        = trades.filter(t => pnl(t) > 0);
-  const losses      = trades.filter(t => pnl(t) <= 0);
-  const totalPnl    = trades.reduce((s, t) => s + pnl(t), 0);
-  const currentBal  = startBal + totalPnl;
-  const portReturn  = startBal ? (totalPnl / startBal * 100) : 0;
-  const winRate     = trades.length ? (wins.length / trades.length * 100) : 0;
-  const avgWin      = wins.length   ? wins.reduce((s, t) => s + pnl(t), 0) / wins.length : 0;
-  const avgLoss     = losses.length ? Math.abs(losses.reduce((s, t) => s + pnl(t), 0) / losses.length) : 0;
-  const rr          = avgLoss ? (avgWin / avgLoss) : 0;
-  const gProfit     = wins.reduce((s, t) => s + pnl(t), 0);
-  const gLoss       = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
-  const pf          = gLoss ? gProfit / gLoss : 0;
+  const wins = trades.filter(t => pnl(t) > 0);
+  const losses = trades.filter(t => pnl(t) <= 0);
+  const totalPnl = trades.reduce((s, t) => s + pnl(t), 0);
+  const winRate = trades.length ? (wins.length / trades.length * 100) : 0;
+  const avgWin  = wins.length ? wins.reduce((s, t) => s + pnl(t), 0) / wins.length : 0;
+  const avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + pnl(t), 0) / losses.length) : 0;
+  const rr = avgLoss ? (avgWin / avgLoss) : 0;
+  const profitFactor = avgLoss && losses.length ?
+    (wins.reduce((s, t) => s + pnl(t), 0)) / Math.abs(losses.reduce((s, t) => s + pnl(t), 0)) : 0;
 
+  // --- คำนวณ Best & Worst Trade ตรงนี้ ---
+  const allPnls = trades.map(t => pnl(t));
+  const bestTrade = allPnls.length ? Math.max(...allPnls) : 0;
+  const worstTrade = allPnls.length ? Math.min(...allPnls) : 0;
+
+  // --- เพิ่มเข้าไปใน Array นี้ 2 บรรทัด ---
   const metrics = [
-    { label: 'STARTING BALANCE', val: '$' + fmtAbs(startBal),   cls: '',                          sub: 'base capital' },
-    { label: 'CURRENT BALANCE',  val: '$' + fmtAbs(currentBal), cls: currentBal >= startBal ? 'pos' : 'neg', sub: `${portReturn >= 0 ? '+' : ''}${portReturn.toFixed(2)}% return` },
-    { label: 'TOTAL P&L',        val: fmtNum(totalPnl),         cls: totalPnl >= 0 ? 'pos' : 'neg', sub: 'USD' },
-    { label: 'WIN RATE',         val: winRate.toFixed(1) + '%', cls: winRate >= 50 ? 'pos' : 'neg', sub: `${wins.length}W / ${losses.length}L` },
-    { label: 'AVG WIN',          val: fmtNum(avgWin),           cls: 'pos',                        sub: 'per trade' },
-    { label: 'AVG LOSS',         val: '-' + fmtAbs(avgLoss),    cls: 'neg',                        sub: 'per trade' },
-    { label: 'R:R RATIO',        val: rr ? rr.toFixed(2) : '—', cls: rr >= 1 ? 'pos' : 'neg',     sub: 'avg win / avg loss' },
-    { label: 'PROFIT FACTOR',    val: pf  ? pf.toFixed(2) : '—', cls: pf >= 1 ? 'accent' : 'neg', sub: 'gross P / gross L' },
-    { label: 'TOTAL TRADES',     val: trades.length,            cls: '',                           sub: 'logged' },
+    { label: 'TOTAL P&L',     val: fmtNum(totalPnl),        cls: totalPnl >= 0 ? 'pos' : 'neg', sub: 'USD' },
+    { label: 'WIN RATE',      val: winRate.toFixed(1) + '%', cls: winRate >= 50 ? 'pos' : 'neg', sub: `${wins.length}W / ${losses.length}L` },
+    { label: 'AVG WIN',       val: fmtNum(avgWin),           cls: 'pos', sub: 'per trade' },
+    { label: 'AVG LOSS',      val: '-' + fmtAbs(avgLoss),    cls: 'neg', sub: 'per trade' },
+    { label: 'BEST TRADE',    val: fmtNum(bestTrade),        cls: bestTrade > 0 ? 'pos' : '', sub: 'max profit' },
+    { label: 'WORST TRADE',   val: fmtNum(worstTrade),       cls: worstTrade < 0 ? 'neg' : '', sub: 'max drawdown' },
+    { label: 'R:R RATIO',     val: rr ? rr.toFixed(2) : '—', cls: rr >= 1 ? 'pos' : 'neg', sub: 'avg win / avg loss' },
+    { label: 'PROFIT FACTOR', val: profitFactor ? profitFactor.toFixed(2) : '—', cls: profitFactor >= 1 ? 'accent' : 'neg', sub: 'gross profit / loss' },
+    { label: 'TOTAL TRADES',  val: trades.length,            cls: '',    sub: 'logged' },
   ];
 
   document.getElementById('metricsRow').innerHTML = metrics.map(m =>
@@ -614,6 +629,11 @@ function renderTable() {
       <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${t.note || '—'}</td>
       <td>${t.tag ? `<span class="tag-pill">${t.tag}</span>` : ''}</td>
       <td><button class="del-btn" onclick="delTrade(${t.id})" title="Delete">✕</button></td>
+      <td>${t.tag ? `<span class="tag-pill">${t.tag}</span>` : ''}</td>
+      <td style="display:flex; gap:8px;">
+        <button class="del-btn" style="color:var(--blue)" onclick="editTrade(${t.id})" title="Edit">✏️</button>
+        <button class="del-btn" onclick="delTrade(${t.id})" title="Delete">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -689,48 +709,116 @@ function renderStreak() {
     </div>`;
 }
 
+function changeHeatmapMonth(offset) {
+  heatmapDate.setMonth(heatmapDate.getMonth() + offset);
+  renderHeatmap();
+}
+
 function renderHeatmap() {
-  const trades = getActiveTrades();
   const pnlByDate = {};
-  trades.forEach(t => { pnlByDate[t.date] = (pnlByDate[t.date] || 0) + pnl(t); });
+  trades.forEach(t => {
+    if (!pnlByDate[t.date]) pnlByDate[t.date] = 0;
+    pnlByDate[t.date] += pnl(t);
+  });
 
-  const today = new Date(), year = today.getFullYear(), month = today.getMonth();
-  const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0);
-  const startDow = firstDay.getDay(), daysInMonth = lastDay.getDate();
+  // ใช้ heatmapDate แทน new Date()
+  const year = heatmapDate.getFullYear();
+  const month = heatmapDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
 
-  const vals   = Object.values(pnlByDate).filter(v => v !== 0);
+  const vals = Object.values(pnlByDate).filter(v => v !== 0);
   const maxAbs = vals.length ? Math.max(...vals.map(Math.abs)) : 1;
 
-  const labels = ['S','M','T','W','T','F','S'].map(d => `<div class="hmap-day-label">${d}</div>`).join('');
-  let cells = Array(startDow).fill('<div class="hmap-cell" style="background:transparent"></div>').join('');
+  let labelsHtml = ['S','M','T','W','T','F','S'].map(d =>
+    `<div class="hmap-day-label">${d}</div>`
+  ).join('');
+
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += `<div class="hmap-cell" style="background:transparent"></div>`;
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const val = pnlByDate[dateStr] || 0;
     let bg;
-    if (val === 0) { bg = 'rgba(128,128,128,0.08)'; }
-    else if (val > 0) { const a = Math.min(0.9, 0.15 + (val / maxAbs) * 0.75); bg = `rgba(60,255,160,${a.toFixed(2)})`; }
-    else { const a = Math.min(0.9, 0.15 + (Math.abs(val) / maxAbs) * 0.75); bg = `rgba(255,69,96,${a.toFixed(2)})`; }
-    cells += `<div class="hmap-cell" style="background:${bg}" title="${val ? `${dateStr}: ${fmtNum(val)}` : dateStr}"></div>`;
+    if (val === 0) {
+      bg = 'rgba(255,255,255,0.04)';
+    } else if (val > 0) {
+      const alpha = Math.min(0.9, 0.15 + (val / maxAbs) * 0.75);
+      bg = `rgba(60,255,160,${alpha.toFixed(2)})`;
+    } else {
+      const alpha = Math.min(0.9, 0.15 + (Math.abs(val) / maxAbs) * 0.75);
+      bg = `rgba(255,69,96,${alpha.toFixed(2)})`;
+    }
+    const title = val !== 0 ? `${dateStr}: ${fmtNum(val)}` : dateStr;
+    cells += `<div class="hmap-cell" style="background:${bg}" title="${title}"></div>`;
   }
 
+  const monthLabel = heatmapDate.toLocaleString('en-US',{month:'long',year:'numeric'}).toUpperCase();
+
+  // เพิ่มปุ่ม ◀ ▶ เข้าไปใน HTML
   document.getElementById('heatmap').innerHTML = `
-    <div class="hmap-label">${labels}</div>
+    <div class="hmap-label">${labelsHtml}</div>
     <div class="heatmap-grid">${cells}</div>
-    <div style="padding:0 20px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">
-      ${today.toLocaleString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
-    </div>`;
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:0 20px 12px;">
+      <button class="btn-ghost" style="padding:2px 8px; font-size:10px" onclick="changeHeatmapMonth(-1)">◀</button>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">${monthLabel}</div>
+      <button class="btn-ghost" style="padding:2px 8px; font-size:10px" onclick="changeHeatmapMonth(1)">▶</button>
+    </div>
+  `;
 }
 
 // ─── TRADE MODAL ──────────────────────────────────────────────────────────────
 function openModal() {
+  editingId = null; 
+  document.querySelector('.modal-title').textContent = "NEW TRADE ENTRY";
+  document.querySelector('.modal-footer .btn-accent').textContent = "SAVE TRADE ▸";
+  
   document.getElementById('modalOverlay').classList.add('open');
-  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  
+  // เคลียร์ฟอร์ม
+  ['f-sym','f-entry','f-exit','f-size','f-note','f-account'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  
   selectedTag = '';
   document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
   setDir('Long');
   updatePreview();
-  setTimeout(() => document.getElementById('f-sym')?.focus(), 100);
+}
+
+function editTrade(id) {
+  const t = trades.find(x => x.id === id);
+  if(!t) return;
+  
+  editingId = id; // เซ็ตว่ากำลังแก้ ID นี้นะ
+  
+  // เปลี่ยนหน้าตา Modal
+  document.querySelector('.modal-title').textContent = "EDIT TRADE";
+  document.querySelector('.modal-footer .btn-accent').textContent = "SAVE CHANGES ▸";
+  document.getElementById('modalOverlay').classList.add('open');
+
+  // ดึงข้อมูลเดิมมาใส่ฟอร์ม
+  document.getElementById('f-sym').value = t.sym;
+  document.getElementById('f-date').value = t.date;
+  document.getElementById('f-entry').value = t.entry;
+  document.getElementById('f-exit').value = t.exit;
+  document.getElementById('f-size').value = t.size;
+  document.getElementById('f-account').value = t.account || '';
+  document.getElementById('f-note').value = t.note || '';
+
+  setDir(t.dir);
+  
+  selectedTag = t.tag || '';
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    if(b.textContent.trim().toUpperCase() === selectedTag.toUpperCase()) b.classList.add('selected');
+    else b.classList.remove('selected');
+  });
+
+  updatePreview();
 }
 
 function closeModal(e) {
@@ -783,28 +871,32 @@ function updatePreview() {
 function saveTrade() {
   const portfolio = getActivePortfolio();
   if (!portfolio) { toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน', 'error'); return; }
-
-  const sym   = (document.getElementById('f-sym').value || '').trim().toUpperCase();
-  const date  = document.getElementById('f-date').value;
-  const entry = parseFloat(document.getElementById('f-entry').value);
-  const exit_ = parseFloat(document.getElementById('f-exit').value);
-  const size  = parseFloat(document.getElementById('f-size').value);
-  const note  = document.getElementById('f-note').value.trim();
+  const sym     = (document.getElementById('f-sym').value || '').trim().toUpperCase();
+  const date    = document.getElementById('f-date').value;
+  const entry   = parseFloat(document.getElementById('f-entry').value);
+  const exit    = parseFloat(document.getElementById('f-exit').value);
+  const size    = parseFloat(document.getElementById('f-size').value);
+  const note    = document.getElementById('f-note').value.trim();
   const account = parseFloat(document.getElementById('f-account').value) || 0;
 
-  if (!sym)                       { toast('กรอก Symbol ก่อนนะ', 'error'); return; }
-  if (!date)                      { toast('เลือก Date ก่อน', 'error'); return; }
-  if (isNaN(entry))               { toast('กรอก Entry Price', 'error'); return; }
-  if (isNaN(exit_))               { toast('กรอก Exit Price', 'error'); return; }
-  if (isNaN(size) || size <= 0)   { toast('กรอก Size ให้ถูกต้อง', 'error'); return; }
+  if (!sym || !date || isNaN(entry) || isNaN(exit) || isNaN(size)) {
+    toast('Fill in all required fields', 'error'); return;
+  }
 
-  portfolio.trades.push({ id: nextTradeId++, date, sym, dir: selectedDir, entry, exit: exit_, size, note, tag: selectedTag, account });
-  save(); render(); closeModalDirect();
-  ['f-sym','f-entry','f-exit','f-size','f-note','f-account'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  toast('Trade saved ✓');
-  playTick();
+  // เช็คว่าเป็นการแก้ไข หรือ เพิ่มใหม่
+  if (editingId !== null) {
+    const idx = trades.findIndex(t => t.id === editingId);
+    if(idx > -1) {
+      trades[idx] = { ...trades[idx], date, sym, dir: selectedDir, entry, exit, size, note, tag: selectedTag, account };
+    }
+    toast('Trade updated ✓');
+  } else {
+    trades.push({ id: nextId++, date, sym, dir: selectedDir, entry, exit, size, note, tag: selectedTag, account });
+    toast('Trade saved ✓');
+  }
+  
+  save(); render();
+  closeModalDirect();
 }
 
 function delTrade(id) {

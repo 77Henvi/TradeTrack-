@@ -1,14 +1,9 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let trades = [];
-
 try {
   const saved = JSON.parse(localStorage.getItem('tradelog_v2'));
-  if (Array.isArray(saved)) {
-    trades = saved;
-  }
-} catch (e) {
-  trades = [];
-}
+  if (Array.isArray(saved)) trades = saved;
+} catch (e) { trades = []; }
 
 let nextId = trades.length ? Math.max(...trades.map(t => t.id)) + 1 : 1;
 let currentFilter = 'all';
@@ -16,9 +11,37 @@ let currentSort = { key: 'date', dir: -1 };
 let selectedDir = 'Long';
 let selectedTag = '';
 
-// 🔊 tick sound
-const tickSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
-tickSound.volume = 0.2;
+// ─── SOUND (ไม่เล่นอัตโนมัติ — รอ user gesture ก่อน) ─────────────────────────
+let soundUnlocked = false;
+let tickAudio = null;
+
+function unlockSound() {
+  if (soundUnlocked) return;
+  soundUnlocked = true;
+  // สร้าง AudioContext แทน Audio element เพื่อความเสถียร
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    tickAudio = ctx;
+  } catch (e) {}
+}
+
+// unlock เมื่อ user กด click ครั้งแรก
+document.addEventListener('click', unlockSound, { once: true });
+document.addEventListener('keydown', unlockSound, { once: true });
+
+function playTick() {
+  if (!soundUnlocked || !tickAudio) return;
+  try {
+    const o = tickAudio.createOscillator();
+    const g = tickAudio.createGain();
+    o.connect(g); g.connect(tickAudio.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.08, tickAudio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, tickAudio.currentTime + 0.08);
+    o.start(tickAudio.currentTime);
+    o.stop(tickAudio.currentTime + 0.08);
+  } catch (e) {}
+}
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function save() { localStorage.setItem('tradelog_v2', JSON.stringify(trades)); }
@@ -51,129 +74,149 @@ function toast(msg, type = 'success') {
   setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-function genSparkline() {
-  let arr = [];
-  let val = Math.random() * 100;
-
-  for (let i = 0; i < 12; i++) {
-    val += (Math.random() - 0.5) * 6;
-    arr.push(val);
+// mini sparkline SVG สำหรับ ticker
+function genSparkline(chg) {
+  const pts = [];
+  let v = 50;
+  for (let i = 0; i < 10; i++) {
+    v += (Math.random() - (chg < 0 ? 0.4 : 0.6)) * 8;
+    v = Math.max(10, Math.min(90, v));
+    pts.push(v);
   }
-
-  const max = Math.max(...arr);
-  const min = Math.min(...arr);
-
-  const path = arr.map((v, i) => {
-    const x = (i / (arr.length - 1)) * 40;
-    const y = 14 - ((v - min) / (max - min || 1)) * 14;
-    return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+  const min = Math.min(...pts), max = Math.max(...pts), range = max - min || 1;
+  const path = pts.map((v, i) => {
+    const x = (i / (pts.length - 1)) * 36;
+    const y = 12 - ((v - min) / range) * 12;
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
-
-  return `
-    <svg width="40" height="14" viewBox="0 0 40 14">
-      <path d="${path}" stroke="currentColor" stroke-width="1.5" fill="none"/>
-    </svg>
-  `;
+  const color = chg >= 0 ? '#1a5020' : '#5a1020';
+  return `<svg width="36" height="12" viewBox="0 0 36 12" style="display:block">
+    <path d="${path}" stroke="${color}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
 }
 
-// ─── CURSOR ──────────────────────────────────────────────────────────────────
-const dot  = document.querySelector('.cursor-dot');
-const ring = document.querySelector('.cursor-ring');
-let mx = 0, my = 0, rx = 0, ry = 0;
+// ─── CUSTOM CURSOR ────────────────────────────────────────────────────────────
+const cursorDot  = document.querySelector('.cursor-dot');
+const cursorRing = document.querySelector('.cursor-ring');
+let mx = -200, my = -200;
+let rx = -200, ry = -200;
+let rafId = null;
 
 document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
 function animateCursor() {
-    rx += (mx - rx) * 0.12;
-    ry += (my - ry) * 0.12;
-    if (dot)  dot.style.cssText  += `left:${mx}px;top:${my}px;`;
-    if (ring) ring.style.cssText += `left:${rx}px;top:${ry}px;`;
-    requestAnimationFrame(animateCursor);
+  // dot เกาะ mouse โดยตรง, ring ตามด้วย lerp
+  rx += (mx - rx) * 0.14;
+  ry += (my - ry) * 0.14;
+  if (cursorDot)  { cursorDot.style.left  = mx + 'px'; cursorDot.style.top  = my + 'px'; }
+  if (cursorRing) { cursorRing.style.left = rx + 'px'; cursorRing.style.top = ry + 'px'; }
+  rafId = requestAnimationFrame(animateCursor);
 }
-/* Pause Function*/ 
+
+// หยุด RAF เมื่อ tab ถูก hidden, เริ่มใหม่เมื่อกลับมา
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) cancelAnimationFrame(animateCursor);
-  else animateCursor();
+  if (document.hidden) {
+    cancelAnimationFrame(rafId);
+  } else {
+    animateCursor();
+  }
 });
 
 animateCursor();
 
+// hover effect: cursor ring scale บน clickable elements
+document.addEventListener('mouseover', e => {
+  if (e.target.matches('button, a, input, select, textarea, [onclick]')) {
+    cursorRing?.style.setProperty('transform', 'translate(-50%,-50%) scale(1.5)');
+  }
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.matches('button, a, input, select, textarea, [onclick]')) {
+    cursorRing?.style.setProperty('transform', 'translate(-50%,-50%) scale(1)');
+  }
+});
+
 // ─── LIVE TIME ────────────────────────────────────────────────────────────────
 function updateTime() {
-  document.getElementById('liveTime').textContent =
-    new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const el = document.getElementById('liveTime');
+  if (el) el.textContent = new Date().toLocaleTimeString('en-US', {
+    hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
 }
 setInterval(updateTime, 1000);
 updateTime();
 
-// ─── GECKO TIKER TAPE ────────────────────────────────────────────────────────────────
-// CoinGecko ID map  (symbol → id ที่ API ต้องการ)
+// ─── THEME TOGGLE ─────────────────────────────────────────────────────────────
+const themeToggle = document.getElementById('themeToggle');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    document.documentElement.classList.toggle('light');
+    localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+    // redraw equity เพราะ canvas ไม่ตอบสนอง CSS variables
+    setTimeout(drawEquity, 50);
+  });
+}
+
+// ─── TICKER — COINGECKO REAL-TIME ─────────────────────────────────────────────
 const COIN_IDS = {
-  BTC:   'bitcoin',         ETH:   'ethereum',       SOL:   'solana',
-  BNB:   'binancecoin',     XRP:   'ripple',          ADA:   'cardano',
-  AVAX:  'avalanche-2',     DOT:   'polkadot',        LINK:  'chainlink',
-  MATIC: 'matic-network',   DOGE:  'dogecoin',        TON:   'the-open-network',
-  SUI:   'sui',             APT:   'aptos',           OP:    'optimism',
-  ARB:   'arbitrum',        ATOM:  'cosmos',          LTC:   'litecoin',
-  UNI:   'uniswap',         PEPE:  'pepe',
+  BTC: 'bitcoin',       ETH: 'ethereum',         SOL: 'solana',
+  BNB: 'binancecoin',   XRP: 'ripple',            ADA: 'cardano',
+  AVAX:'avalanche-2',   DOT: 'polkadot',          LINK:'chainlink',
+  MATIC:'matic-network',DOGE:'dogecoin',           TON: 'the-open-network',
+  SUI: 'sui',           APT: 'aptos',             OP:  'optimism',
+  ARB: 'arbitrum',      ATOM:'cosmos',             LTC: 'litecoin',
+  UNI: 'uniswap',       PEPE:'pepe',
 };
 
-// coins ที่เปิดใช้งาน — โหลดจาก localStorage หรือ default
-let selectedCoins = JSON.parse(localStorage.getItem('ticker_coins') || 'null')
-  || ['BTC','ETH','SOL','BNB','XRP','ADA','AVAX','LINK'];
+let selectedCoins = (() => {
+  try { return JSON.parse(localStorage.getItem('ticker_coins')) || null; } catch { return null; }
+})() || ['BTC','ETH','SOL','BNB','XRP','ADA','AVAX','LINK'];
 
-let tickerPriceCache = {}; // เก็บราคาล่าสุดไว้ใช้ตอน rebuild
-let tickerInterval = null;
+let tickerPriceCache = {};
+let tickerIntervalId = null;
 
-// ── STEP 1: fetch ราคาจาก CoinGecko ──────────────────────────────────────────
+// STEP 1 — fetch ราคาจาก CoinGecko
 async function fetchCoinPrices(symbols) {
   const ids = symbols.map(s => COIN_IDS[s]).filter(Boolean).join(',');
-  if (!ids) return {};
-
+  if (!ids) return tickerPriceCache;
   try {
     const res = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+      { signal: AbortSignal.timeout(10000) }
     );
-
-    if (!res.ok) throw new Error('API error');
-
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-
     const result = {};
     symbols.forEach(sym => {
       const id = COIN_IDS[sym];
       if (data[id]) {
-        result[sym] = {
-          price: data[id].usd,
-          chg: +(data[id].usd_24h_change || 0).toFixed(2),
-        };
+        result[sym] = { price: data[id].usd, chg: +(data[id].usd_24h_change || 0).toFixed(2) };
       }
     });
-
     return result;
-
   } catch (err) {
-    console.warn('Fetch failed, retrying...', err);
-    await new Promise(r => setTimeout(r, 1500));
-    return tickerPriceCache; // fallback cache
+    console.warn('[Ticker] fetch failed:', err.message);
+    return tickerPriceCache; // fallback ใช้ cache เดิม
   }
 }
 
-// ── STEP 2: สร้าง HTML ของ ticker จากข้อมูลจริง ──────────────────────────────
+// STEP 2 — build ticker HTML
 function buildTicker(priceData) {
-  // ถ้ายังไม่มีข้อมูล (กำลัง load) แสดง skeleton
+  const ticker = document.getElementById('ticker');
+  if (!ticker) return;
+
   if (!priceData || Object.keys(priceData).length === 0) {
-    document.getElementById('ticker').innerHTML =
-      '<span class="ticker-item" style="opacity:0.5;letter-spacing:2px">LOADING LIVE PRICES...</span>';
+    ticker.innerHTML = '<span class="ticker-item" style="opacity:0.5;letter-spacing:2px">LOADING LIVE PRICES...</span>';
     return;
   }
 
-  // สร้าง items เฉพาะ coin ที่ fetch สำเร็จ
-  const items = selectedCoins
-    .filter(s => priceData[s])
-    .map(s => ({ sym: s, ...priceData[s] }));
+  const items = selectedCoins.filter(s => priceData[s]).map(s => ({ sym: s, ...priceData[s] }));
+  if (items.length === 0) {
+    ticker.innerHTML = '<span class="ticker-item" style="opacity:0.5">NO DATA</span>';
+    return;
+  }
 
-  // ทำซ้ำ 2 รอบเพื่อให้ ticker วนต่อเนื่องไม่สะดุด
+  // ซ้ำ 2 รอบให้ scroll วนต่อเนื่อง
   const html = [...items, ...items].map(i => {
     const priceStr = i.price >= 1
       ? i.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -181,73 +224,87 @@ function buildTicker(priceData) {
     return `<span class="ticker-item">
       <span class="sym">${i.sym}</span>
       <span>$${priceStr}</span>
-      <span class="chg ${i.chg >= 0 ? 'pos' : 'neg'}">
-        ${i.chg >= 0 ? '▲' : '▼'} ${Math.abs(i.chg)}%
-      </span>
-      <span class="spark">${genSparkline()}</span>
+      <span class="chg ${i.chg >= 0 ? 'pos' : 'neg'}">${i.chg >= 0 ? '▲' : '▼'} ${Math.abs(i.chg)}%</span>
+      <span class="spark">${genSparkline(i.chg)}</span>
     </span><span class="ticker-sep">◆</span>`;
   }).join('');
 
-  document.getElementById('ticker').innerHTML = html;
-}
+  ticker.innerHTML = html;
 
-// ── STEP 3: refresh — fetch แล้ว rebuild ticker ──────────────────────────────
-async function refreshTicker() {
-  // อัปเดต status dot บน ticker
-  const statusDot = document.getElementById('tickerStatus');
-  if (statusDot) { statusDot.style.opacity = '0.4'; }
-  tickSound.currentTime = 0;
-  tickSound.play().catch(() => {});
-
-  try {
-    tickerPriceCache = await fetchCoinPrices(selectedCoins);
-    buildTicker(tickerPriceCache);
-    // 🔊 play tick sound
-    tickSound.currentTime = 0;
-    tickSound.play().catch(() => {});
-    if (statusDot) { statusDot.style.opacity = '1'; statusDot.style.background = '#3cffa0'; }
-    document.getElementById('lastUpdate').textContent =
-      'LIVE · ' + new Date().toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  } catch (err) {
-    console.warn('Ticker fetch failed:', err);
-    // fallback — ถ้า API ล้มเหลวให้แสดงข้อมูล cache เดิม
-    if (Object.keys(tickerPriceCache).length) buildTicker(tickerPriceCache);
-    if (statusDot) { statusDot.style.background = '#ff4560'; statusDot.style.opacity = '1'; }
+  // flash effect
+  const wrap = document.querySelector('.ticker-wrap');
+  if (wrap) {
+    wrap.classList.add('flash');
+    setTimeout(() => wrap.classList.remove('flash'), 300);
   }
 }
 
-// ── STEP 4: ตั้ง interval fetch ทุก 60 วิ ────────────────────────────────────
-function startTickerRefresh() {
-  if (tickerInterval) clearInterval(tickerInterval);
-  refreshTicker();                          // fetch ทันทีตอนโหลด
-  tickerInterval = setInterval(refreshTicker, 60000); // แล้ว fetch ซ้ำทุก 60 วิ
+// STEP 3 — refresh cycle
+async function refreshTicker() {
+  const statusDot = document.getElementById('tickerStatus');
+  const lastUpdateEl = document.getElementById('lastUpdate');
+  if (statusDot) { statusDot.style.opacity = '0.3'; statusDot.style.background = '#888'; }
+
+  const data = await fetchCoinPrices(selectedCoins);
+
+  if (Object.keys(data).length > 0) {
+    tickerPriceCache = data;
+    buildTicker(data);
+    playTick();
+    if (statusDot) { statusDot.style.opacity = '1'; statusDot.style.background = '#3cffa0'; }
+    if (lastUpdateEl) {
+      lastUpdateEl.textContent = 'LIVE · ' + new Date().toLocaleTimeString('en-US', {
+        hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    }
+  } else {
+    // API ล้มเหลว — แสดง cache เดิมถ้ามี
+    if (Object.keys(tickerPriceCache).length) buildTicker(tickerPriceCache);
+    if (statusDot) { statusDot.style.opacity = '1'; statusDot.style.background = '#ff4560'; }
+    if (lastUpdateEl && lastUpdateEl.textContent.startsWith('LIVE')) {
+      lastUpdateEl.textContent = lastUpdateEl.textContent.replace('LIVE', 'CACHED');
+    }
+  }
 }
 
-// ── SETTINGS PANEL ───────────────────────────────────────────────────────────
+// STEP 4 — start / restart refresh loop
+function startTickerRefresh() {
+  if (tickerIntervalId) clearInterval(tickerIntervalId);
+  buildTicker({}); // แสดง loading ก่อน
+  refreshTicker();
+  tickerIntervalId = setInterval(refreshTicker, 60000);
+}
+
+startTickerRefresh();
+
+// ─── TICKER SETTINGS ─────────────────────────────────────────────────────────
 function openTickerSettings() {
-  document.getElementById('tickerSettingsOverlay').classList.add('open');
-  // sync status dot + last update time into modal
-  const modalDot = document.getElementById('tickerModalStatus');
-  const mainDot  = document.getElementById('tickerStatus');
+  const overlay = document.getElementById('tickerSettingsOverlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+
+  // sync status
+  const mainDot   = document.getElementById('tickerStatus');
+  const modalDot  = document.getElementById('tickerModalStatus');
+  const lastUpEl  = document.getElementById('lastUpdate');
+  const modalTime = document.getElementById('tickerModalTime');
   if (modalDot && mainDot) modalDot.style.background = mainDot.style.background || '#3cffa0';
-  const lu = document.getElementById('lastUpdate');
-  const mt = document.getElementById('tickerModalTime');
-  if (lu && mt) mt.textContent = lu.textContent;
+  if (modalTime && lastUpEl) modalTime.textContent = lastUpEl.textContent;
+
   renderCoinPicker();
 }
 
 function closeTickerSettings(e) {
-  if (!e || e.target === document.getElementById('tickerSettingsOverlay'))
-    document.getElementById('tickerSettingsOverlay').classList.remove('open');
+  const overlay = document.getElementById('tickerSettingsOverlay');
+  if (!e || e.target === overlay) overlay?.classList.remove('open');
 }
 
 function renderCoinPicker() {
-  const allCoins = Object.keys(COIN_IDS);
-  document.getElementById('coinPickerGrid').innerHTML = allCoins.map(sym => {
+  const grid = document.getElementById('coinPickerGrid');
+  if (!grid) return;
+  grid.innerHTML = Object.keys(COIN_IDS).map(sym => {
     const active = selectedCoins.includes(sym);
-    return `<button class="coin-pick-btn ${active ? 'active' : ''}" onclick="toggleCoin('${sym}',this)">
-      ${sym}
-    </button>`;
+    return `<button class="coin-pick-btn ${active ? 'active' : ''}" onclick="toggleCoin('${sym}',this)">${sym}</button>`;
   }).join('');
   updateSelectedCount();
 }
@@ -266,98 +323,40 @@ function toggleCoin(sym, el) {
 }
 
 function updateSelectedCount() {
-  document.getElementById('selectedCount').textContent = selectedCoins.length + ' selected';
+  const el = document.getElementById('selectedCount');
+  if (el) el.textContent = selectedCoins.length + ' selected';
 }
 
 function applyTickerSettings() {
   localStorage.setItem('ticker_coins', JSON.stringify(selectedCoins));
-  closeTickerSettings();
-  buildTicker({}); // แสดง loading
+  document.getElementById('tickerSettingsOverlay')?.classList.remove('open');
   startTickerRefresh();
   toast('Ticker updated — fetching live prices ✓');
-}
-
-// ── RATE-LIMIT-PROTECTION TICKER ───────────────────────────────────────────────────────────
-async function fetchCoinPrices(symbols) {
-  try {
-    const ids = symbols.map(s => COIN_IDS[s]).filter(Boolean).join(',');
-    if (!ids) return {};
-
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
-
-    if (!res.ok) throw new Error();
-
-    const data = await res.json();
-
-    const result = {};
-    symbols.forEach(sym => {
-      const id = COIN_IDS[sym];
-      if (data[id]) {
-        result[sym] = {
-          price: data[id].usd,
-          chg: +(data[id].usd_24h_change || 0).toFixed(2),
-        };
-      }
-    });
-
-    return result;
-
-  } catch {
-    await new Promise(r => setTimeout(r, 1500)); // retry delay
-    return tickerPriceCache; // fallback
-  }
-}
-
-// kick off!
-startTickerRefresh();
-
-// ─── FLASH TICKER─────────────────────────────────────────────────────────────
-function flashTicker() {
-  const el = document.querySelector('.ticker-wrap');
-  el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 150);
-}
-
-flashTicker();
-
-// ─── THEME BUTTON ─────────────────────────────────────────────────────────────
-const toggle = document.getElementById("themeToggle");
-
-toggle.addEventListener("click", () => {
-  document.documentElement.classList.toggle("light");
-
-  localStorage.setItem(
-    "theme",
-    document.documentElement.classList.contains("light")
-      ? "light"
-      : "dark"
-  );
-});
-
-// load saved theme
-if (localStorage.getItem("theme") === "light") {
-  document.documentElement.classList.add("light");
-}
-
-if (!localStorage.getItem("theme")) {
-  const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-  if (prefersLight) {
-    document.documentElement.classList.add("light");
-  }
 }
 
 // ─── EQUITY CURVE ─────────────────────────────────────────────────────────────
 function drawEquity() {
   const canvas = document.getElementById('equityCanvas');
+  if (!canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.offsetWidth;
+  if (W === 0) return;
   canvas.width  = W * dpr;
   canvas.height = 120 * dpr;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
 
+  const isLight = document.documentElement.classList.contains('light');
+
   const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
-  if (sorted.length === 0) return;
+  if (sorted.length === 0) {
+    document.getElementById('equityStats').innerHTML = `
+      <div class="equity-stat"><div class="el">TOTAL P&L</div><div class="ev">+0.00</div></div>
+      <div class="equity-stat"><div class="el">WIN RATE</div><div class="ev">0%</div></div>
+      <div class="equity-stat"><div class="el">MAX DRAWDOWN</div><div class="ev neg">0.00</div></div>
+      <div class="equity-stat"><div class="el">TRADES</div><div class="ev">0</div></div>`;
+    return;
+  }
 
   const points = [0];
   let running = 0;
@@ -367,20 +366,16 @@ function drawEquity() {
   const max = Math.max(...points);
   const range = max - min || 1;
   const pad = 10;
+  const xs = i => (i / (points.length - 1)) * (W - pad * 2) + pad;
+  const ys = v => 100 - ((v - min) / range) * 80 + 10;
 
-  const xs = (i) => (i / (points.length - 1)) * (W - pad * 2) + pad;
-  const ys = (v) => 100 - ((v - min) / range) * 80 + 10;
-
-  // Fill gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, 120);
   const isPos = running >= 0;
-  if (isPos) {
-    grad.addColorStop(0, 'rgba(60,255,160,0.25)');
-    grad.addColorStop(1, 'rgba(60,255,160,0)');
-  } else {
-    grad.addColorStop(0, 'rgba(255,69,96,0.25)');
-    grad.addColorStop(1, 'rgba(255,69,96,0)');
-  }
+  const lineColor  = isPos ? (isLight ? '#16a34a' : '#3cffa0') : (isLight ? '#dc2626' : '#ff4560');
+  const fillColorA = isPos ? (isLight ? 'rgba(22,163,74,0.15)' : 'rgba(60,255,160,0.2)') : (isLight ? 'rgba(220,38,38,0.15)' : 'rgba(255,69,96,0.2)');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 120);
+  grad.addColorStop(0, fillColorA);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
 
   ctx.beginPath();
   ctx.moveTo(xs(0), ys(points[0]));
@@ -391,44 +386,39 @@ function drawEquity() {
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Line
   ctx.beginPath();
   ctx.moveTo(xs(0), ys(points[0]));
   points.forEach((p, i) => { if (i > 0) ctx.lineTo(xs(i), ys(p)); });
-  ctx.strokeStyle = isPos ? '#3cffa0' : '#ff4560';
+  ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
   ctx.stroke();
 
-  // Zero line
-  const zeroY = ys(0);
+  // zero line
   ctx.beginPath();
-  ctx.moveTo(pad, zeroY);
-  ctx.lineTo(W - pad, zeroY);
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.moveTo(pad, ys(0)); ctx.lineTo(W - pad, ys(0));
+  ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)';
   ctx.lineWidth = 1;
-  ctx.setLineDash([4, 6]);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  ctx.setLineDash([4, 6]); ctx.stroke(); ctx.setLineDash([]);
 
-  // Dots at each trade
+  // dots
   points.forEach((p, i) => {
     const win = i > 0 && pnl(sorted[i - 1]) > 0;
     ctx.beginPath();
     ctx.arc(xs(i), ys(p), 4, 0, Math.PI * 2);
-    ctx.fillStyle = i === 0 ? 'rgba(255,255,255,0.3)' : (win ? '#3cffa0' : '#ff4560');
+    ctx.fillStyle = i === 0
+      ? (isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)')
+      : (win ? lineColor : (isLight ? '#dc2626' : '#ff4560'));
     ctx.fill();
   });
 
-  // Stats
-  const totalPnl = running;
-  const wins = trades.filter(t => pnl(t) > 0);
-  const wr = trades.length ? (wins.length / trades.length * 100).toFixed(1) : 0;
-  const maxDD = calcMaxDrawdown(points);
-
+  const wins   = trades.filter(t => pnl(t) > 0);
+  const wr     = trades.length ? (wins.length / trades.length * 100).toFixed(1) : '0.0';
+  const maxDD  = calcMaxDrawdown(points);
   document.getElementById('equityStats').innerHTML = `
     <div class="equity-stat">
       <div class="el">TOTAL P&L</div>
-      <div class="ev ${totalPnl >= 0 ? 'pos' : 'neg'}">${fmtNum(totalPnl)}</div>
+      <div class="ev ${running >= 0 ? 'pos' : 'neg'}">${fmtNum(running)}</div>
     </div>
     <div class="equity-stat">
       <div class="el">WIN RATE</div>
@@ -441,8 +431,7 @@ function drawEquity() {
     <div class="equity-stat">
       <div class="el">TRADES</div>
       <div class="ev">${trades.length}</div>
-    </div>
-  `;
+    </div>`;
 }
 
 function calcMaxDrawdown(points) {
@@ -455,17 +444,20 @@ function calcMaxDrawdown(points) {
   return maxDD;
 }
 
+window.addEventListener('resize', drawEquity);
+
 // ─── METRICS ──────────────────────────────────────────────────────────────────
 function renderMetrics() {
-  const wins = trades.filter(t => pnl(t) > 0);
+  const wins   = trades.filter(t => pnl(t) > 0);
   const losses = trades.filter(t => pnl(t) <= 0);
   const totalPnl = trades.reduce((s, t) => s + pnl(t), 0);
-  const winRate = trades.length ? (wins.length / trades.length * 100) : 0;
-  const avgWin  = wins.length ? wins.reduce((s, t) => s + pnl(t), 0) / wins.length : 0;
-  const avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + pnl(t), 0) / losses.length) : 0;
-  const rr = avgLoss ? (avgWin / avgLoss) : 0;
-  const profitFactor = avgLoss && losses.length ?
-    (wins.reduce((s, t) => s + pnl(t), 0)) / Math.abs(losses.reduce((s, t) => s + pnl(t), 0)) : 0;
+  const winRate  = trades.length ? (wins.length / trades.length * 100) : 0;
+  const avgWin   = wins.length ? wins.reduce((s, t) => s + pnl(t), 0) / wins.length : 0;
+  const avgLoss  = losses.length ? Math.abs(losses.reduce((s, t) => s + pnl(t), 0) / losses.length) : 0;
+  const rr       = avgLoss ? (avgWin / avgLoss) : 0;
+  const gProfit  = wins.reduce((s, t) => s + pnl(t), 0);
+  const gLoss    = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
+  const pf       = gLoss ? gProfit / gLoss : 0;
 
   const metrics = [
     { label: 'TOTAL P&L',     val: fmtNum(totalPnl),        cls: totalPnl >= 0 ? 'pos' : 'neg', sub: 'USD' },
@@ -473,8 +465,8 @@ function renderMetrics() {
     { label: 'AVG WIN',       val: fmtNum(avgWin),           cls: 'pos', sub: 'per trade' },
     { label: 'AVG LOSS',      val: '-' + fmtAbs(avgLoss),    cls: 'neg', sub: 'per trade' },
     { label: 'R:R RATIO',     val: rr ? rr.toFixed(2) : '—', cls: rr >= 1 ? 'pos' : 'neg', sub: 'avg win / avg loss' },
-    { label: 'PROFIT FACTOR', val: profitFactor ? profitFactor.toFixed(2) : '—', cls: profitFactor >= 1 ? 'accent' : 'neg', sub: 'gross profit / loss' },
-    { label: 'TOTAL TRADES',  val: trades.length,             cls: '',    sub: 'logged' },
+    { label: 'PROFIT FACTOR', val: pf  ? pf.toFixed(2)  : '—', cls: pf >= 1 ? 'accent' : 'neg', sub: 'gross P / gross L' },
+    { label: 'TOTAL TRADES',  val: trades.length,             cls: '', sub: 'logged' },
   ];
 
   document.getElementById('metricsRow').innerHTML = metrics.map(m =>
@@ -488,7 +480,7 @@ function renderMetrics() {
 
 // ─── TABLE ────────────────────────────────────────────────────────────────────
 function getFiltered() {
-  const search = (document.getElementById('searchInput')?.value || '').toUpperCase();
+  const search = (document.getElementById('searchInput')?.value || '').toUpperCase().trim();
   return trades
     .filter(t => {
       if (currentFilter === 'Long')  return t.dir === 'Long';
@@ -497,23 +489,27 @@ function getFiltered() {
       if (currentFilter === 'loss')  return pnl(t) <= 0;
       return true;
     })
-    .filter(t => !search || t.sym.includes(search) || (t.note || '').toUpperCase().includes(search) || (t.tag || '').toUpperCase().includes(search))
+    .filter(t => !search
+      || t.sym.includes(search)
+      || (t.note || '').toUpperCase().includes(search)
+      || (t.tag  || '').toUpperCase().includes(search)
+    )
     .sort((a, b) => {
-      const k = currentSort.key;
-      let va = k === 'pnl' ? pnl(a) : a[k];
-      let vb = k === 'pnl' ? pnl(b) : b[k];
+      const k  = currentSort.key;
+      const va = k === 'pnl' ? pnl(a) : a[k];
+      const vb = k === 'pnl' ? pnl(b) : b[k];
       if (typeof va === 'string') return va.localeCompare(vb) * currentSort.dir;
       return (va - vb) * currentSort.dir;
     });
 }
 
 function renderTable() {
-  const rows = getFiltered();
+  const rows  = getFiltered();
   const tbody = document.getElementById('tradeBody');
   document.getElementById('emptyState').style.display = rows.length ? 'none' : 'block';
 
   tbody.innerHTML = rows.map((t, idx) => {
-    const p = pnl(t);
+    const p  = pnl(t);
     const pp = pnlPct(t);
     const win = p > 0;
     return `<tr class="row-enter ${win ? 'row-win' : 'row-loss'}" style="animation-delay:${idx * 0.03}s">
@@ -524,7 +520,7 @@ function renderTable() {
       <td style="font-family:var(--mono);font-size:12px">${t.exit.toLocaleString()}</td>
       <td style="font-family:var(--mono);font-size:12px">${t.size}</td>
       <td><span class="pnl-cell ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span></td>
-      <td style="font-family:var(--mono);font-size:11px;color:${win ? 'var(--green)' : 'var(--red)'}">${pp >= 0 ? '+' : ''}${pp.toFixed(2)}%</td>
+      <td style="font-family:var(--mono);font-size:11px;color:${win ? 'var(--green)' : 'var(--red)'}">${(pp >= 0 ? '+' : '') + pp.toFixed(2)}%</td>
       <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${t.note || '—'}</td>
       <td>${t.tag ? `<span class="tag-pill">${t.tag}</span>` : ''}</td>
       <td><button class="del-btn" onclick="delTrade(${t.id})" title="Delete">✕</button></td>
@@ -540,21 +536,19 @@ function setFilter(f, el) {
 }
 
 function sortBy(key) {
-  if (currentSort.key === key) currentSort.dir *= -1;
-  else { currentSort.key = key; currentSort.dir = -1; }
+  currentSort = { key, dir: currentSort.key === key ? currentSort.dir * -1 : -1 };
   renderTable();
 }
 
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 function renderBreakdown() {
-  const wins = trades.filter(t => pnl(t) > 0);
+  const wins   = trades.filter(t => pnl(t) > 0);
   const losses = trades.filter(t => pnl(t) <= 0);
-  const total = trades.length || 1;
-  const wPct = (wins.length / total * 100).toFixed(0);
-  const lPct = (losses.length / total * 100).toFixed(0);
-  const totalWin = wins.reduce((s, t) => s + pnl(t), 0);
+  const total  = trades.length || 1;
+  const wPct   = (wins.length / total * 100).toFixed(0);
+  const lPct   = (losses.length / total * 100).toFixed(0);
+  const totalWin  = wins.reduce((s, t) => s + pnl(t), 0);
   const totalLoss = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
-
   document.getElementById('breakdown').innerHTML = `
     <div class="breakdown-bar">
       <div class="bar-row"><span class="bar-label">WIN</span><span style="color:var(--green)">${wins.length} (${wPct}%)</span></div>
@@ -563,112 +557,99 @@ function renderBreakdown() {
       <div class="bar-track"><div class="bar-fill red" style="width:${lPct}%"></div></div>
       <div class="bar-row" style="margin-top:4px"><span class="bar-label">GROSS PROFIT</span><span style="color:var(--green)">${fmtNum(totalWin)}</span></div>
       <div class="bar-row"><span class="bar-label">GROSS LOSS</span><span style="color:var(--red)">-${fmtAbs(totalLoss)}</span></div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderSymPerf() {
   const map = {};
-  trades.forEach(t => {
-    if (!map[t.sym]) map[t.sym] = 0;
-    map[t.sym] += pnl(t);
-  });
+  trades.forEach(t => { map[t.sym] = (map[t.sym] || 0) + pnl(t); });
   const sorted = Object.entries(map).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6);
-  document.getElementById('symPerf').innerHTML = sorted.map(([sym, p]) =>
-    `<div class="sym-row">
-      <span class="sym-name">${sym}</span>
-      <span class="sym-pnl ${p >= 0 ? 'pos' : 'neg'}">${fmtNum(p)}</span>
-    </div>`
-  ).join('');
+  document.getElementById('symPerf').innerHTML = sorted.length
+    ? sorted.map(([sym, p]) =>
+        `<div class="sym-row">
+          <span class="sym-name">${sym}</span>
+          <span class="sym-pnl ${p >= 0 ? 'pos' : 'neg'}">${fmtNum(p)}</span>
+        </div>`).join('')
+    : '<div style="padding:16px 20px;color:var(--muted);font-family:var(--mono);font-size:11px">No data yet</div>';
 }
 
 function renderStreak() {
   const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
   let streak = 0, streakType = null, best = 0, bestType = null, cur = 0, curType = null;
   sorted.forEach(t => {
-    const win = pnl(t) > 0;
-    const type = win ? 'win' : 'loss';
-    if (type === curType) {
-      cur++;
-    } else {
-      curType = type; cur = 1;
-    }
+    const type = pnl(t) > 0 ? 'win' : 'loss';
+    if (type === curType) { cur++; } else { curType = type; cur = 1; }
     if (cur > best) { best = cur; bestType = type; }
     streak = cur; streakType = type;
   });
 
-  const dots = sorted.slice(-20).map(t => {
-    const win = pnl(t) > 0;
-    return `<div class="streak-dot ${win ? 'w' : 'l'}"></div>`;
-  }).join('');
+  const dots = sorted.slice(-20).map(t =>
+    `<div class="streak-dot ${pnl(t) > 0 ? 'w' : 'l'}" title="${t.sym} ${pnl(t) > 0 ? '+' : ''}${pnl(t).toFixed(0)}"></div>`
+  ).join('');
 
   document.getElementById('streakBlock').innerHTML = `
     <div class="streak-block">
       <div class="streak-num ${streakType || ''}">${streak || 0}</div>
       <div class="streak-label">CURRENT ${streakType ? streakType.toUpperCase() + ' STREAK' : 'STREAK'}</div>
       <div class="streak-dots">${dots}</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:12px">BEST: ${best} ${bestType ? bestType.toUpperCase() + 'S' : '—'}</div>
-    </div>
-  `;
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:12px">
+        BEST: ${best} ${bestType ? bestType.toUpperCase() + 'S' : '—'}
+      </div>
+    </div>`;
 }
 
 function renderHeatmap() {
   const pnlByDate = {};
-  trades.forEach(t => {
-    if (!pnlByDate[t.date]) pnlByDate[t.date] = 0;
-    pnlByDate[t.date] += pnl(t);
-  });
+  trades.forEach(t => { pnlByDate[t.date] = (pnlByDate[t.date] || 0) + pnl(t); });
 
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const today    = new Date();
+  const year     = today.getFullYear();
+  const month    = today.getMonth();
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+  const lastDay  = new Date(year, month + 1, 0);
   const startDow = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
 
-  const vals = Object.values(pnlByDate).filter(v => v !== 0);
+  const vals   = Object.values(pnlByDate).filter(v => v !== 0);
   const maxAbs = vals.length ? Math.max(...vals.map(Math.abs)) : 1;
 
-  let labelsHtml = ['S','M','T','W','T','F','S'].map(d =>
-    `<div class="hmap-day-label">${d}</div>`
-  ).join('');
-
-  let cells = '';
-  for (let i = 0; i < startDow; i++) cells += `<div class="hmap-cell" style="background:transparent"></div>`;
+  const labels = ['S','M','T','W','T','F','S'].map(d => `<div class="hmap-day-label">${d}</div>`).join('');
+  let cells = Array(startDow).fill('<div class="hmap-cell" style="background:transparent"></div>').join('');
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const val = pnlByDate[dateStr] || 0;
     let bg;
     if (val === 0) {
-      bg = 'rgba(255,255,255,0.04)';
+      bg = 'rgba(128,128,128,0.08)';
     } else if (val > 0) {
-      const alpha = Math.min(0.9, 0.15 + (val / maxAbs) * 0.75);
-      bg = `rgba(60,255,160,${alpha.toFixed(2)})`;
+      const a = Math.min(0.9, 0.15 + (val / maxAbs) * 0.75);
+      bg = `rgba(60,255,160,${a.toFixed(2)})`;
     } else {
-      const alpha = Math.min(0.9, 0.15 + (Math.abs(val) / maxAbs) * 0.75);
-      bg = `rgba(255,69,96,${alpha.toFixed(2)})`;
+      const a = Math.min(0.9, 0.15 + (Math.abs(val) / maxAbs) * 0.75);
+      bg = `rgba(255,69,96,${a.toFixed(2)})`;
     }
-    const title = val !== 0 ? `${dateStr}: ${fmtNum(val)}` : dateStr;
-    cells += `<div class="hmap-cell" style="background:${bg}" title="${title}"></div>`;
+    const tip = val ? `${dateStr}: ${fmtNum(val)}` : dateStr;
+    cells += `<div class="hmap-cell" style="background:${bg}" title="${tip}"></div>`;
   }
 
   document.getElementById('heatmap').innerHTML = `
-    <div class="hmap-label">${labelsHtml}</div>
+    <div class="hmap-label">${labels}</div>
     <div class="heatmap-grid">${cells}</div>
-    <div style="padding:0 20px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">${today.toLocaleString('en-US',{month:'long',year:'numeric'}).toUpperCase()}</div>
-  `;
+    <div style="padding:0 20px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">
+      ${today.toLocaleString('en-US',{month:'long',year:'numeric'}).toUpperCase()}
+    </div>`;
 }
 
-// ─── MODAL ────────────────────────────────────────────────────────────────────
+// ─── ADD TRADE MODAL ──────────────────────────────────────────────────────────
 function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
-  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
   selectedTag = '';
   document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
   setDir('Long');
   updatePreview();
+  setTimeout(() => document.getElementById('f-sym')?.focus(), 100);
 }
 
 function closeModal(e) {
@@ -680,7 +661,7 @@ function closeModalDirect() {
 
 function setDir(dir) {
   selectedDir = dir;
-  document.getElementById('btn-long').className  = 'dir-btn' + (dir === 'Long' ? ' active' : '');
+  document.getElementById('btn-long').className  = 'dir-btn' + (dir === 'Long'  ? ' active' : '');
   document.getElementById('btn-short').className = 'dir-btn' + (dir === 'Short' ? ' active' : '');
   updatePreview();
 }
@@ -700,52 +681,55 @@ function updatePreview() {
   const entry = parseFloat(document.getElementById('f-entry')?.value);
   const exit  = parseFloat(document.getElementById('f-exit')?.value);
   const size  = parseFloat(document.getElementById('f-size')?.value);
-  const pv = document.getElementById('previewVal');
-  const pr = document.getElementById('previewRR');
-  if (!isNaN(entry) && !isNaN(exit) && !isNaN(size)) {
+  const pv    = document.getElementById('previewVal');
+  const pr    = document.getElementById('previewRR');
+  if (!isNaN(entry) && !isNaN(exit) && !isNaN(size) && size > 0) {
     const diff = selectedDir === 'Long' ? exit - entry : entry - exit;
-    const p = diff * size;
+    const p    = diff * size;
     pv.textContent = fmtNum(p);
-    pv.className = 'preview-val ' + (p >= 0 ? 'pos' : 'neg');
-    const pct = entry ? (diff / entry * 100).toFixed(2) : 0;
-    pr.textContent = `${pct}% per unit · ${size}x`;
+    pv.className   = 'preview-val ' + (p >= 0 ? 'pos' : 'neg');
+    const pct = entry ? (diff / entry * 100).toFixed(2) : '0.00';
+    pr.textContent = `${pct}% per unit · size ${size}`;
   } else {
-    pv.textContent = '—'; pv.className = 'preview-val';
-    pr.textContent = '';
+    pv.textContent = '—'; pv.className = 'preview-val'; pr.textContent = '';
   }
 }
 
-// Listen for live preview
-['f-entry', 'f-exit', 'f-size'].forEach(id => {
-  setTimeout(() => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updatePreview);
-  }, 100);
+// attach live preview listeners after DOM ready
+['f-entry','f-exit','f-size'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updatePreview);
 });
 
 function saveTrade() {
-  const sym     = (document.getElementById('f-sym').value || '').trim().toUpperCase();
-  const date    = document.getElementById('f-date').value;
+  const sym  = (document.getElementById('f-sym').value || '').trim().toUpperCase();
+  const date = document.getElementById('f-date').value;
   const entry   = parseFloat(document.getElementById('f-entry').value);
-  const exit    = parseFloat(document.getElementById('f-exit').value);
+  const exit_   = parseFloat(document.getElementById('f-exit').value);
   const size    = parseFloat(document.getElementById('f-size').value);
   const note    = document.getElementById('f-note').value.trim();
   const account = parseFloat(document.getElementById('f-account').value) || 0;
 
-  if (!sym || !date || isNaN(entry) || isNaN(exit) || isNaN(size)) {
-    toast('Fill in all required fields', 'error'); return;
-  }
-  trades.push({ id: nextId++, date, sym, dir: selectedDir, entry, exit, size, note, tag: selectedTag, account });
-  save(); render();
+  if (!sym)             { toast('กรอก Symbol ก่อนนะ', 'error'); return; }
+  if (!date)            { toast('เลือก Date ก่อน', 'error'); return; }
+  if (isNaN(entry))     { toast('กรอก Entry Price', 'error'); return; }
+  if (isNaN(exit_))     { toast('กรอก Exit Price', 'error'); return; }
+  if (isNaN(size) || size <= 0) { toast('กรอก Size ให้ถูกต้อง', 'error'); return; }
+
+  trades.push({ id: nextId++, date, sym, dir: selectedDir, entry, exit: exit_, size, note, tag: selectedTag, account });
+  save();
+  render();
   closeModalDirect();
   ['f-sym','f-entry','f-exit','f-size','f-note','f-account'].forEach(id => {
-    document.getElementById(id).value = '';
+    const el = document.getElementById(id);
+    if (el) el.value = '';
   });
   toast('Trade saved ✓');
+  playTick();
 }
 
 function delTrade(id) {
-  if (!confirm('Delete this trade?')) return;
+  if (!confirm('ลบ trade นี้?')) return;
   trades = trades.filter(t => t.id !== id);
   save(); render();
   toast('Trade deleted', 'error');
@@ -755,15 +739,16 @@ function delTrade(id) {
 function exportCSV() {
   const header = 'Date,Symbol,Direction,Entry,Exit,Size,PnL,PnL%,Setup,Tag';
   const rows = trades.map(t => {
-    const p = pnl(t);
+    const p  = pnl(t);
     const pp = pnlPct(t);
-    return [t.date, t.sym, t.dir, t.entry, t.exit, t.size, p.toFixed(2), pp.toFixed(2) + '%', `"${t.note || ''}"`, t.tag || ''].join(',');
+    return [t.date, t.sym, t.dir, t.entry, t.exit, t.size,
+      p.toFixed(2), pp.toFixed(2) + '%', `"${(t.note||'').replace(/"/g,'""')}"`, t.tag || ''
+    ].join(',');
   });
-  const csv = header + '\n' + rows.join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url;
-  a.download = `tradelog_${new Date().toISOString().slice(0,10)}.csv`;
+  const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `tradelog_${new Date().toISOString().slice(0,10)}.csv`;
   a.click(); URL.revokeObjectURL(url);
   toast('CSV exported ↓');
 }
@@ -771,8 +756,7 @@ function exportCSV() {
 function exportNotion() {
   const header = 'Date\tSymbol\tDirection\tEntry\tExit\tSize\tP&L\tP&L%\tResult\tSetup\tTag';
   const rows = trades.map(t => {
-    const p = pnl(t);
-    const pp = pnlPct(t);
+    const p = pnl(t), pp = pnlPct(t);
     return [t.date, t.sym, t.dir, t.entry, t.exit, t.size,
       (p >= 0 ? '+' : '') + p.toFixed(2),
       (pp >= 0 ? '+' : '') + pp.toFixed(2) + '%',
@@ -790,13 +774,27 @@ function closeNotion(e) {
 }
 
 function copyNotion() {
-  navigator.clipboard.writeText(document.getElementById('notionText').value).then(() => {
+  const text = document.getElementById('notionText').value;
+  navigator.clipboard.writeText(text).then(() => {
     const msg = document.getElementById('copiedMsg');
-    msg.style.opacity = 1;
-    setTimeout(() => msg.style.opacity = 0, 2000);
+    if (msg) { msg.style.opacity = 1; setTimeout(() => msg.style.opacity = 0, 2000); }
     toast('Copied to clipboard ✓');
-  });
+  }).catch(() => toast('Copy failed — select all text and copy manually', 'error'));
 }
+
+// keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModalDirect();
+    document.getElementById('notionOverlay')?.classList.remove('open');
+    document.getElementById('tickerSettingsOverlay')?.classList.remove('open');
+  }
+  // Ctrl/Cmd + N = new trade
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+    e.preventDefault();
+    openModal();
+  }
+});
 
 // ─── RENDER ALL ───────────────────────────────────────────────────────────────
 function render() {
@@ -809,13 +807,4 @@ function render() {
   renderHeatmap();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  render();
-});
-
-document.addEventListener('click', () => {
-  tickSound.play().then(() => {
-    tickSound.pause();
-    tickSound.currentTime = 0;
-  }).catch(() => {});
-}, { once: true });
+document.addEventListener('DOMContentLoaded', render);

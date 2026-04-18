@@ -3,20 +3,17 @@
 <head>
   <script>
     const theme = localStorage.getItem("theme");
-    if (theme === "light") {
-      document.documentElement.classList.add("light");
-    }
+    if (theme === "light") document.documentElement.classList.add("light");
   </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TrackTrade</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackTrade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 
 <!-- NOISE OVERLAY -->
 <div class="noise"></div>
@@ -26,8 +23,14 @@
 
 <!-- TICKER TAPE -->
 <div class="ticker-wrap">
-  <div class="ticker" id="ticker"></div>
+  <div class="ticker-scroll-area">
+    <div class="ticker" id="ticker"></div>
+  </div>
 </div>
+
+<!-- hidden status refs for JS — ไม่แสดงผล -->
+<span id="tickerStatus" style="display:none"></span>
+<span id="lastUpdate" style="display:none"></span>
 
 <!-- Custom cursor -->
 <div class="cursor-dot"></div>
@@ -45,13 +48,18 @@
     </div>
   </div>
   <div class="header-right">
-    <div class="theme-toggle" id="themeToggle">
+    <button class="header-ticker-btn" onclick="openTickerSettings()" title="Ticker settings">
+      <span class="header-ticker-icon">⚙</span>
+      <span class="header-ticker-label">TICKER</span>
+    </button>
+    <div class="header-divider"></div>
+    <div class="theme-toggle" id="themeToggle" title="Toggle dark / light">
       <div class="toggle-ball"></div>
     </div>
+    <div class="header-divider"></div>
     <div class="live-dot"></div>
     <span class="live-label" id="liveTime">—</span>
   </div>
-  
 </header>
 
 <!-- ===== EQUITY CURVE ===== -->
@@ -66,7 +74,6 @@
 
 <!-- ===== MAIN LAYOUT ===== -->
 <main>
-
   <!-- LEFT: TRADE LOG TABLE -->
   <div class="panel panel-log">
     <div class="panel-header">
@@ -79,11 +86,11 @@
     </div>
 
     <div class="filter-bar">
-      <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">ALL</button>
-      <button class="filter-btn" data-filter="Long" onclick="setFilter('Long',this)">LONG</button>
-      <button class="filter-btn" data-filter="Short" onclick="setFilter('Short',this)">SHORT</button>
-      <button class="filter-btn" data-filter="win" onclick="setFilter('win',this)">WINS</button>
-      <button class="filter-btn" data-filter="loss" onclick="setFilter('loss',this)">LOSSES</button>
+      <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+      <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
+      <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
+      <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
+      <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
       <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL..." oninput="renderTable()">
     </div>
 
@@ -108,46 +115,29 @@
       </table>
       <div class="empty-state" id="emptyState" style="display:none">
         <div class="empty-icon">◎</div>
-        <div>"Start logging your first trade →"</div>
+        <div>Start logging your first trade →</div>
       </div>
     </div>
   </div>
 
   <!-- RIGHT: SIDEBAR -->
   <div class="sidebar">
-
-    <!-- WIN/LOSS BREAKDOWN -->
     <div class="panel panel-sm">
-      <div class="panel-header">
-        <div class="panel-title">BREAKDOWN</div>
-      </div>
+      <div class="panel-header"><div class="panel-title">BREAKDOWN</div></div>
       <div id="breakdown"></div>
     </div>
-
-    <!-- SYMBOL PERFORMANCE -->
     <div class="panel panel-sm">
-      <div class="panel-header">
-        <div class="panel-title">SYMBOL PERFORMANCE</div>
-      </div>
+      <div class="panel-header"><div class="panel-title">SYMBOL PERFORMANCE</div></div>
       <div id="symPerf"></div>
     </div>
-
-    <!-- STREAK -->
     <div class="panel panel-sm">
-      <div class="panel-header">
-        <div class="panel-title">STREAK TRACKER</div>
-      </div>
+      <div class="panel-header"><div class="panel-title">STREAK TRACKER</div></div>
       <div id="streakBlock"></div>
     </div>
-
-    <!-- CALENDAR HEATMAP -->
     <div class="panel panel-sm">
-      <div class="panel-header">
-        <div class="panel-title">MONTHLY HEATMAP</div>
-      </div>
+      <div class="panel-header"><div class="panel-title">MONTHLY HEATMAP</div></div>
       <div id="heatmap"></div>
     </div>
-
   </div>
 </main>
 
@@ -207,9 +197,7 @@
           </div>
         </div>
       </div>
-
-      <!-- LIVE P&L PREVIEW -->
-      <div class="pnl-preview" id="pnlPreview">
+      <div class="pnl-preview">
         <div class="preview-label">ESTIMATED P&L</div>
         <div class="preview-val" id="previewVal">—</div>
         <div class="preview-rr" id="previewRR"></div>
@@ -234,6 +222,46 @@
       <textarea id="notionText" readonly></textarea>
       <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()">COPY TO CLIPBOARD</button>
       <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s">✓ COPIED!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TICKER SETTINGS MODAL ===== -->
+<div class="modal-overlay" id="tickerSettingsOverlay" onclick="closeTickerSettings(event)">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div class="modal-title">TICKER SETTINGS</div>
+      <button class="btn-close" onclick="document.getElementById('tickerSettingsOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="ticker-info-box">
+        <div class="tib-row">
+          <span class="tib-dot" id="tickerModalStatus"></span>
+          <span class="tib-label">DATA SOURCE</span>
+          <span class="tib-val">CoinGecko API — Free · No key required</span>
+        </div>
+        <div class="tib-row">
+          <span class="tib-label" style="margin-left:18px">REFRESH RATE</span>
+          <span class="tib-val">Every 60 seconds</span>
+        </div>
+        <div class="tib-row">
+          <span class="tib-label" style="margin-left:18px">LAST UPDATE</span>
+          <span class="tib-val" id="tickerModalTime">—</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted)">SELECT COINS TO DISPLAY</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--accent)" id="selectedCount">— selected</div>
+      </div>
+      <div class="coin-picker-grid" id="coinPickerGrid"></div>
+      <p style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.8">
+        เลือก 2–15 coins · กด APPLY เพื่อ fetch ราคาจริงจาก CoinGecko<br>
+        ราคาจะ refresh อัตโนมัติทุก 60 วินาที — ไม่ต้อง API key
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="document.getElementById('tickerSettingsOverlay').classList.remove('open')">CANCEL</button>
+      <button class="btn-accent" onclick="applyTickerSettings()">APPLY & FETCH LIVE ▸</button>
     </div>
   </div>
 </div>

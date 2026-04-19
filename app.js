@@ -21,7 +21,7 @@ const rowsPerPage = 50;
 
 // ─── SYMBOL PRESETS (Contract Size) ───
 const SYMBOL_PRESETS = {
-  "XAUUSD": 10,
+  "XAUUSD": 100,
   "EURUSD": 100000,
   "GBPUSD": 100000,
   "NQ1!": 20

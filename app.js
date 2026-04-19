@@ -31,15 +31,15 @@ const SYMBOL_PRESETS = {
 function applySymbolPreset() {
   const sel = document.getElementById('f-sym-select').value;
   const custom = document.getElementById('f-sym-custom');
-  const mult = document.getElementById('f-mult'); // ช่อง Contract Size ที่เราซ่อนไว้ให้กรอก
+  const mult = document.getElementById('f-mult'); 
 
   if (sel === 'OTHER') {
-    custom.style.display = 'block';
-    custom.value = '';
-    if(!mult.value) mult.value = 1; // ค่าตั้งต้นถ้าเลือก Other
+    if(custom) custom.style.display = 'block';
+    if(custom) custom.value = '';
+    if(mult) mult.value = 1; 
   } else {
-    custom.style.display = 'none';
-    mult.value = SYMBOL_PRESETS[sel] || 1;
+    if(custom) custom.style.display = 'none';
+    if(mult) mult.value = SYMBOL_PRESETS[sel] || 1;
   }
   
   if (typeof updatePreview === 'function') updatePreview();

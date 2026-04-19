@@ -17,6 +17,10 @@
 </head>
 <body>
 
+<!-- Custom cursor — must be outside #appWrapper so querySelector finds it on load -->
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
   <div class="logo-mark" style="font-size:48px;animation:logoPulse 1s ease-in-out infinite">▲</div>
@@ -72,10 +76,6 @@
     <div class="ticker" id="ticker"></div>
   </div>
 </div>
-
-<!-- Custom cursor -->
-<div class="cursor-dot"></div>
-<div class="cursor-ring"></div>
 
 <!-- ===== HEADER ===== -->
 <header>

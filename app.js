@@ -1,7 +1,7 @@
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 // ⚠️  แทนค่า 2 บรรทัดนี้ด้วยค่าจาก Supabase Dashboard → Settings → API
-const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON = 'YOUR_ANON_PUBLIC_KEY';
+const SUPABASE_URL  = 'https://nuaoxwpdanulspzoyjvp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YW94d3BkYW51bHNwem95anZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1ODQ1NjMsImV4cCI6MjA5MjE2MDU2M30.v3D2dSEd1-urhfJuqpulKuTh0ku6Y7ytNcax4lR7n4g';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);

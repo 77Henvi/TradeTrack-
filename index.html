@@ -12,8 +12,53 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div class="logo-mark" style="font-size:48px;animation:logoPulse 1s ease-in-out infinite">▲</div>
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--muted)">LOADING...</div>
+</div>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="authScreen" style="display:none;position:fixed;inset:0;z-index:8000;background:var(--bg);align-items:center;justify-content:center;">
+  <div class="noise"></div>
+  <div class="bg-grid"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-mark" style="font-size:36px">▲</span>
+      <div>
+        <div style="font-family:var(--display);font-size:32px;letter-spacing:3px;color:var(--text)">TrackTrade</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px">TRACK YOUR RETIREMENT</div>
+      </div>
+    </div>
+    <div class="auth-body">
+      <div id="authTitle" style="font-family:var(--display);font-size:28px;letter-spacing:4px;color:var(--accent);margin-bottom:24px;text-shadow:0 0 12px var(--accent-glow)">LOGIN</div>
+      <div id="authMsg" class="auth-msg" style="display:none"></div>
+      <div class="field" style="margin-bottom:14px">
+        <label>EMAIL</label>
+        <input type="email" id="a-email" placeholder="trader@email.com" autocomplete="email">
+      </div>
+      <div class="field" style="margin-bottom:20px">
+        <label>PASSWORD</label>
+        <input type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()">LOGIN ▸</button>
+      <button id="btn-register" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px;display:none" onclick="register()">CREATE ACCOUNT ▸</button>
+      <button class="btn-ghost" style="width:100%;padding:10px;margin-top:8px;font-size:10px" onclick="forgotPassword()">FORGOT PASSWORD?</button>
+      <div style="text-align:center;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--muted)">
+        <span id="authToggleMsg">ยังไม่มีบัญชี?</span>
+        <a href="#" id="authToggleLink" style="color:var(--accent);margin-left:6px;text-decoration:none" onclick="toggleAuthMode();return false">Register</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP WRAPPER (shown after login) ===== -->
+<div id="appWrapper" style="display:none">
 
 <!-- NOISE OVERLAY -->
 <div class="noise"></div>
@@ -44,10 +89,11 @@
     </div>
   </div>
   <div class="header-right">
-    <button class="header-ticker-btn" onclick="openTickerSettings()" title="Ticker settings">
-      <span class="header-ticker-icon">⚙</span>
-      <span class="header-ticker-label">TICKER</span>
-    </button>
+    <div class="header-divider"></div>
+    <div class="user-info">
+      <span class="user-email" id="userEmail"></span>
+      <button class="btn-ghost" style="padding:5px 10px;font-size:10px" onclick="logout()" title="Logout">⎋ LOGOUT</button>
+    </div>
     <div class="header-divider"></div>
     <div class="theme-toggle" id="themeToggle" title="Toggle dark / light">
       <div class="toggle-ball"></div>
@@ -95,7 +141,7 @@
       <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
       <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
       <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
-      <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL..." oninput="renderTable()">
+      <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL...">
     </div>
 
     <div class="table-scroll">
@@ -243,7 +289,7 @@
         <div class="tib-row">
           <span class="tib-dot" id="tickerModalStatus"></span>
           <span class="tib-label">DATA SOURCE</span>
-          <span class="tib-val">CoinGecko API — Free · No key required</span>
+          <span class="tib-val">Market Sessions + Upcoming News</span>
         </div>
         <div class="tib-row">
           <span class="tib-label" style="margin-left:18px">REFRESH RATE</span>
@@ -254,19 +300,31 @@
           <span class="tib-val" id="tickerModalTime">—</span>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted)">SELECT COINS TO DISPLAY</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--accent)" id="selectedCount">— selected</div>
+      <div class="form-grid" style="margin-top:20px;margin-bottom:0">
+        <div class="field full">
+          <label>SCROLL SPEED (seconds per loop)</label>
+          <div style="display:flex;align-items:center;gap:14px">
+            <input type="range" id="ts-speed" min="15" max="90" step="5" style="flex:1;accent-color:var(--accent)">
+            <span id="speed-val" style="font-family:var(--mono);font-size:13px;color:var(--accent);min-width:36px">30s</span>
+          </div>
+        </div>
+        <div class="field full">
+          <label>HIGHLIGHT COLOR</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="ts-color-btns">
+            <button class="ticker-color-btn" data-color="#c8f03c" style="background:#c8f03c" onclick="selectTickerColor(this,'#c8f03c')"></button>
+            <button class="ticker-color-btn" data-color="#3cffa0" style="background:#3cffa0" onclick="selectTickerColor(this,'#3cffa0')"></button>
+            <button class="ticker-color-btn" data-color="#38bdf8" style="background:#38bdf8" onclick="selectTickerColor(this,'#38bdf8')"></button>
+            <button class="ticker-color-btn" data-color="#f59e0b" style="background:#f59e0b" onclick="selectTickerColor(this,'#f59e0b')"></button>
+            <button class="ticker-color-btn" data-color="#ff4560" style="background:#ff4560" onclick="selectTickerColor(this,'#ff4560')"></button>
+            <button class="ticker-color-btn" data-color="#a78bfa" style="background:#a78bfa" onclick="selectTickerColor(this,'#a78bfa')"></button>
+          </div>
+          <input type="hidden" id="ts-color" value="#f59e0b">
+        </div>
       </div>
-      <div class="coin-picker-grid" id="coinPickerGrid"></div>
-      <p style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.8">
-        เลือก 2–15 coins · กด APPLY เพื่อ fetch ราคาจริงจาก CoinGecko<br>
-        ราคาจะ refresh อัตโนมัติทุก 60 วินาที — ไม่ต้อง API key
-      </p>
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeTickerSettings()">CANCEL</button>
-      <button class="btn-accent" onclick="applyTickerSettings()">APPLY & FETCH LIVE ▸</button>
+      <button class="btn-accent" onclick="applyTickerSettings()">APPLY ▸</button>
     </div>
   </div>
 </div>
@@ -361,6 +419,8 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+</div><!-- end #appWrapper -->
 
 <script src="app.js"></script>
 </body>

@@ -216,7 +216,44 @@ body {
 .tib-label { color: var(--muted); letter-spacing: 1px; min-width: 110px; }
 .tib-val { color: var(--text); }
 
-/* ─── COIN PICKER ────────────────────────────────────────────────────────── */
+/* ─── AUTH SCREEN ────────────────────────────────────────────────────────── */
+.auth-card {
+  position: relative; z-index: 10;
+  background: var(--panel); border: 1px solid var(--border2);
+  border-top: 2px solid var(--accent);
+  border-radius: 6px; width: 420px; max-width: 95vw;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+}
+.auth-logo {
+  display: flex; align-items: center; gap: 16px;
+  padding: 28px 32px 20px; border-bottom: 1px solid var(--border);
+}
+.auth-body { padding: 28px 32px 32px; }
+.auth-msg {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
+  padding: 10px 14px; border-radius: 3px; margin-bottom: 16px;
+}
+.auth-msg.error   { background: var(--red-dim);   color: var(--red);   border-left: 3px solid var(--red); }
+.auth-msg.success { background: var(--green-dim);  color: var(--green); border-left: 3px solid var(--green); }
+
+/* ─── USER INFO (header) ─────────────────────────────────────────────────── */
+.user-info { display: flex; align-items: center; gap: 8px; }
+.user-email {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+
+.ticker-color-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.ticker-color-btn:hover { transform: scale(1.15); }
+.ticker-color-btn.active-color { border-color: var(--text); transform: scale(1.15); box-shadow: 0 0 0 2px var(--bg2); }
+
+
 .coin-picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));

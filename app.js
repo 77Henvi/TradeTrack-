@@ -1,5 +1,4 @@
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
-// ⚠️  แทนค่า 2 บรรทัดนี้ด้วยค่าจาก Supabase Dashboard → Settings → API
 const SUPABASE_URL  = 'https://nuaoxwpdanulspzoyjvp.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YW94d3BkYW51bHNwem95anZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1ODQ1NjMsImV4cCI6MjA5MjE2MDU2M30.v3D2dSEd1-urhfJuqpulKuTh0ku6Y7ytNcax4lR7n4g';
 
@@ -22,24 +21,25 @@ const rowsPerPage = 50;
 
 // ─── SYMBOL PRESETS (Contract Size) ───
 const SYMBOL_PRESETS = {
-  "XAUUSD": 10,       // อิงจาก Lot 1 วิ่ง 10 จุด = $100
-  "EURUSD": 100000,   // Standard Lot
-  "GBPUSD": 100000,   // Standard Lot
-  "NQ1!": 20          // สมมติเป็น CME E-Mini ($20 ต่อจุด) ปรับแก้ได้ตาม Broker ของคุณ
+  "XAUUSD": 10,
+  "EURUSD": 100000,
+  "GBPUSD": 100000,
+  "NQ1!": 20
 };
 
 function applySymbolPreset() {
-  const sel = document.getElementById('f-sym-select').value;
+  const sel = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
   const mult = document.getElementById('f-mult'); 
 
-  if (sel === 'OTHER') {
-    if(custom) custom.style.display = 'block';
-    if(custom) custom.value = '';
-    if(mult) mult.value = 1; 
+  if (!sel) return;
+
+  if (sel.value === 'OTHER') {
+    if (custom) { custom.style.display = 'block'; custom.value = ''; }
+    if (mult) mult.value = 1; 
   } else {
-    if(custom) custom.style.display = 'none';
-    if(mult) mult.value = SYMBOL_PRESETS[sel] || 1;
+    if (custom) custom.style.display = 'none';
+    if (mult) mult.value = SYMBOL_PRESETS[sel.value] || 1;
   }
   
   if (typeof updatePreview === 'function') updatePreview();
@@ -70,9 +70,12 @@ function playTick() {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function pnl(t) {
-  const diff = t.dir === 'Long' ? t.exit - t.entry : t.entry - t.exit;
-  const mult = parseFloat(t.mult) || 1; // ดึง Contract Size มาคูณ
-  return diff * t.size * mult; 
+  // Supabase stores entry_price / exit_price — fallback for legacy data
+  const entry = t.entry_price ?? t.entry;
+  const exit  = t.exit_price  ?? t.exit;
+  const diff  = t.dir === 'Long' ? exit - entry : entry - exit;
+  const mult  = parseFloat(t.multiplier) || parseFloat(t.mult) || 1;
+  return diff * t.size * mult;
 }
 function pnlPct(t) {
   if (!t.entry_price) return 0;
@@ -341,8 +344,8 @@ async function saveWelcome() {
 }
 
 // ─── CURSOR, LIVE TIME, THEME ─────────────────────────────────────────────────
-const cursorDot  = document.querySelector('.cursor-dot');
-const cursorRing = document.querySelector('.cursor-ring');
+// Wrap in DOMContentLoaded so elements exist before querying
+let cursorDot = null, cursorRing = null;
 let mx = -200, my = -200, rx = -200, ry = -200, rafId = null;
 document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 function animateCursor() {
@@ -351,10 +354,14 @@ function animateCursor() {
   if (cursorRing) { cursorRing.style.left = rx + 'px'; cursorRing.style.top = ry + 'px'; }
   rafId = requestAnimationFrame(animateCursor);
 }
+document.addEventListener('DOMContentLoaded', () => {
+  cursorDot  = document.querySelector('.cursor-dot');
+  cursorRing = document.querySelector('.cursor-ring');
+  animateCursor();
+});
 document.addEventListener('visibilitychange', () => {
   document.hidden ? cancelAnimationFrame(rafId) : (rafId = requestAnimationFrame(animateCursor));
 });
-animateCursor();
 document.addEventListener('mouseover', e => {
   if (e.target.matches('button, a, input, select, textarea, [onclick]'))
     cursorRing?.style.setProperty('transform', 'translate(-50%,-50%) scale(1.5)');
@@ -619,37 +626,57 @@ function renderHeatmap() {
 
 // ─── TRADE MODAL ──────────────────────────────────────────────────────────────
 function openModal() {
-  editingId = null;
-  document.querySelector('.modal-title').textContent = 'NEW TRADE ENTRY';
-  document.querySelector('.modal-footer .btn-accent').textContent = 'SAVE TRADE ▸';
+  editingId = null; 
+  document.querySelector('.modal-title').textContent = "NEW TRADE ENTRY";
   document.getElementById('modalOverlay').classList.add('open');
-  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
-  ['f-sym','f-entry','f-exit','f-size','f-account'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  if(document.getElementById('f-mult')) document.getElementById('f-mult').value='1';
-  if(document.getElementById('f-note')) document.getElementById('f-note').value='';
-  selectedTag=''; document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('selected'));
-  setDir('Long'); updatePreview();
-  setTimeout(() => document.getElementById('f-sym')?.focus(), 100);
+  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  
+  ['f-entry','f-exit','f-size','f-account'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  if(document.getElementById('f-note')) document.getElementById('f-note').value = '';
+  
+  const sel = document.getElementById('f-sym-select');
+  if (sel) {
+      sel.value = 'XAUUSD';
+      applySymbolPreset();
+  }
 
-  document.getElementById('f-sym-select').value = 'XAUUSD';
-  applySymbolPreset(); 
+  selectedTag = ''; document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
+  setDir('Long'); updatePreview();
 }
+
 function editTrade(id) {
-  const t = getActiveTrades().find(x=>x.id===id); if(!t) return;
-  editingId = id;
-  document.querySelector('.modal-title').textContent = 'EDIT TRADE';
-  document.querySelector('.modal-footer .btn-accent').textContent = 'SAVE CHANGES ▸';
+  const t = getActiveTrades().find(x => x.id === id); if(!t) return;
+  editingId = id; 
+  document.querySelector('.modal-title').textContent = "EDIT TRADE";
   document.getElementById('modalOverlay').classList.add('open');
-  document.getElementById('f-sym').value=t.sym; document.getElementById('f-date').value=t.date;
-  document.getElementById('f-entry').value=t.entry_price; document.getElementById('f-exit').value=t.exit_price;
-  document.getElementById('f-size').value=t.size;
-  if(document.getElementById('f-mult')) document.getElementById('f-mult').value=t.multiplier||1;
-  if(document.getElementById('f-account')) document.getElementById('f-account').value=t.account||'';
-  if(document.getElementById('f-note')) document.getElementById('f-note').value=t.note||'';
-  setDir(t.dir); selectedTag=t.tag||'';
-  document.querySelectorAll('.tag-btn').forEach(b=>{ b.textContent.trim().toUpperCase()===selectedTag.toUpperCase()?b.classList.add('selected'):b.classList.remove('selected'); });
+  
+  document.getElementById('f-date').value = t.date;
+  document.getElementById('f-entry').value = t.entry_price || t.entry; 
+  document.getElementById('f-exit').value = t.exit_price || t.exit;
+  document.getElementById('f-size').value = t.size;
+  
+  const sel = document.getElementById('f-sym-select');
+  const custom = document.getElementById('f-sym-custom');
+  if (sel && custom) {
+    if (SYMBOL_PRESETS[t.sym]) {
+      sel.value = t.sym;
+      custom.style.display = 'none';
+    } else {
+      sel.value = 'OTHER';
+      custom.style.display = 'block';
+      custom.value = t.sym;
+    }
+  }
+
+  if (document.getElementById('f-mult')) document.getElementById('f-mult').value = t.multiplier || 1;
+  if (document.getElementById('f-account')) document.getElementById('f-account').value = t.account || '';
+  if (document.getElementById('f-note')) document.getElementById('f-note').value = t.note || '';
+  
+  setDir(t.dir); selectedTag = t.tag || '';
+  document.querySelectorAll('.tag-btn').forEach(b => { b.textContent.trim().toUpperCase() === selectedTag.toUpperCase() ? b.classList.add('selected') : b.classList.remove('selected'); });
   updatePreview();
 }
+
 function closeModal(e) { if(e.target===document.getElementById('modalOverlay')) closeModalDirect(); }
 function closeModalDirect() { document.getElementById('modalOverlay').classList.remove('open'); }
 function setDir(dir) {
@@ -659,34 +686,49 @@ function setDir(dir) {
   updatePreview();
 }
 function toggleTag(el,tag) { if(selectedTag===tag){selectedTag='';el.classList.remove('selected');}else{selectedTag=tag;document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');} }
+
 function updatePreview() {
-  const entry=parseFloat(document.getElementById('f-entry')?.value), exit=parseFloat(document.getElementById('f-exit')?.value), size=parseFloat(document.getElementById('f-size')?.value);
-  const acc=parseFloat(document.getElementById('f-account')?.value), mult=parseFloat(document.getElementById('f-mult')?.value)||1;
-  const pv=document.getElementById('previewVal'), pr=document.getElementById('previewRR');
-  if(!isNaN(entry)&&!isNaN(exit)&&!isNaN(size)&&size>0){
-    const diff=selectedDir==='Long'?exit-entry:entry-exit, p=diff*size*mult;
-    pv.textContent=fmtNum(p); pv.className='preview-val '+(p>=0?'pos':'neg');
-    const points=Math.abs(diff);
-    let prText=`ระยะ: ${points%1!==0?points.toFixed(3):points} Points`;
-    if(mult!==1) prText+=` · x${mult}`;
-    if(!isNaN(acc)&&acc>0){ const accPct=(p/acc*100).toFixed(2); prText+=` <br><span style="color:${p>=0?'var(--green)':'var(--red)'}">บัญชีโต: ${(p>=0?'+':'')}${accPct}%</span>`; }
-    pr.innerHTML=prText;
-  } else { pv.textContent='—'; pv.className='preview-val'; pr.textContent=''; }
+  const entry = parseFloat(document.getElementById('f-entry')?.value);
+  const exit = parseFloat(document.getElementById('f-exit')?.value);
+  const size = parseFloat(document.getElementById('f-size')?.value);
+  const acc = parseFloat(document.getElementById('f-account')?.value);
+  const mult = parseFloat(document.getElementById('f-mult')?.value) || 1; 
+  const pv = document.getElementById('previewVal');
+  const pr = document.getElementById('previewRR');
+  
+  if (!isNaN(entry) && !isNaN(exit) && !isNaN(size) && size > 0) {
+    const diff = selectedDir === 'Long' ? exit - entry : entry - exit;
+    const p = diff * size * mult; 
+    if(pv) { pv.textContent = fmtNum(p); pv.className = 'preview-val ' + (p >= 0 ? 'pos' : 'neg'); }
+    
+    const points = Math.abs(diff); 
+    let prText = `ระยะ: ${points % 1 !== 0 ? points.toFixed(3) : points} Points`; 
+    if (mult !== 1) prText += ` · x${mult}`;
+    
+    if (!isNaN(acc) && acc > 0) {
+       const accPct = (p / acc * 100).toFixed(2);
+       prText += ` <br><span style="color:${p>=0?'var(--green)':'var(--red)'}">บัญชีโต: ${(p>=0?'+':'')}${accPct}%</span>`;
+    }
+    if(pr) pr.innerHTML = prText;
+  } else { 
+    if(pv) { pv.textContent = '—'; pv.className = 'preview-val'; }
+    if(pr) pr.textContent = ''; 
+  }
 }
+
 ['f-entry','f-exit','f-size','f-mult','f-account'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',updatePreview); });
 
 async function saveTrade() {
   const portfolio = getActivePortfolio(); 
   if(!portfolio){toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน','error');return;}
 
-
-  const selVal = document.getElementById('f-sym-select').value;
-  const rawSym = (selVal === 'OTHER') ? document.getElementById('f-sym-custom').value : selVal;
+  // 🟢 ดึงข้อมูล Symbol อย่างถูกต้อง
+  const selVal = document.getElementById('f-sym-select')?.value;
+  const rawSym = (selVal === 'OTHER') ? document.getElementById('f-sym-custom')?.value : selVal;
   const sym = (rawSym || '').trim().toUpperCase();
 
   const date=document.getElementById('f-date').value;
   const entry=parseFloat(document.getElementById('f-entry').value), exit=parseFloat(document.getElementById('f-exit').value), size=parseFloat(document.getElementById('f-size').value);
-  
   
   const multiplier=document.getElementById('f-mult')?(parseFloat(document.getElementById('f-mult').value)||1):1;
   const note=document.getElementById('f-note')?document.getElementById('f-note').value.trim():'';
@@ -708,7 +750,8 @@ async function saveTrade() {
   
   render(); closeModalDirect();
 }
-function delTrade(id) {
+
+async function delTrade(id) {
   if(!confirm('ลบ trade นี้?')) return;
   const p=getActivePortfolio(); if(!p) return;
   const ok=await dbDeleteTrade(id); if(!ok) return;

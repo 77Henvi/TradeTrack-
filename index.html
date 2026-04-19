@@ -203,7 +203,16 @@
       <div class="form-grid">
         <div class="field full">
           <label>SYMBOL</label>
-          <input type="text" id="f-sym" placeholder="BTC, ETH, AAPL..." autocomplete="off">
+          <div style="display:flex; gap:8px;">
+            <select id="f-sym-select" onchange="applySymbolPreset()" style="padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px; font-family:var(--sans); flex:1; outline:none; cursor:pointer;">
+              <option value="XAUUSD">XAUUSD (Gold)</option>
+              <option value="EURUSD">EURUSD</option>
+              <option value="GBPUSD">GBPUSD</option>
+              <option value="NQ1!">NQ1! (Nasdaq)</option>
+              <option value="OTHER">OTHER (พิมพ์เอง)...</option>
+            </select>
+            <input type="text" id="f-sym-custom" placeholder="e.g. BTCUSD" style="display:none; flex:1;">
+          </div>
         </div>
         <div class="field">
           <label>DATE</label>

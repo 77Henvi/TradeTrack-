@@ -20,6 +20,31 @@ let editingId     = null;
 let currentPage   = 1;
 const rowsPerPage = 50;
 
+// ─── SYMBOL PRESETS (Contract Size) ───
+const SYMBOL_PRESETS = {
+  "XAUUSD": 10,       // อิงจาก Lot 1 วิ่ง 10 จุด = $100
+  "EURUSD": 100000,   // Standard Lot
+  "GBPUSD": 100000,   // Standard Lot
+  "NQ1!": 20          // สมมติเป็น CME E-Mini ($20 ต่อจุด) ปรับแก้ได้ตาม Broker ของคุณ
+};
+
+function applySymbolPreset() {
+  const sel = document.getElementById('f-sym-select').value;
+  const custom = document.getElementById('f-sym-custom');
+  const mult = document.getElementById('f-mult'); // ช่อง Contract Size ที่เราซ่อนไว้ให้กรอก
+
+  if (sel === 'OTHER') {
+    custom.style.display = 'block';
+    custom.value = '';
+    if(!mult.value) mult.value = 1; // ค่าตั้งต้นถ้าเลือก Other
+  } else {
+    custom.style.display = 'none';
+    mult.value = SYMBOL_PRESETS[sel] || 1;
+  }
+  
+  if (typeof updatePreview === 'function') updatePreview();
+}
+
 // ─── PORTFOLIO HELPERS ────────────────────────────────────────────────────────
 function getActivePortfolio() { return portfolios.find(p => p.id === activePortfolioId) || portfolios[0]; }
 function getActiveTrades()    { return getActivePortfolio()?.trades || []; }
@@ -45,8 +70,9 @@ function playTick() {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function pnl(t) {
-  const diff = t.dir === 'Long' ? t.exit_price - t.entry_price : t.entry_price - t.exit_price;
-  return diff * t.size * (t.multiplier || 1);
+  const diff = t.dir === 'Long' ? t.exit - t.entry : t.entry - t.exit;
+  const mult = parseFloat(t.mult) || 1; // ดึง Contract Size มาคูณ
+  return diff * t.size * mult; 
 }
 function pnlPct(t) {
   if (!t.entry_price) return 0;
@@ -604,6 +630,9 @@ function openModal() {
   selectedTag=''; document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('selected'));
   setDir('Long'); updatePreview();
   setTimeout(() => document.getElementById('f-sym')?.focus(), 100);
+
+  document.getElementById('f-sym-select').value = 'XAUUSD';
+  applySymbolPreset(); 
 }
 function editTrade(id) {
   const t = getActiveTrades().find(x=>x.id===id); if(!t) return;
@@ -647,14 +676,26 @@ function updatePreview() {
 ['f-entry','f-exit','f-size','f-mult','f-account'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',updatePreview); });
 
 async function saveTrade() {
-  const portfolio = getActivePortfolio(); if(!portfolio){toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน','error');return;}
-  const sym=(document.getElementById('f-sym').value||'').trim().toUpperCase(), date=document.getElementById('f-date').value;
+  const portfolio = getActivePortfolio(); 
+  if(!portfolio){toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน','error');return;}
+
+
+  const selVal = document.getElementById('f-sym-select').value;
+  const rawSym = (selVal === 'OTHER') ? document.getElementById('f-sym-custom').value : selVal;
+  const sym = (rawSym || '').trim().toUpperCase();
+
+  const date=document.getElementById('f-date').value;
   const entry=parseFloat(document.getElementById('f-entry').value), exit=parseFloat(document.getElementById('f-exit').value), size=parseFloat(document.getElementById('f-size').value);
+  
+  
   const multiplier=document.getElementById('f-mult')?(parseFloat(document.getElementById('f-mult').value)||1):1;
   const note=document.getElementById('f-note')?document.getElementById('f-note').value.trim():'';
   const account=document.getElementById('f-account')?(parseFloat(document.getElementById('f-account').value)||0):0;
+  
   if(!sym||!date||isNaN(entry)||isNaN(exit)||isNaN(size)){toast('Fill in all required fields','error');return;}
+  
   const tradeData={date,sym,dir:selectedDir,entry,exit,size,multiplier,note,tag:selectedTag,account};
+  
   if(editingId!==null){
     const ok=await dbUpdateTrade(editingId,tradeData); if(!ok) return;
     const idx=portfolio.trades.findIndex(t=>t.id===editingId);
@@ -664,9 +705,10 @@ async function saveTrade() {
     const saved=await dbSaveTrade(portfolio.id,tradeData); if(!saved) return;
     portfolio.trades.push(saved); toast('Trade saved ✓');
   }
+  
   render(); closeModalDirect();
 }
-async function delTrade(id) {
+function delTrade(id) {
   if(!confirm('ลบ trade นี้?')) return;
   const p=getActivePortfolio(); if(!p) return;
   const ok=await dbDeleteTrade(id); if(!ok) return;

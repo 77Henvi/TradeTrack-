@@ -156,8 +156,8 @@
             <th>SIZE</th>
             <th onclick="sortBy('pnl')">P&L <span class="sort-icon">↕</span></th>
             <th>%</th>
-            <th>SETUP</th>
-            <th>TAG</th>
+            <th class="col-setup">SETUP</th>
+            <th class="col-tag">TAG</th>
             <th></th>
           </tr>
         </thead>
@@ -212,9 +212,9 @@
               <option value="OTHER">OTHER (พิมพ์เอง)...</option>
             </select>
             <input type="text" id="f-sym-custom" placeholder="e.g. BTCUSD" style="display:none; flex:1; padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px;">
-            <input type="hidden" id="f-mult" value="1">
+            
+            <input type="hidden" id="f-mult" value="10">
           </div>
-          <div id="sym-hint" style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:5px;letter-spacing:1px;min-height:14px"></div>
         </div>
         <div class="field">
           <label>DATE</label>

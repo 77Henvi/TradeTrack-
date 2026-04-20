@@ -753,23 +753,142 @@ main {
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+
+/* Tablet landscape / small desktop: 1024px */
 @media (max-width: 1100px) {
   main { grid-template-columns: 1fr; }
-  .sidebar { display: grid; grid-template-columns: 1fr 1fr; }
+  .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
+  .metrics-row { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 }
+
+/* Tablet portrait: 768px */
 @media (max-width: 768px) {
-  header, .equity-section, .metrics-row, main { margin-left: 12px; margin-right: 12px; }
+  /* Layout spacing */
+  header          { padding: 16px 16px 12px; margin-top: 30px; }
+  .equity-section { margin: 0 16px; }
+  .metrics-row    { margin: 16px 16px; grid-template-columns: repeat(3, 1fr); }
+  main            { margin: 0 16px 24px; }
+
+  /* Header — stack logo and right controls */
+  header { flex-wrap: wrap; gap: 10px; }
+  .header-right { gap: 8px; }
+  .logo-sub { display: none; }
+  .user-email { max-width: 130px; font-size: 10px; }
+
+  /* Sidebar stacks to single column */
   .sidebar { grid-template-columns: 1fr; }
+
+  /* Form */
   .form-grid { grid-template-columns: 1fr; }
+
+  /* Equity stats wrap tighter */
   .equity-stats { gap: 16px; }
+  .equity-stat .ev { font-size: 22px; }
+
+  /* Metrics smaller */
+  .mc-val { font-size: 24px; }
+
+  /* Table — allow horizontal scroll, tighten padding */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .trade-table td, .trade-table th { padding: 10px 10px; }
+
+  /* Search goes full-width on its own row */
+  .filter-bar { gap: 5px; }
+  .search-input { width: 100%; margin-left: 0; margin-top: 6px; }
+
+  /* Panel header buttons shrink */
+  .panel-header { flex-wrap: wrap; gap: 6px; }
+  .panel-header > div:last-child { gap: 6px; }
+
+  /* Noise & cursor off */
   .noise { display: none; }
-  .search-input { width: 120px; }
+  .cursor-dot, .cursor-ring { display: none; }
+  body { cursor: auto; }
+}
+
+/* Mobile: 480px */
+@media (max-width: 480px) {
+  /* Even tighter spacing */
+  header          { padding: 12px 12px 10px; }
+  .equity-section { margin: 0 12px; padding: 16px 0 0; }
+  .metrics-row    { margin: 12px 12px; grid-template-columns: repeat(2, 1fr); }
+  main            { margin: 0 12px 20px; }
+
+  /* Header: hide live clock label, keep dot */
+  .live-label { display: none; }
+  .header-divider:last-of-type { display: none; }
+  .logo-mark { font-size: 20px; }
+  .logo-title { font-size: 22px; }
+
+  /* Auth card full-width */
+  .auth-card { width: 100%; border-radius: 0; border-left: none; border-right: none; }
+  .auth-body { padding: 20px 20px 28px; }
+  .auth-logo { padding: 20px 20px 16px; }
+
+  /* Metrics: 2 columns, smaller text */
+  .mc-val   { font-size: 20px; }
+  .mc-label { font-size: 8px; }
+  .mc-sub   { font-size: 10px; }
+  .metric-card { padding: 12px 14px; }
+
+  /* Equity stats: 2 per row */
+  .equity-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .equity-stat .ev { font-size: 20px; }
+  .equity-stat .el { font-size: 9px; }
+
+  /* Filter bar: wrap tightly */
+  .filter-bar { padding: 10px 12px; }
+  .filter-btn { font-size: 9px; padding: 4px 7px; }
+
+  /* Table: hide lower-priority columns on very small screens */
+  .trade-table .col-setup,
+  .trade-table .col-tag { display: none; }
+  .trade-table td, .trade-table th { padding: 9px 8px; font-size: 11px; }
+
+  /* Panel header: stack title and buttons */
+  .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .panel-header > div:last-child { width: 100%; justify-content: flex-end; }
+
+  /* Modal full-screen on mobile */
+  .modal-overlay { align-items: flex-end; }
+  .modal {
+    width: 100% !important; max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+  }
+
+  /* Portfolio tabs scroll */
+  .portfolio-tabs-wrap { padding: 8px 12px 0; }
+  .portfolio-tab { font-size: 9px; padding: 5px 10px; }
+
+  /* Sidebar panels tighter */
+  .breakdown-bar { padding: 12px 14px; }
+  .sym-row { padding: 8px 14px; }
+  .streak-block { padding: 16px; }
+  .streak-num { font-size: 48px; }
+}
+
+/* Tiny phones: 360px */
+@media (max-width: 360px) {
+  .metrics-row { grid-template-columns: 1fr; }
+  .equity-stats { grid-template-columns: 1fr 1fr; }
+  .header-right { gap: 6px; }
+  .user-email { display: none; }
+}
+
+/* Touch devices — restore cursor */
+@media (pointer: coarse) {
+  .cursor-dot, .cursor-ring { display: none !important; }
+  body, *, *::before, *::after, input, button, a { cursor: auto !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-*, *::before, *::after, input, button, a {
-  cursor: none !important;
+/* Fine pointer (mouse) — hide system cursor for custom cursor effect */
+@media (pointer: fine) {
+  *, *::before, *::after, input, button, a {
+    cursor: none !important;
+  }
 }

@@ -19,29 +19,33 @@ let editingId     = null;
 let currentPage   = 1;
 const rowsPerPage = 50;
 
-// ─── SYMBOL PRESETS (Contract Size) ───
+// ─── SYMBOL PRESETS (Contract Size / Multiplier) ──────────────────────────────
 const SYMBOL_PRESETS = {
-  "XAUUSD": 100,
-  "EURUSD": 100000,
-  "GBPUSD": 100000,
-  "NQ1!": 20
+  "XAUUSD": { mult: 100,    label: "100 oz/lot" },
+  "EURUSD": { mult: 100000, label: "100,000 units/lot" },
+  "GBPUSD": { mult: 100000, label: "100,000 units/lot" },
+  "NQ1!":   { mult: 20,     label: "$20/point" },
 };
 
 function applySymbolPreset() {
-  const sel = document.getElementById('f-sym-select');
+  const sel    = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
-  const mult = document.getElementById('f-mult'); 
+  const mult   = document.getElementById('f-mult');
+  const hint   = document.getElementById('sym-hint');
 
   if (!sel) return;
 
   if (sel.value === 'OTHER') {
     if (custom) { custom.style.display = 'block'; custom.value = ''; }
-    if (mult) mult.value = 1; 
+    if (mult)   mult.value = 1;
+    if (hint)   hint.textContent = '';
   } else {
+    const preset = SYMBOL_PRESETS[sel.value];
     if (custom) custom.style.display = 'none';
-    if (mult) mult.value = SYMBOL_PRESETS[sel.value] || 1;
+    if (mult)   mult.value = preset ? preset.mult : 1;
+    if (hint)   hint.textContent = preset ? `Contract size: ${preset.label}` : '';
   }
-  
+
   if (typeof updatePreview === 'function') updatePreview();
 }
 
@@ -121,6 +125,7 @@ function showAuthScreen() {
   document.getElementById('appWrapper').style.display  = 'none';
 }
 
+let appListenersReady = false;
 async function showApp() {
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appWrapper').style.display  = 'block';
@@ -128,6 +133,7 @@ async function showApp() {
   showLoading(true);
   await loadAllData();
   showLoading(false);
+  if (!appListenersReady) { initAppListeners(); appListenersReady = true; }
   renderPortfolioTabs();
   render();
   startTickerRefresh();
@@ -179,9 +185,14 @@ function authSuccess(msg) {
   el.textContent = msg; el.className = 'auth-msg success'; el.style.display = 'block';
 }
 function setAuthLoading(on) {
+  const isRegister = document.getElementById('authTitle').textContent === 'REGISTER';
   document.getElementById('btn-login').disabled    = on;
   document.getElementById('btn-register').disabled = on;
-  document.getElementById('btn-login').textContent = on ? 'LOADING...' : 'LOGIN ▸';
+  if (isRegister) {
+    document.getElementById('btn-register').textContent = on ? 'LOADING...' : 'CREATE ACCOUNT ▸';
+  } else {
+    document.getElementById('btn-login').textContent = on ? 'LOADING...' : 'LOGIN ▸';
+  }
 }
 function toggleAuthMode() {
   const title   = document.getElementById('authTitle');
@@ -375,15 +386,6 @@ function updateTime() {
   if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 setInterval(updateTime, 1000); updateTime();
-
-const themeToggle = document.getElementById('themeToggle');
-if (themeToggle) {
-  themeToggle.addEventListener('click', () => {
-    document.documentElement.classList.toggle('light');
-    localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
-    setTimeout(drawEquity, 50);
-  });
-}
 
 // ─── TICKER ───────────────────────────────────────────────────────────────────
 let tickerPrefs = JSON.parse(localStorage.getItem('ticker_prefs')) || { speed: 30, color: '#f59e0b' };
@@ -626,22 +628,26 @@ function renderHeatmap() {
 
 // ─── TRADE MODAL ──────────────────────────────────────────────────────────────
 function openModal() {
-  editingId = null; 
+  editingId = null;
   document.querySelector('.modal-title').textContent = "NEW TRADE ENTRY";
+  document.querySelector('.modal-footer .btn-accent').textContent = "SAVE TRADE ▸";
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
-  
+
   ['f-entry','f-exit','f-size','f-account'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  if(document.getElementById('f-note')) document.getElementById('f-note').value = '';
-  
+  if (document.getElementById('f-note')) document.getElementById('f-note').value = '';
+
   const sel = document.getElementById('f-sym-select');
+  const custom = document.getElementById('f-sym-custom');
   if (sel) {
-      sel.value = 'XAUUSD';
-      applySymbolPreset();
+    sel.value = 'XAUUSD';
+    if (custom) custom.style.display = 'none';
+    applySymbolPreset();
   }
 
   selectedTag = ''; document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
   setDir('Long'); updatePreview();
+  setTimeout(() => document.getElementById('f-entry')?.focus(), 100);
 }
 
 function editTrade(id) {
@@ -657,14 +663,17 @@ function editTrade(id) {
   
   const sel = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
+  const hint   = document.getElementById('sym-hint');
   if (sel && custom) {
     if (SYMBOL_PRESETS[t.sym]) {
       sel.value = t.sym;
       custom.style.display = 'none';
+      if (hint) hint.textContent = `Contract size: ${SYMBOL_PRESETS[t.sym].label}`;
     } else {
       sel.value = 'OTHER';
       custom.style.display = 'block';
       custom.value = t.sym;
+      if (hint) hint.textContent = '';
     }
   }
 
@@ -716,7 +725,26 @@ function updatePreview() {
   }
 }
 
-['f-entry','f-exit','f-size','f-mult','f-account'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',updatePreview); });
+// ─── APP LISTENERS (bind after #appWrapper is visible) ───────────────────────
+function initAppListeners() {
+  // Bug #4 — themeToggle was inside hidden #appWrapper at load time
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('light');
+      localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+      setTimeout(drawEquity, 50);
+    });
+  }
+
+  // Bug #5 — searchInput was inside hidden #appWrapper at load time
+  document.getElementById('searchInput')?.addEventListener('input', () => { currentPage = 1; renderTable(); });
+
+  // Bug #6 — modal inputs were inside hidden #appWrapper at load time
+  ['f-entry','f-exit','f-size','f-mult','f-account'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.addEventListener('input', updatePreview);
+  });
+}
 
 async function saveTrade() {
   const portfolio = getActivePortfolio(); 

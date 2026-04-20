@@ -174,7 +174,7 @@ body {
 .ticker {
   display: flex; align-items: center;
   height: 100%; white-space: nowrap;
-  animation: tickerScroll 36s linear infinite;
+  animation: tickerScroll var(--ticker-speed, 36s) linear infinite;
   will-change: transform;
 }
 
@@ -883,7 +883,10 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *:not(.ticker), *:not(.ticker)::before, *:not(.ticker)::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Fine pointer (mouse) — hide system cursor for custom cursor effect */

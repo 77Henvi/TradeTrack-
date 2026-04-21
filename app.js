@@ -166,7 +166,7 @@ async function register() {
     authError('รูปแบบ email ไม่ถูกต้อง');
     return;
   }
-  
+
   if (error) { authError(error.message); return; }
   authSuccess('สมัครสมาชิกสำเร็จ! ✓ กรุณาเช็ค email เพื่อยืนยัน');
 }
@@ -392,32 +392,6 @@ async function saveWelcome() {
 }
 
 // ─── CURSOR, LIVE TIME, THEME ─────────────────────────────────────────────────
-// Wrap in DOMContentLoaded so elements exist before querying
-let cursorDot = null, cursorRing = null;
-let mx = -200, my = -200, rx = -200, ry = -200, rafId = null;
-document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-function animateCursor() {
-  rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14;
-  if (cursorDot)  { cursorDot.style.left  = mx + 'px'; cursorDot.style.top  = my + 'px'; }
-  if (cursorRing) { cursorRing.style.left = rx + 'px'; cursorRing.style.top = ry + 'px'; }
-  rafId = requestAnimationFrame(animateCursor);
-}
-document.addEventListener('DOMContentLoaded', () => {
-  cursorDot  = document.querySelector('.cursor-dot');
-  cursorRing = document.querySelector('.cursor-ring');
-  animateCursor();
-});
-document.addEventListener('visibilitychange', () => {
-  document.hidden ? cancelAnimationFrame(rafId) : (rafId = requestAnimationFrame(animateCursor));
-});
-document.addEventListener('mouseover', e => {
-  if (e.target.matches('button, a, input, select, textarea, [onclick]'))
-    cursorRing?.style.setProperty('transform', 'translate(-50%,-50%) scale(1.5)');
-});
-document.addEventListener('mouseout', e => {
-  if (e.target.matches('button, a, input, select, textarea, [onclick]'))
-    cursorRing?.style.setProperty('transform', 'translate(-50%,-50%) scale(1)');
-});
 function updateTime() {
   const el = document.getElementById('liveTime');
   if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });

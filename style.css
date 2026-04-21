@@ -60,9 +60,6 @@ body {
   transition: background 0.3s, color 0.3s;
 }
 
-@media (pointer: fine) {
-  body { cursor: none; }
-}
 
 /* ─── NOISE + GRID ───────────────────────────────────────────────────────── */
 .noise {
@@ -83,22 +80,6 @@ body {
   background-image:
     linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
-}
-
-/* ─── CUSTOM CURSOR ──────────────────────────────────────────────────────── */
-.cursor-dot, .cursor-ring {
-  position: fixed; pointer-events: none; z-index: 9999;
-  transform: translate(-50%, -50%); transition: opacity 0.2s;
-}
-.cursor-dot {
-  width: 6px; height: 6px;
-  background: var(--accent); border-radius: 50%;
-  box-shadow: 0 0 8px var(--accent-glow);
-}
-.cursor-ring {
-  width: 24px; height: 24px;
-  border: 1.5px solid var(--accent);
-  border-radius: 50%; opacity: 0.6;
 }
 
 /* ─── TICKER TAPE ────────────────────────────────────────────────────────── */
@@ -910,4 +891,19 @@ main {
   *, *::before, *::after, input, button, a {
     cursor: none !important;
   }
+}
+
+.cf-turnstile {
+  cursor: auto !important;
+}
+.cf-turnstile * {
+  cursor: auto !important;
+}
+
+#authScreen {
+  cursor: default !important;
+}
+
+#authScreen * {
+  cursor: auto !important;
 }

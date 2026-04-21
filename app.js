@@ -18,30 +18,36 @@ let selectedTag   = '';
 let editingId     = null;
 let currentPage   = 1;
 const rowsPerPage = 50;
+let lastEmailSent = 0;
+const EMAIL_COOLDOWN = 30000; // 
 
-// ─── SYMBOL PRESETS (Contract Size) ───
+// ─── SYMBOL PRESETS (Contract Size / Multiplier) ──────────────────────────────
 const SYMBOL_PRESETS = {
-  "XAUUSD": 100,
-  "EURUSD": 100000,
-  "GBPUSD": 100000,
-  "NQ1!": 20
+  "XAUUSD": { mult: 100,    label: "100 oz/lot" },
+  "EURUSD": { mult: 100000, label: "100,000 units/lot" },
+  "GBPUSD": { mult: 100000, label: "100,000 units/lot" },
+  "NQ1!":   { mult: 20,     label: "$20/point" },
 };
 
 function applySymbolPreset() {
-  const sel = document.getElementById('f-sym-select');
+  const sel    = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
-  const mult = document.getElementById('f-mult'); 
+  const mult   = document.getElementById('f-mult');
+  const hint   = document.getElementById('sym-hint');
 
   if (!sel) return;
 
   if (sel.value === 'OTHER') {
     if (custom) { custom.style.display = 'block'; custom.value = ''; }
-    if (mult) mult.value = 1; 
+    if (mult)   mult.value = 1;
+    if (hint)   hint.textContent = '';
   } else {
+    const preset = SYMBOL_PRESETS[sel.value];
     if (custom) custom.style.display = 'none';
-    if (mult) mult.value = SYMBOL_PRESETS[sel.value] || 1;
+    if (mult)   mult.value = preset ? preset.mult : 1;
+    if (hint)   hint.textContent = preset ? `Contract size: ${preset.label}` : '';
   }
-  
+
   if (typeof updatePreview === 'function') updatePreview();
 }
 
@@ -128,12 +134,15 @@ async function showApp() {
   showLoading(true);
   await loadAllData();
   showLoading(false);
+  initAppListeners();
   renderPortfolioTabs();
   render();
   startTickerRefresh();
 }
 
 async function register() {
+  if (!canSendEmail()) return;
+
   const email = document.getElementById('a-email').value.trim();
   const pass  = document.getElementById('a-pass').value;
   if (!email || !pass) { authError('กรุณาใส่ email และ password'); return; }
@@ -141,6 +150,23 @@ async function register() {
   setAuthLoading(true);
   const { error } = await sb.auth.signUp({ email, password: pass });
   setAuthLoading(false);
+
+  if (!email.includes('@')) {
+    authError('Email ไม่ถูกต้อง');
+    return; 
+  }
+
+  if (pass.length < 6) {
+    authError('Password ต้อง ≥ 6 ตัว');
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    authError('รูปแบบ email ไม่ถูกต้อง');
+    return;
+  }
+  
   if (error) { authError(error.message); return; }
   authSuccess('สมัครสมาชิกสำเร็จ! ✓ กรุณาเช็ค email เพื่อยืนยัน');
 }
@@ -161,6 +187,7 @@ async function logout() {
 }
 
 async function forgotPassword() {
+  if (!canSendEmail()) return;
   const email = document.getElementById('a-email').value.trim();
   if (!email) { authError('ใส่ email ก่อนแล้วกด Forgot Password'); return; }
   setAuthLoading(true);
@@ -176,12 +203,20 @@ function authError(msg) {
 }
 function authSuccess(msg) {
   const el = document.getElementById('authMsg');
+  authSuccess('ส่ง email แล้ว กรุณารอ 30 วินาที');
   el.textContent = msg; el.className = 'auth-msg success'; el.style.display = 'block';
 }
 function setAuthLoading(on) {
+  const isRegister = document.getElementById('authTitle').textContent === 'REGISTER';
   document.getElementById('btn-login').disabled    = on;
   document.getElementById('btn-register').disabled = on;
-  document.getElementById('btn-login').textContent = on ? 'LOADING...' : 'LOGIN ▸';
+  const forgotBtn = document.querySelector('.btn-ghost');
+  if (forgotBtn) forgotBtn.disabled = on;
+  if (isRegister) {
+    document.getElementById('btn-register').textContent = on ? 'LOADING...' : 'CREATE ACCOUNT ▸';
+  } else {
+    document.getElementById('btn-login').textContent = on ? 'LOADING...' : 'LOGIN ▸';
+  }
 }
 function toggleAuthMode() {
   const title   = document.getElementById('authTitle');
@@ -194,7 +229,6 @@ function toggleAuthMode() {
   document.getElementById('authMsg').style.display = 'none';
 }
 
-// Enter key in auth form
 document.addEventListener('DOMContentLoaded', () => {
   ['a-email','a-pass'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => {
@@ -205,6 +239,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// Checking Email
+function canSendEmail() {
+  const now = Date.now();
+
+  if (now - lastEmailSent < EMAIL_COOLDOWN) {
+    const remain = Math.ceil((EMAIL_COOLDOWN - (now - lastEmailSent)) / 1000);
+    toast(`รออีก ${remain} วินาที`, 'error');
+    return false;
+  }
+
+  lastEmailSent = now;
+  return true;
+}
 
 // ─── SUPABASE DATA LAYER ──────────────────────────────────────────────────────
 async function loadAllData() {
@@ -375,15 +423,6 @@ function updateTime() {
   if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 setInterval(updateTime, 1000); updateTime();
-
-const themeToggle = document.getElementById('themeToggle');
-if (themeToggle) {
-  themeToggle.addEventListener('click', () => {
-    document.documentElement.classList.toggle('light');
-    localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
-    setTimeout(drawEquity, 50);
-  });
-}
 
 // ─── TICKER ───────────────────────────────────────────────────────────────────
 let tickerPrefs = JSON.parse(localStorage.getItem('ticker_prefs')) || { speed: 30, color: '#f59e0b' };
@@ -587,7 +626,6 @@ function renderTable() {
 function changePage(dir) { currentPage += dir; renderTable(); }
 function setFilter(f, el) { currentFilter = f; currentPage = 1; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); renderTable(); }
 function sortBy(key) { currentSort = { key, dir: currentSort.key === key ? currentSort.dir * -1 : -1 }; currentPage = 1; renderTable(); }
-document.getElementById('searchInput')?.addEventListener('input', () => { currentPage = 1; renderTable(); });
 
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 function renderBreakdown() {
@@ -612,13 +650,15 @@ function changeHeatmapMonth(offset) {
   heatmapDate = new Date(heatmapDate.getFullYear(), heatmapDate.getMonth() + offset, 1); renderHeatmap();
 }
 function renderHeatmap() {
+  const isLight = document.documentElement.classList.contains('light');
+  const emptyBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
   const pnlByDate = {}; getActiveTrades().forEach(t => { pnlByDate[t.date] = (pnlByDate[t.date]||0) + pnl(t); });
   const year=heatmapDate.getFullYear(), month=heatmapDate.getMonth(), startDow=new Date(year,month,1).getDay(), daysInMonth=new Date(year,month+1,0).getDate();
   const vals=Object.values(pnlByDate).filter(v=>v!==0), maxAbs=vals.length?Math.max(...vals.map(Math.abs)):1;
   let cells=''; for(let i=0;i<startDow;i++) cells+=`<div class="hmap-cell" style="background:transparent"></div>`;
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, val=pnlByDate[dateStr]||0;
-    let bg=val===0?'rgba(255,255,255,0.04)':(val>0?`rgba(60,255,160,${Math.min(0.9,0.15+(val/maxAbs)*0.75).toFixed(2)})`:`rgba(255,69,96,${Math.min(0.9,0.15+(Math.abs(val)/maxAbs)*0.75).toFixed(2)})`);
+    let bg=val===0?emptyBg:(val>0?`rgba(60,255,160,${Math.min(0.9,0.15+(val/maxAbs)*0.75).toFixed(2)})`:`rgba(255,69,96,${Math.min(0.9,0.15+(Math.abs(val)/maxAbs)*0.75).toFixed(2)})`);
     cells+=`<div class="hmap-cell" style="background:${bg}" title="${val!==0?dateStr+': '+fmtNum(val):dateStr}"></div>`;
   }
   document.getElementById('heatmap').innerHTML=`<div class="hmap-label">${['S','M','T','W','T','F','S'].map(d=>`<div class="hmap-day-label">${d}</div>`).join('')}</div><div class="heatmap-grid">${cells}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:0 20px 12px;"><button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(-1)">◀</button><div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">${heatmapDate.toLocaleString('en-US',{month:'long',year:'numeric'}).toUpperCase()}</div><button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(1)">▶</button></div>`;
@@ -626,22 +666,26 @@ function renderHeatmap() {
 
 // ─── TRADE MODAL ──────────────────────────────────────────────────────────────
 function openModal() {
-  editingId = null; 
+  editingId = null;
   document.querySelector('.modal-title').textContent = "NEW TRADE ENTRY";
+  document.querySelector('.modal-footer .btn-accent').textContent = "SAVE TRADE ▸";
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
-  
+
   ['f-entry','f-exit','f-size','f-account'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  if(document.getElementById('f-note')) document.getElementById('f-note').value = '';
-  
+  if (document.getElementById('f-note')) document.getElementById('f-note').value = '';
+
   const sel = document.getElementById('f-sym-select');
+  const custom = document.getElementById('f-sym-custom');
   if (sel) {
-      sel.value = 'XAUUSD';
-      applySymbolPreset();
+    sel.value = 'XAUUSD';
+    if (custom) custom.style.display = 'none';
+    applySymbolPreset();
   }
 
   selectedTag = ''; document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
   setDir('Long'); updatePreview();
+  setTimeout(() => document.getElementById('f-entry')?.focus(), 100);
 }
 
 function editTrade(id) {
@@ -657,14 +701,17 @@ function editTrade(id) {
   
   const sel = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
+  const hint = document.getElementById('sym-hint');
   if (sel && custom) {
     if (SYMBOL_PRESETS[t.sym]) {
       sel.value = t.sym;
       custom.style.display = 'none';
+      if (hint) hint.textContent = `Contract size: ${SYMBOL_PRESETS[t.sym].label}`;
     } else {
       sel.value = 'OTHER';
       custom.style.display = 'block';
       custom.value = t.sym;
+      if (hint) hint.textContent = '';
     }
   }
 
@@ -716,7 +763,30 @@ function updatePreview() {
   }
 }
 
-['f-entry','f-exit','f-size','f-mult','f-account'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',updatePreview); });
+// ─── APP LISTENERS (called once after #appWrapper is visible) ─────────────────
+let appListenersReady = false;
+function initAppListeners() {
+  if (appListenersReady) return;
+  appListenersReady = true;
+
+  // Bug #3 — themeToggle inside hidden #appWrapper at load time
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('light');
+      localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+      setTimeout(drawEquity, 50);
+    });
+  }
+
+  // Bug #4 — searchInput inside hidden #appWrapper at load time
+  document.getElementById('searchInput')?.addEventListener('input', () => { currentPage = 1; renderTable(); });
+
+  // Bug #5 — modal inputs inside hidden #appWrapper at load time
+  ['f-entry','f-exit','f-size','f-mult','f-account'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.addEventListener('input', updatePreview);
+  });
+}
 
 async function saveTrade() {
   const portfolio = getActivePortfolio(); 

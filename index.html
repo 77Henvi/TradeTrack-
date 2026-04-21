@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="style.css">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 
@@ -49,6 +50,10 @@
       <div class="field" style="margin-bottom:20px">
         <label>PASSWORD</label>
         <input type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <div style="margin-bottom:16px">
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAADAXRSiDPr8tsPB0"></div>
       </div>
       <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()">LOGIN ▸</button>
       <button id="btn-register" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px;display:none" onclick="register()">CREATE ACCOUNT ▸</button>
@@ -212,9 +217,9 @@
               <option value="OTHER">OTHER (พิมพ์เอง)...</option>
             </select>
             <input type="text" id="f-sym-custom" placeholder="e.g. BTCUSD" style="display:none; flex:1; padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px;">
-            
-            <input type="hidden" id="f-mult" value="10">
+            <input type="hidden" id="f-mult" value="1">
           </div>
+          <div id="sym-hint" style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:5px;letter-spacing:1px;min-height:14px"></div>
         </div>
         <div class="field">
           <label>DATE</label>

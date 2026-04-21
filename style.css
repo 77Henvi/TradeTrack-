@@ -900,10 +900,8 @@ main {
   cursor: auto !important;
 }
 
-#authScreen {
-  cursor: default !important;
-}
-
-#authScreen * {
+/* Auth screen: show system cursor since custom cursor elements are outside authScreen */
+#authScreen .auth-card,
+#authScreen .auth-card * {
   cursor: auto !important;
 }

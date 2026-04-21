@@ -831,41 +831,8 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openModal();}
 });
 
-
-// ─── CURSOR ───────────────────────────────────────────────────────────────────
-let _cursorDot = null, _cursorRing = null;
-let _mx = -200, _my = -200, _rx = -200, _ry = -200, _rafId = null;
-
-document.addEventListener('mousemove', e => { _mx = e.clientX; _my = e.clientY; });
-
-function _animateCursor() {
-  _rx += (_mx - _rx) * 0.14;
-  _ry += (_my - _ry) * 0.14;
-  if (_cursorDot)  { _cursorDot.style.left  = _mx + 'px'; _cursorDot.style.top  = _my + 'px'; }
-  if (_cursorRing) { _cursorRing.style.left = _rx + 'px'; _cursorRing.style.top = _ry + 'px'; }
-  _rafId = requestAnimationFrame(_animateCursor);
-}
-
-document.addEventListener('visibilitychange', () => {
-  document.hidden ? cancelAnimationFrame(_rafId) : (_rafId = requestAnimationFrame(_animateCursor));
-});
-
-document.addEventListener('mouseover', e => {
-  if (_cursorRing && e.target.matches('button, a, input, select, textarea, [onclick]'))
-    _cursorRing.style.transform = 'translate(-50%,-50%) scale(1.5)';
-});
-document.addEventListener('mouseout', e => {
-  if (_cursorRing && e.target.matches('button, a, input, select, textarea, [onclick]'))
-    _cursorRing.style.transform = 'translate(-50%,-50%) scale(1)';
-});
-
 // ─── RENDER ALL ───────────────────────────────────────────────────────────────
 function render() { drawEquity(); renderMetrics(); renderTable(); renderBreakdown(); renderSymPerf(); renderStreak(); renderHeatmap(); }
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  _cursorDot  = document.querySelector('.cursor-dot');
-  _cursorRing = document.querySelector('.cursor-ring');
-  _animateCursor();
-  initAuth();
-});
+document.addEventListener('DOMContentLoaded', () => { initAuth(); });

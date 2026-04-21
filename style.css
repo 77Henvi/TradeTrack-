@@ -49,6 +49,7 @@
 html { scroll-behavior: smooth; }
 
 body {
+  cursor: auto;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -799,7 +800,7 @@ main {
 
   /* Noise & cursor off */
   .noise { display: none; }
-  .cursor-dot, .cursor-ring { display: none; }
+  
   body { cursor: auto; }
 }
 
@@ -875,8 +876,8 @@ main {
 
 /* Touch devices — restore cursor */
 @media (pointer: coarse) {
-  .cursor-dot, .cursor-ring { display: none !important; }
-  body, *, *::before, *::after, input, button, a { cursor: auto !important; }
+  
+  
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -886,11 +887,7 @@ main {
   }
 }
 
-/* Fine pointer (mouse) — hide system cursor for custom cursor effect */
-@media (pointer: fine) {
-  *, *::before, *::after, input, button, a {
-    cursor: none !important;
-  }
+
 }
 
 .cf-turnstile {
@@ -900,8 +897,5 @@ main {
   cursor: auto !important;
 }
 
-/* Auth screen: show system cursor since custom cursor elements are outside authScreen */
-#authScreen .auth-card,
-#authScreen .auth-card * {
-  cursor: auto !important;
-}
+
+

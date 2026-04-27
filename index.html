@@ -242,8 +242,8 @@
           <input type="number" id="f-size" step="any" placeholder="1">
         </div>
         <div class="field">
-          <label>ACCOUNT ($)</label>
-          <input type="number" id="f-account" step="any" placeholder="10000">
+          <label>PORTFOLIO BALANCE</label>
+          <div id="f-account-display" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:1px">—</div>
         </div>
         <div class="field full">
           <label>SETUP / NOTES</label>
@@ -435,6 +435,16 @@
 
 </div><!-- end #appWrapper -->
 
-<script src="app.js"></script>
+<!-- ===== JS MODULES (load in dependency order) ===== -->
+<script src="js/config.js"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js"></script>     <!-- trade modal & export -->
+<script src="js/ui.js"></script>        <!-- render: equity, table, sidebar, heatmap -->
+
+<!-- BOOT -->
+<script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>
 </body>
 </html>

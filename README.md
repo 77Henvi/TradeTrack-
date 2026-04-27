@@ -106,8 +106,3 @@ tradelog/
 **Rapeepat Nitakorn (Fifa)**  
 Student @ KMITL · [GitHub](https://github.com/77Henvi)
 
----
-
-## 📄 License
-
-MIT — feel free to fork and adapt for your own trading journal.

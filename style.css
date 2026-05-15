@@ -85,17 +85,17 @@ body {
 /* ─── TICKER TAPE ────────────────────────────────────────────────────────── */
 .ticker-wrap {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 30px;
+  height: 44px;
   display: flex; align-items: center; overflow: hidden;
   background: var(--bg2);
-  border-bottom: 1px solid rgba(245,158,11,0.4);
-  box-shadow: 0 1px 0 rgba(245,158,11,0.12);
+  border-bottom: 2px solid rgba(245,158,11,0.5);
+  box-shadow: 0 2px 16px rgba(245,158,11,0.1), 0 1px 0 rgba(245,158,11,0.15);
 }
 
 :root.light .ticker-wrap {
   background: var(--bg2);
-  border-bottom: 1px solid rgba(180,120,0,0.3);
-  box-shadow: 0 1px 0 rgba(180,120,0,0.08);
+  border-bottom: 2px solid rgba(180,120,0,0.4);
+  box-shadow: 0 2px 16px rgba(180,120,0,0.08), 0 1px 0 rgba(180,120,0,0.12);
 }
 
 .ticker-wrap::after {
@@ -175,16 +175,16 @@ body {
 }
 
 .ticker-item {
-  font-family: var(--mono); font-size: 11px; font-weight: 700;
-  letter-spacing: 0.5px; font-variant-numeric: tabular-nums;
-  color: var(--text); padding: 0 18px;
-  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.8px; font-variant-numeric: tabular-nums;
+  color: var(--text); padding: 0 22px;
+  display: flex; align-items: center; gap: 10px;
 }
-.ticker-item .sym { font-weight: 700; color: var(--orange); letter-spacing: 1px; }
+.ticker-item .sym { font-weight: 700; color: var(--orange); letter-spacing: 1.5px; font-size: 13px; }
 .ticker-item .chg.pos { color: var(--green); }
 .ticker-item .chg.neg { color: var(--red); }
 .ticker-item .chg.orange { color: var(--orange); }
-.ticker-sep { color: var(--border2); font-size: 10px; }
+.ticker-sep { color: var(--border2); font-size: 14px; opacity: 0.6; }
 
 .spark { margin-left: 4px; opacity: 0.75; display: flex; align-items: center; }
 .spark svg { display: block; }
@@ -277,7 +277,7 @@ header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 28px 32px 16px;
   border-bottom: 1px solid var(--border);
-  margin-top: 30px;
+  margin-top: 44px;
 }
 .logo-block { display: flex; align-items: center; gap: 14px; }
 .logo-mark {
@@ -761,7 +761,7 @@ main {
 /* Tablet portrait: 768px */
 @media (max-width: 768px) {
   /* Layout spacing */
-  header          { padding: 16px 16px 12px; margin-top: 30px; }
+  header          { padding: 16px 16px 12px; margin-top: 44px; }
   .equity-section { margin: 0 16px; }
   .metrics-row    { margin: 16px 16px; grid-template-columns: repeat(3, 1fr); }
   main            { margin: 0 16px 24px; }
@@ -894,6 +894,3 @@ main {
 .cf-turnstile * {
   cursor: auto !important;
 }
-
-
-

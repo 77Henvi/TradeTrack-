@@ -76,10 +76,20 @@ function buildForexTicker() {
     `<span class="ticker-item"><span class="sym">${s.name}</span><span class="chg" style="${s.status === 'CLOSED' ? 'color:var(--muted)' : 'color:var(--green)'}">${s.status === 'OPEN' ? '🟢 OPEN' : '🔴 CLOSED'}</span></span><span class="ticker-sep">|</span>`
   ).join('');
   const newsHtml = cachedNews.map(n =>
-  `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? '🔥' : '⚠️'}</span></span><span class="ticker-sep">|</span>`
+  `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8;font-size:13px">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? '🔥' : '⚠️'}</span></span><span class="ticker-sep">|</span>`
   ).join('');
-  const fullHtml = sessionHtml + `<span class="ticker-item" style="color:var(--ticker-hl);font-family:var(--mono);letter-spacing:2px;font-size:10px;">UPCOMING NEWS ⚡</span><span class="ticker-sep">|</span>` + newsHtml;
-  ticker.innerHTML = fullHtml + fullHtml;
+  const fullHtml = sessionHtml + `<span class="ticker-item" style="color:var(--ticker-hl);font-family:var(--mono);letter-spacing:2px;font-size:12px;">UPCOMING NEWS ⚡</span><span class="ticker-sep">|</span>` + newsHtml;
+  const newHtml = fullHtml + fullHtml;
+
+  // Only update DOM if content changed — prevents animation reset on theme toggle
+  if (ticker.dataset.lastHtml === newHtml) return;
+  ticker.dataset.lastHtml = newHtml;
+
+  // Preserve current animation progress to avoid jump
+  const computed = getComputedStyle(ticker);
+  const currentDelay = computed.animationDelay;
+  ticker.innerHTML = newHtml;
+  ticker.style.animationDelay = currentDelay;
 }
 
 async function startTickerRefresh() {

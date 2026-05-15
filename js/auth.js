@@ -19,6 +19,10 @@ function showAuthScreen() {
   document.getElementById('appWrapper').style.display  = 'none';
 }
 
+function getTurnstileToken() {
+  return document.querySelector('[name="cf-turnstile-response"]')?.value || '';
+}
+
 async function showApp() {
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appWrapper').style.display  = 'block';
@@ -42,6 +46,9 @@ async function register() {
   if (!emailRegex.test(email)) { authError('รูปแบบ email ไม่ถูกต้อง'); return; }
   if (pass.length < 6)       { authError('Password ต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
   if (!canSendEmail())       return;
+  if (!canSendEmail()) return;
+  const token = getTurnstileToken();
+  if (!token) { authError('กรุณายืนยัน CAPTCHA ก่อน'); return; }
 
   setAuthLoading(true);
   const { error } = await sb.auth.signUp({ email, password: pass });
@@ -51,6 +58,8 @@ async function register() {
 }
 
 async function login() {
+  const token = getTurnstileToken();
+  if (!token) { authError('กรุณายืนยัน CAPTCHA ก่อน'); return; }
   const email = document.getElementById('a-email').value.trim();
   const pass  = document.getElementById('a-pass').value;
   if (!email || !pass) { authError('กรุณาใส่ email และ password'); return; }

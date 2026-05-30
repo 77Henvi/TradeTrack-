@@ -46,7 +46,6 @@ async function register() {
   if (!emailRegex.test(email)) { authError('รูปแบบ email ไม่ถูกต้อง'); return; }
   if (pass.length < 6)       { authError('Password ต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
   if (!canSendEmail())       return;
-  if (!canSendEmail()) return;
   const token = getTurnstileToken();
   if (!token) { authError('กรุณายืนยัน CAPTCHA ก่อน'); return; }
 
@@ -122,7 +121,7 @@ function canSendEmail() {
   const now = Date.now();
   if (now - lastEmailSent < EMAIL_COOLDOWN) {
     const remain = Math.ceil((EMAIL_COOLDOWN - (now - lastEmailSent)) / 1000);
-    toast(`รออีก ${remain} วินาที`, 'error');
+    authError(`รออีก ${remain} วินาที`);
     return false;
   }
   lastEmailSent = now;

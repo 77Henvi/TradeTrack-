@@ -340,7 +340,7 @@ header {
 #equityCanvas { width: 100%; height: 160px; display: block; }
 .equity-stats { display: flex; gap: 40px; margin-top: 16px; flex-wrap: wrap; }
 .equity-stat .el { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; }
-.equity-stat .ev { font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: -0.5px; }
+.equity-stat .ev { font-family: var(--display); font-weight: 700; font-size: 25px; letter-spacing: -0.5px; }
 .equity-stat .ev.pos { color: var(--green); }
 .equity-stat .ev.neg { color: var(--red); }
 
@@ -367,7 +367,7 @@ header {
   .metric-card:hover::before { background: var(--accent); }
 }
 .mc-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; }
-.mc-val { font-family: var(--display); font-weight: 700; font-size: 38px; letter-spacing: -0.5px; color: var(--text); line-height: 1; }
+.mc-val { font-family: var(--display); font-weight: 700; font-size: 25px; letter-spacing: -0.5px; color: var(--text); line-height: 1; }
 .mc-val.pos { color: var(--green); }
 .mc-val.neg { color: var(--red); }
 .mc-val.accent { color: var(--accent); }
@@ -379,7 +379,7 @@ header {
 }
 .metric-card.primary::before { background: var(--accent); }
 .metric-card.primary .mc-label { color: var(--text); }
-.metric-card.primary .mc-val { font-size: 28px; white-space: nowrap; }
+.metric-card.primary .mc-val { font-size: 25px; white-space: nowrap; }
 
 /* ─── MAIN LAYOUT ────────────────────────────────────────────────────────── */
 main {

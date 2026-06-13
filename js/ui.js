@@ -128,8 +128,8 @@ function renderMetrics() {
     { label: 'R:R RATIO',     val: rr ? rr.toFixed(2) : '—',                                           cls: rr >= 1 ? 'pos' : 'neg',         sub: 'avg win / avg loss' },
     { label: 'PROFIT FACTOR', val: profitFactor === Infinity ? '∞' : (profitFactor ? profitFactor.toFixed(2) : '—'), cls: (profitFactor >= 1 || profitFactor === Infinity) ? 'accent' : 'neg', sub: 'gross profit / loss' },
   ];
-  document.getElementById('metricsRow').innerHTML = metrics.map(m =>
-    `<div class="metric-card"><div class="mc-label">${m.label}</div><div class="mc-val ${m.cls}">${m.val}</div><div class="mc-sub">${m.sub}</div></div>`
+  document.getElementById('metricsRow').innerHTML = metrics.map((m, i) =>
+    `<div class="metric-card${i === 0 ? ' primary' : ''}"><div class="mc-label">${m.label}</div><div class="mc-val ${m.cls}">${m.val}</div><div class="mc-sub">${m.sub}</div></div>`
   ).join('');
 }
 

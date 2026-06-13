@@ -379,7 +379,7 @@ header {
 }
 .metric-card.primary::before { background: var(--accent); }
 .metric-card.primary .mc-label { color: var(--text); }
-.metric-card.primary .mc-val { font-size: 38px; white-space: nowrap; }
+.metric-card.primary .mc-val { font-size: 28px; white-space: nowrap; }
 
 /* ─── MAIN LAYOUT ────────────────────────────────────────────────────────── */
 main {

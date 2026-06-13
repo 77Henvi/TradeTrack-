@@ -10,7 +10,7 @@
   <title>TrackTrade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21,7 +21,7 @@
 
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-  <div class="logo-mark" style="font-size:48px;animation:logoPulse 1s ease-in-out infinite">▲</div>
+  <div class="logo-mark" style="font-size:48px">▲</div>
   <div style="font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--muted)">LOADING...</div>
 </div>
 
@@ -33,12 +33,12 @@
     <div class="auth-logo">
       <span class="logo-mark" style="font-size:36px">▲</span>
       <div>
-        <div style="font-family:var(--display);font-size:32px;letter-spacing:3px;color:var(--text)">TrackTrade</div>
+        <div style="font-family:var(--display);font-weight:700;font-size:32px;letter-spacing:0.5px;color:var(--text)">TrackTrade</div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px">TRACK YOUR RETIREMENT</div>
       </div>
     </div>
     <div class="auth-body">
-      <div id="authTitle" style="font-family:var(--display);font-size:28px;letter-spacing:4px;color:var(--accent);margin-bottom:24px;text-shadow:0 0 12px var(--accent-glow)">LOGIN</div>
+      <div id="authTitle" style="font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:0.5px;color:var(--accent);margin-bottom:24px">LOGIN</div>
       <div id="authMsg" class="auth-msg" style="display:none"></div>
       <div class="field" style="margin-bottom:14px">
         <label>EMAIL</label>

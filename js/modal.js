@@ -187,7 +187,7 @@ async function saveTrade() {
 }
 
 async function delTrade(id) {
-  if (!confirm('ลบ trade นี้?')) return;
+  if (!await confirmDialog('ลบ trade นี้?')) return;
   const p = getActivePortfolio(); if (!p) return;
   const ok = await dbDeleteTrade(id); if (!ok) return;
   p.trades = p.trades.filter(t => t.id !== id); render(); toast('Trade deleted', 'error');

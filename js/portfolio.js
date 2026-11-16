@@ -9,7 +9,7 @@ function switchPortfolio(id) {
 function renderPortfolioTabs() {
   const container = document.getElementById('portfolioTabs'); if (!container) return;
   container.innerHTML = portfolios.map(p =>
-    `<button class="portfolio-tab ${p.id === activePortfolioId ? 'active' : ''}" onclick="switchPortfolio('${p.id}')">${p.name}</button>`
+    `<button class="portfolio-tab ${p.id === activePortfolioId ? 'active' : ''}" onclick="switchPortfolio('${p.id}')">${escHtml(p.name)}</button>`
   ).join('') + `<button class="portfolio-tab-add" onclick="openNewPortfolioModal()" title="New portfolio">+</button>`;
 }
 
@@ -34,7 +34,7 @@ async function savePortfolioSettings() {
 async function deletePortfolio() {
   const p = getActivePortfolio(); if (!p) return;
   if (portfolios.length <= 1) { toast('ต้องมีอย่างน้อย 1 พอร์ต', 'error'); return; }
-  if (!confirm(`ลบพอร์ต "${p.name}" และ trade ทั้งหมด?`)) return;
+  if (!await confirmDialog(`ลบพอร์ต "${escHtml(p.name)}" และ trade ทั้งหมด?`)) return;
   const ok = await dbDeletePortfolio(p.id); if (!ok) return;
   portfolios = portfolios.filter(x => x.id !== p.id);
   activePortfolioId = portfolios[0].id; saveActivePortfolio(); currentPage = 1;

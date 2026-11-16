@@ -1,4 +1,4 @@
-// ─── LIVE TIME ────────────────────────────────────────────────────────────────
+﻿// ─── LIVE TIME ────────────────────────────────────────────────────────────────
 function updateTime() {
   const el = document.getElementById('liveTime');
   if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -30,7 +30,6 @@ function getMarketSessions() {
   });
 }
 
-const FINNHUB_KEY = 'd83j3spr01qkm5c8b8fgd83j3spr01qkm5c8b8g0';
 let cachedNews = [];
 
 async function fetchEconomicCalendar() {
@@ -134,3 +133,15 @@ function closeTickerSettings(e) {
   if (!e || e.target === document.getElementById('tickerSettingsOverlay'))
     document.getElementById('tickerSettingsOverlay')?.classList.remove('open');
 }
+
+// KEYBOARD SHORTCUTS
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'n') {
+    e.preventDefault();
+    openModal();
+  }
+  if (e.key === 'Escape') {
+    closeModalDirect();
+    document.getElementById('confirmOverlay')?.classList.remove('open');
+  }
+});

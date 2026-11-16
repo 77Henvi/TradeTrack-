@@ -1,11 +1,11 @@
-// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://nuaoxwpdanulspzoyjvp.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YW94d3BkYW51bHNwem95anZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1ODQ1NjMsImV4cCI6MjA5MjE2MDU2M30.v3D2dSEd1-urhfJuqpulKuTh0ku6Y7ytNcax4lR7n4g';
+// SUPABASE CONFIG
+const SUPABASE_URL = 'https://urgrcxjeackcvaaoayja.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9dNez8F0loJTUNq0_dLd3w_wqn8K_vQ';
 
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── GLOBAL STATE ─────────────────────────────────────────────────────────────
+// GLOBAL STATE
 let currentUser       = null;
 let portfolios        = [];
 let activePortfolioId = null;
@@ -21,7 +21,7 @@ const rowsPerPage = 50;
 let lastEmailSent = 0;
 const EMAIL_COOLDOWN = 30000;
 
-// ─── SYMBOL PRESETS ───────────────────────────────────────────────────────────
+// SYMBOL PRESETS
 const SYMBOL_PRESETS = {
   "XAUUSD": { mult: 100,    label: "100 oz/lot" },
   "EURUSD": { mult: 100000, label: "100,000 units/lot" },
@@ -29,11 +29,11 @@ const SYMBOL_PRESETS = {
   "NQ1!":   { mult: 20,     label: "$20/point" },
 };
 
-// ─── PORTFOLIO HELPERS ────────────────────────────────────────────────────────
+// PORTFOLIO HELPERS
 function getActivePortfolio() { return portfolios.find(p => p.id === activePortfolioId) || portfolios[0]; }
 function getActiveTrades()    { return getActivePortfolio()?.trades || []; }
 
-// ─── SOUND ────────────────────────────────────────────────────────────────────
+// SOUND
 let soundUnlocked = false, tickAudio = null;
 function unlockSound() {
   if (soundUnlocked) return; soundUnlocked = true;
@@ -52,7 +52,7 @@ function playTick() {
   } catch(e) {}
 }
 
-// ─── PURE HELPERS ─────────────────────────────────────────────────────────────
+// PURE HELPERS
 function pnl(t) {
   const entry = t.entry_price ?? t.entry;
   const exit  = t.exit_price  ?? t.exit;
@@ -66,7 +66,7 @@ function pnlPct(t) {
   return (diff / t.entry_price * 100);
 }
 function fmtNum(n, dec = 2) {
-  return (n === undefined || n === null || isNaN(n)) ? '—'
+  return (n === undefined || n === null || isNaN(n)) ? '-'
     : (n >= 0 ? '+' : '') + n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 function fmtAbs(n, dec = 2) {
@@ -81,4 +81,31 @@ function toast(msg, type = 'success') {
 function showLoading(show) {
   const el = document.getElementById('loadingOverlay');
   if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+// FINNHUB — free tier key, replace if rate-limited
+const FINNHUB_KEY = 'd83j3spr01qkm5c8b8fgd83j3spr01qkm5c8b8g0';
+
+// HTML ESCAPE — prevent XSS in innerHTML
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// CUSTOM CONFIRM DIALOG
+function confirmDialog(msg) {
+  return new Promise(resolve => {
+    document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmOverlay').classList.add('open');
+    const yes = document.getElementById('confirmYes');
+    const no  = document.getElementById('confirmNo');
+    const cleanup = (val) => {
+      document.getElementById('confirmOverlay').classList.remove('open');
+      yes.onclick = null; no.onclick = null;
+      resolve(val);
+    };
+    yes.onclick = () => cleanup(true);
+    no.onclick  = () => cleanup(false);
+  });
 }

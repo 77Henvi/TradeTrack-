@@ -50,6 +50,7 @@ async function dbSaveTrade(portfolioId, d) {
     entry_price: d.entry, exit_price: d.exit,
     size: d.size, multiplier: d.multiplier || 1,
     note: d.note || '', tag: d.tag || '', account: d.account || 0,
+    stop_loss: d.stop_loss ?? null, take_profit: d.take_profit ?? null, actual_r: d.actual_r ?? null,
   }).select().single();
   if (error) { toast('Error saving trade', 'error'); return null; }
   return data;
@@ -60,6 +61,7 @@ async function dbUpdateTrade(id, d) {
     entry_price: d.entry, exit_price: d.exit,
     size: d.size, multiplier: d.multiplier || 1,
     note: d.note || '', tag: d.tag || '', account: d.account || 0,
+    stop_loss: d.stop_loss ?? null, take_profit: d.take_profit ?? null, actual_r: d.actual_r ?? null,
   }).eq('id', id);
   if (error) { toast('Error updating trade', 'error'); return false; }
   return true;

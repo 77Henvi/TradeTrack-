@@ -27,7 +27,7 @@ function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
 
-  ['f-entry','f-exit','f-size'].forEach(id => {
+  ['f-entry','f-exit','f-size','f-sl','f-tp'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   if (document.getElementById('f-note')) document.getElementById('f-note').value = '';
@@ -64,6 +64,8 @@ function editTrade(id) {
   document.getElementById('f-entry').value = t.entry_price || t.entry;
   document.getElementById('f-exit').value  = t.exit_price  || t.exit;
   document.getElementById('f-size').value  = t.size;
+  document.getElementById('f-sl').value    = t.stop_loss ?? '';
+  document.getElementById('f-tp').value    = t.take_profit ?? '';
 
   const sel = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
@@ -116,16 +118,26 @@ function toggleTag(el, tag) {
   }
 }
 
+// ─── R-MULTIPLE HELPERS ───────────────────────────────────────────────────────
+// risk per unit = distance from entry to stop (must be > 0 to be valid)
+function calcRiskPerUnit(dir, entry, sl) { return dir === 'Long' ? entry - sl : sl - entry; }
+function calcActualR(dir, entry, exit, riskPerUnit) {
+  return (dir === 'Long' ? exit - entry : entry - exit) / riskPerUnit;
+}
+function fmtR(r) { return (r >= 0 ? '+' : '') + r.toFixed(2) + 'R'; }
+
 // ─── LIVE P&L PREVIEW ─────────────────────────────────────────────────────────
 function updatePreview() {
   const entry = parseFloat(document.getElementById('f-entry')?.value);
   const exit  = parseFloat(document.getElementById('f-exit')?.value);
   const size  = parseFloat(document.getElementById('f-size')?.value);
+  const sl    = parseFloat(document.getElementById('f-sl')?.value);
   const mult  = parseFloat(document.getElementById('f-mult')?.value) || 1;
   // ดึง balance จากพอร์ตที่ active แทนการให้ user กรอก
   const acc   = getActivePortfolio()?.balance || 0;
   const pv    = document.getElementById('previewVal');
   const pr    = document.getElementById('previewRR');
+  const lines = [];
 
   if (!isNaN(entry) && !isNaN(exit) && !isNaN(size) && size > 0) {
     const diff = selectedDir === 'Long' ? exit - entry : entry - exit;
@@ -139,11 +151,31 @@ function updatePreview() {
       const accPct = (p / acc * 100).toFixed(2);
       prText += ` <br><span style="color:${p >= 0 ? 'var(--green)' : 'var(--red)'}">บัญชีโต: ${(p >= 0 ? '+' : '')}${accPct}%</span>`;
     }
-    if (pr) pr.innerHTML = prText;
-  } else {
-    if (pv) { pv.textContent = '—'; pv.className = 'preview-val'; }
-    if (pr) pr.textContent = '';
+    lines.push(prText);
+  } else if (pv) {
+    pv.textContent = '—'; pv.className = 'preview-val';
   }
+
+  // Risk + Actual R (only when a stop loss is entered)
+  if (!isNaN(sl) && !isNaN(entry)) {
+    const rpu = calcRiskPerUnit(selectedDir, entry, sl);
+    if (rpu <= 0) {
+      lines.push(`<span style="color:var(--red)">SL must be ${selectedDir === 'Long' ? 'below' : 'above'} entry for a ${selectedDir}</span>`);
+    } else {
+      if (!isNaN(size) && size > 0) {
+        const dollarRisk = rpu * size * mult;
+        let riskText = `Risk: $${fmtAbs(dollarRisk)}`;
+        if (acc > 0) riskText += ` (${(dollarRisk / acc * 100).toFixed(2)}% of Port)`;
+        lines.push(riskText);
+      }
+      if (!isNaN(exit)) {
+        const r = calcActualR(selectedDir, entry, exit, rpu);
+        lines.push(`<span style="color:${r >= 0 ? 'var(--green)' : 'var(--red)'}">Actual R: ${fmtR(r)}</span>`);
+      }
+    }
+  }
+
+  if (pr) pr.innerHTML = lines.join('<br>');
 }
 
 // ─── SAVE / DELETE TRADE ──────────────────────────────────────────────────────
@@ -166,7 +198,22 @@ async function saveTrade() {
 
   if (!sym || !date || isNaN(entry) || isNaN(exit) || isNaN(size)) { toast('Fill in all required fields', 'error'); return; }
 
-  const tradeData = { date, sym, dir: selectedDir, entry, exit, size, multiplier, note, tag: selectedTag, account };
+  // optional SL / TP → actual R
+  const slVal = parseFloat(document.getElementById('f-sl')?.value);
+  const tpVal = parseFloat(document.getElementById('f-tp')?.value);
+  const stop_loss   = Number.isFinite(slVal) ? slVal : null;
+  const take_profit = Number.isFinite(tpVal) ? tpVal : null;
+  let actual_r = null;
+  if (stop_loss !== null) {
+    const rpu = calcRiskPerUnit(selectedDir, entry, stop_loss);
+    if (rpu <= 0) {
+      toast(`Stop loss must be ${selectedDir === 'Long' ? 'below' : 'above'} entry for a ${selectedDir}`, 'error');
+      return;
+    }
+    actual_r = calcActualR(selectedDir, entry, exit, rpu);
+  }
+
+  const tradeData = { date, sym, dir: selectedDir, entry, exit, size, multiplier, note, tag: selectedTag, account, stop_loss, take_profit, actual_r };
 
   if (editingId !== null) {
     const ok = await dbUpdateTrade(editingId, tradeData); if (!ok) return;
@@ -175,7 +222,8 @@ async function saveTrade() {
       ...portfolio.trades[idx],
       date, sym, dir: selectedDir,
       entry_price: entry, exit_price: exit,
-      size, multiplier, note, tag: selectedTag, account
+      size, multiplier, note, tag: selectedTag, account,
+      stop_loss, take_profit, actual_r
     };
     toast('Trade updated ✓');
   } else {

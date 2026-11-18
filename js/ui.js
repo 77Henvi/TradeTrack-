@@ -15,7 +15,7 @@ function initAppListeners() {
 
   document.getElementById('searchInput')?.addEventListener('input', () => { currentPage = 1; renderTable(); });
 
-  ['f-entry','f-exit','f-size','f-mult'].forEach(id => {
+  ['f-entry','f-exit','f-size','f-mult','f-sl','f-tp'].forEach(id => {
     const el = document.getElementById(id); if (el) el.addEventListener('input', updatePreview);
   });
 }
@@ -148,6 +148,11 @@ function getFiltered() {
     .filter(t => !search || t.sym.includes(search) || (t.note || '').toUpperCase().includes(search) || (t.tag || '').toUpperCase().includes(search))
     .sort((a, b) => {
       const k  = currentSort.key;
+      if (k === 'actual_r') {            // trades without SL always sink to the bottom
+        const na = a.actual_r == null, nb = b.actual_r == null;
+        if (na || nb) return na === nb ? 0 : (na ? 1 : -1);
+        return (Number(a.actual_r) - Number(b.actual_r)) * currentSort.dir;
+      }
       const va = k === 'pnl' ? pnl(a) : (k === 'entry' ? a.entry_price : k === 'exit' ? a.exit_price : a[k]);
       const vb = k === 'pnl' ? pnl(b) : (k === 'entry' ? b.entry_price : k === 'exit' ? b.exit_price : b[k]);
       if (typeof va === 'string') return va.localeCompare(vb) * currentSort.dir;
@@ -173,6 +178,11 @@ function renderTable() {
 
   tbody.innerHTML = rowsToRender.map((t, idx) => {
     const p = pnl(t), pp = pnlPct(t), win = p > 0;
+    const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
+    const rCell = isNaN(rVal) ? '—'
+      : rVal > 0 ? `<span class="tag-pill" style="color:var(--green);border-color:var(--green)">+${rVal.toFixed(2)}R</span>`
+      : rVal < 0 ? `<span class="tag-pill" style="color:var(--red);border-color:var(--red)">${rVal.toFixed(2)}R</span>`
+      :            `<span class="tag-pill">0.00R</span>`;
     const curBal    = runningBalMap[t.id] ?? 0;
     const balColor  = curBal >= startBal ? 'var(--green)' : 'var(--red)';
     const multStr   = (t.multiplier && t.multiplier !== 1) ? `<br><span style="font-size:9px;color:var(--muted)">x${t.multiplier}</span>` : '';
@@ -188,6 +198,7 @@ function renderTable() {
       <td style="font-family:var(--mono);font-size:12px">${t.size}${multStr}</td>
       <td><span class="pnl-cell ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span></td>
       <td style="font-family:var(--mono);font-size:11px;color:${win ? 'var(--green)' : 'var(--red)'}">${(pp >= 0 ? '+' : '') + pp.toFixed(2)}%${balStr}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${rCell}</td>
       <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis" class="col-setup">${t.note || '—'}</td>
       <td class="col-tag">${t.tag ? `<span class="tag-pill">${t.tag}</span>` : ''}</td>
       <td style="display:flex;gap:8px;">

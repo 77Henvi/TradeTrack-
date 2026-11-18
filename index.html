@@ -158,6 +158,7 @@
             <th>SIZE</th>
             <th onclick="sortBy('pnl')">P&L <span class="sort-icon">↕</span></th>
             <th>%</th>
+            <th onclick="sortBy('actual_r')">R <span class="sort-icon">↕</span></th>
             <th class="col-setup">SETUP</th>
             <th class="col-tag">TAG</th>
             <th></th>
@@ -236,6 +237,14 @@
         <div class="field">
           <label>EXIT PRICE</label>
           <input type="number" id="f-exit" step="any" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label for="f-sl">STOP LOSS</label>
+          <input type="number" id="f-sl" step="any" placeholder="Optional">
+        </div>
+        <div class="field">
+          <label for="f-tp">TAKE PROFIT</label>
+          <input type="number" id="f-tp" step="any" placeholder="Optional">
         </div>
         <div class="field">
           <label>POSITION SIZE</label>

@@ -18,12 +18,15 @@ function initAppListeners() {
   ['f-entry','f-exit','f-size','f-mult','f-sl','f-tp'].forEach(id => {
     const el = document.getElementById(id); if (el) el.addEventListener('input', updatePreview);
   });
+
+  initEquityHover();
 }
 
 // ─── GLOBAL KEYBOARD SHORTCUTS ────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModalDirect();
+    closeImportModalDirect();
     document.getElementById('notionOverlay')?.classList.remove('open');
     document.getElementById('tickerSettingsOverlay')?.classList.remove('open');
     document.getElementById('portfolioSettingsOverlay')?.classList.remove('open');
@@ -37,8 +40,9 @@ function render() { drawEquity(); renderMetrics(); renderTable(); renderBreakdow
 
 // ─── EQUITY CURVE ─────────────────────────────────────────────────────────────
 function drawEquity() {
-  const trades = getActiveTrades(), canvas = document.getElementById('equityCanvas'); if (!canvas) return;
+  const trades = getDateFilteredTrades(), canvas = document.getElementById('equityCanvas'); if (!canvas) return;
   const dpr = window.devicePixelRatio || 1, W = canvas.offsetWidth; if (W === 0) return;
+  resetEquityHover(); equityPoints = []; equityBase = null;   // data is about to change
   canvas.width = W * dpr; canvas.height = 120 * dpr;
   const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
   const isLight = document.documentElement.classList.contains('light');
@@ -90,6 +94,15 @@ function drawEquity() {
   if (min !== max) ctx.fillText(fmtNum(min, 0), W - pad, ys(min) - 10);
   if (min < 0 && max > 0) ctx.fillText('0', W - pad, ys(0) - 6);
 
+  // geometry + snapshot of the finished chart, used by the hover overlay
+  const balMap = buildBalanceMap();
+  equityPoints = sorted.map((t, i) => ({
+    x: xs(i + 1), y: ys(points[i + 1]), trade: t, equity: balMap[t.id],
+    color: pnl(t) > 0 ? lineColor : (isLight ? '#dc2626' : '#ff4560'),
+  }));
+  equityGeom = { dpr, W, H: 120, isLight };
+  try { equityBase = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch (e) { equityBase = null; }
+
   let peak = points[0], maxDD = 0;
   points.forEach(p => { if (p > peak) peak = p; const dd = peak - p; if (dd > maxDD) maxDD = dd; });
   const wins = trades.filter(t => pnl(t) > 0), wr = trades.length ? (wins.length / trades.length * 100) : 0;
@@ -100,6 +113,109 @@ function drawEquity() {
     `<div class="equity-stat"><div class="el">TRADES</div><div class="ev">${trades.length}</div></div>`;
 }
 window.addEventListener('resize', drawEquity);
+
+// ─── EQUITY HOVER: crosshair · pulsing ring · tooltip ─────────────────────────
+let equityPoints = [], equityGeom = null, equityBase = null, equityHover = -1, equityRaf = 0;
+const EQUITY_HIT_RADIUS = 25;   // px
+
+function equityReducedMotion() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// state + tooltip reset only (no repaint) — used when the chart itself is being redrawn
+function resetEquityHover() {
+  if (equityRaf) { cancelAnimationFrame(equityRaf); equityRaf = 0; }
+  equityHover = -1;
+  const tip = document.getElementById('equityTooltip'); if (tip) tip.style.display = 'none';
+}
+// reset + put the clean chart back on the canvas
+function clearEquityHover() {
+  const had = equityHover >= 0;
+  resetEquityHover();
+  const canvas = document.getElementById('equityCanvas');
+  if (had && canvas && equityBase && equityGeom) {
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(equityBase, 0, 0);
+    ctx.setTransform(equityGeom.dpr, 0, 0, equityGeom.dpr, 0, 0);
+  }
+}
+
+function paintEquityOverlay(ts) {
+  const canvas = document.getElementById('equityCanvas'), g = equityGeom, p = equityPoints[equityHover];
+  if (!canvas || !g || !p || !equityBase) return;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(equityBase, 0, 0);
+  ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+
+  // vertical crosshair
+  ctx.beginPath(); ctx.moveTo(p.x, 4); ctx.lineTo(p.x, g.H - 4);
+  ctx.strokeStyle = g.isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+  // pulsing ring — canvas is CSS-stretched vertically, so undo that to keep it circular
+  const sy = (canvas.offsetHeight || g.H) / g.H;
+  const phase = equityReducedMotion() ? 0.3 : ((ts || 0) % 1200) / 1200;
+  ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, 1 / sy);
+  ctx.beginPath(); ctx.arc(0, 0, 6 + phase * 9, 0, Math.PI * 2);
+  ctx.strokeStyle = p.color; ctx.globalAlpha = 1 - phase; ctx.lineWidth = 2; ctx.stroke();
+  ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
+  ctx.restore();
+}
+function equityPulseTick(ts) {
+  if (equityHover < 0) { equityRaf = 0; return; }
+  paintEquityOverlay(ts);
+  equityRaf = requestAnimationFrame(equityPulseTick);
+}
+
+function equityHitTest(mx, my, rect) {
+  const g = equityGeom; if (!g || !equityPoints.length) return -1;
+  const kx = rect.width / g.W, ky = rect.height / g.H;   // logical → CSS px
+  let best = -1, bestD = EQUITY_HIT_RADIUS * EQUITY_HIT_RADIUS;
+  equityPoints.forEach((p, i) => {
+    const dx = p.x * kx - mx, dy = p.y * ky - my, d = dx * dx + dy * dy;
+    if (d <= bestD) { bestD = d; best = i; }
+  });
+  return best;
+}
+
+function showEquityTooltip(idx) {
+  const tip = document.getElementById('equityTooltip'), p = equityPoints[idx]; if (!tip || !p) return;
+  const t = p.trade, v = pnl(t), r = t.actual_r == null ? NaN : Number(t.actual_r);
+  const rText = isNaN(r) ? '' : `· ${fmtR(r)}`;
+  tip.innerHTML =
+    `<div style="font-weight:700;color:var(--text);">${escHtml(t.date)} · ${escHtml(t.sym)} <span class="dir-tag ${t.dir === 'Long' ? 'long' : 'short'}">${escHtml(t.dir)}</span></div>` +
+    `<div style="margin-top:4px;color:${v >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtNum(v)} ${rText}</div>` +
+    `<div style="color:var(--muted);font-size:10px;margin-top:2px;">Equity: ${p.equity < 0 ? '-' : ''}$${fmtAbs(Math.abs(p.equity))}</div>`;
+  tip.style.display = 'block';
+}
+function positionEquityTooltip(mx, my, canvas) {
+  const tip = document.getElementById('equityTooltip'); if (!tip) return;
+  const tw = tip.offsetWidth, th = tip.offsetHeight, ww = (canvas.parentElement || canvas).clientWidth;
+  let left = mx + 14, top = my - th - 12;
+  if (ww && left + tw > ww) left = mx - tw - 14;   // flip to the left near the right edge
+  if (left < 0) left = 0;
+  if (top < 0) top = my + 16;                      // flip below the cursor near the top
+  tip.style.left = left + 'px'; tip.style.top = top + 'px';
+}
+
+function onEquityMove(e) {
+  const canvas = e.currentTarget, rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const idx = equityHitTest(mx, my, rect);
+  if (idx < 0) { clearEquityHover(); return; }
+  if (idx !== equityHover) {
+    equityHover = idx; showEquityTooltip(idx); paintEquityOverlay(performance.now());
+    if (!equityRaf && !equityReducedMotion()) equityRaf = requestAnimationFrame(equityPulseTick);
+  }
+  positionEquityTooltip(mx, my, canvas);
+}
+function initEquityHover() {
+  const canvas = document.getElementById('equityCanvas'); if (!canvas) return;
+  canvas.addEventListener('mousemove', onEquityMove);
+  canvas.addEventListener('mouseleave', clearEquityHover);
+  // touch: a tap fires a synthetic mousemove but never mouseleave — dismiss on any tap elsewhere
+  document.addEventListener('touchstart', e => { if (e.target !== canvas) clearEquityHover(); }, { passive: true });
+}
 
 // ─── METRICS ──────────────────────────────────────────────────────────────────
 function renderMetrics() {
@@ -134,8 +250,39 @@ function renderMetrics() {
 }
 
 // ─── TABLE + PAGINATION ───────────────────────────────────────────────────────
+// ─── DATE RANGE FILTER ────────────────────────────────────────────────────────
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+// first date (YYYY-MM-DD, local) included in the range; null = no lower bound
+function dateFilterStart(type = currentDateFilter) {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  if (type === 'month')    d.setDate(1);
+  else if (type === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // week starts Monday
+  else if (type === '30d')  d.setDate(d.getDate() - 30);
+  else return null;
+  return localDateStr(d);
+}
+function getDateFilteredTrades() {
+  const start = dateFilterStart(), all = getActiveTrades();
+  return start ? all.filter(t => t.date >= start) : all;
+}
+function setDateFilter(type, el) {
+  currentDateFilter = type; currentPage = 1;
+  document.querySelectorAll('.filter-btn[data-date-filter]').forEach(b => b.classList.remove('active'));
+  (el || document.querySelector(`.filter-btn[data-date-filter="${type}"]`))?.classList.add('active');
+  renderTable(); drawEquity();
+}
+
+// balance after each trade (start balance + cumulative P&L, date order), keyed by trade id
+function buildBalanceMap() {
+  const map = {}; let bal = getActivePortfolio()?.balance || 0;
+  [...getActiveTrades()].sort((a, b) => a.date.localeCompare(b.date)).forEach(t => { bal += pnl(t); map[t.id] = bal; });
+  return map;
+}
+
 function getFiltered() {
-  const trades = getActiveTrades();
+  const trades = getDateFilteredTrades();
   const search = (document.getElementById('searchInput')?.value || '').toUpperCase().trim();
   return trades
     .filter(t => {
@@ -171,10 +318,7 @@ function renderTable() {
   const portfolio = getActivePortfolio();
   const startBal  = portfolio?.balance || 0;
   // สร้าง map: tradeId → balance หลัง trade นั้น (sort by date ascending)
-  const allSorted = [...getActiveTrades()].sort((a, b) => a.date.localeCompare(b.date));
-  const runningBalMap = {};
-  let runBal = startBal;
-  allSorted.forEach(t => { runBal += pnl(t); runningBalMap[t.id] = runBal; });
+  const runningBalMap = buildBalanceMap();
 
   tbody.innerHTML = rowsToRender.map((t, idx) => {
     const p = pnl(t), pp = pnlPct(t), win = p > 0;
@@ -190,17 +334,17 @@ function renderTable() {
       ? `<br><span style="font-size:10px;color:${balColor}" title="Balance after trade">$${fmtAbs(curBal, 0)}</span>`
       : '';
     return `<tr class="row-enter ${win ? 'row-win' : 'row-loss'}" style="animation-delay:${idx * 0.02}s">
-      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${t.date}</td>
-      <td style="font-weight:700;letter-spacing:1px;font-family:var(--mono)">${t.sym}</td>
-      <td><span class="dir-tag ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${t.dir.toUpperCase()}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(t.date)}</td>
+      <td style="font-weight:700;letter-spacing:1px;font-family:var(--mono)">${escHtml(t.sym)}</td>
+      <td><span class="dir-tag ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(String(t.dir).toUpperCase())}</span></td>
       <td style="font-family:var(--mono);font-size:12px">${t.entry_price.toLocaleString()}</td>
       <td style="font-family:var(--mono);font-size:12px">${t.exit_price.toLocaleString()}</td>
       <td style="font-family:var(--mono);font-size:12px">${t.size}${multStr}</td>
       <td><span class="pnl-cell ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span></td>
       <td style="font-family:var(--mono);font-size:11px;color:${win ? 'var(--green)' : 'var(--red)'}">${(pp >= 0 ? '+' : '') + pp.toFixed(2)}%${balStr}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${rCell}</td>
-      <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis" class="col-setup">${t.note || '—'}</td>
-      <td class="col-tag">${t.tag ? `<span class="tag-pill">${t.tag}</span>` : ''}</td>
+      <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis" class="col-setup">${escHtml(t.note) || '—'}</td>
+      <td class="col-tag">${t.tag ? `<span class="tag-pill">${escHtml(t.tag)}</span>` : ''}</td>
       <td style="display:flex;gap:8px;">
         <button class="del-btn" style="color:var(--blue)" onclick="editTrade('${t.id}')" title="Edit">✏️</button>
         <button class="del-btn" onclick="delTrade('${t.id}')" title="Delete">✕</button>
@@ -223,7 +367,7 @@ function renderTable() {
 function changePage(dir) { currentPage += dir; renderTable(); }
 function setFilter(f, el) {
   currentFilter = f; currentPage = 1;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn:not([data-date-filter])').forEach(b => b.classList.remove('active'));
   el.classList.add('active'); renderTable();
 }
 function sortBy(key) {
@@ -251,7 +395,7 @@ function renderSymPerf() {
   const map = {}; getActiveTrades().forEach(t => { map[t.sym] = (map[t.sym] || 0) + pnl(t); });
   const sorted = Object.entries(map).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6);
   document.getElementById('symPerf').innerHTML = sorted.length
-    ? sorted.map(([sym, p]) => `<div class="sym-row"><span class="sym-name">${sym}</span><span class="sym-pnl ${p >= 0 ? 'pos' : 'neg'}">${fmtNum(p)}</span></div>`).join('')
+    ? sorted.map(([sym, p]) => `<div class="sym-row"><span class="sym-name">${escHtml(sym)}</span><span class="sym-pnl ${p >= 0 ? 'pos' : 'neg'}">${fmtNum(p)}</span></div>`).join('')
     : '<div style="padding:16px 20px;color:var(--muted);font-family:var(--mono);font-size:11px">No data yet</div>';
 }
 
@@ -265,7 +409,7 @@ function renderStreak() {
     streak = cur; streakType = type;
   });
   const dots = sorted.slice(-20).map(t =>
-    `<div class="streak-dot ${pnl(t) > 0 ? 'w' : 'l'}" title="${t.sym} ${pnl(t) > 0 ? '+' : ''}${pnl(t).toFixed(0)}"></div>`
+    `<div class="streak-dot ${pnl(t) > 0 ? 'w' : 'l'}" title="${escHtml(t.sym)} ${pnl(t) > 0 ? '+' : ''}${pnl(t).toFixed(0)}"></div>`
   ).join('');
   document.getElementById('streakBlock').innerHTML =
     `<div class="streak-block">` +

@@ -12,6 +12,7 @@ let activePortfolioId = null;
 let heatmapDate       = new Date();
 
 let currentFilter = 'all';
+let currentDateFilter = 'all';   // all | month | week | 30d
 let currentSort   = { key: 'date', dir: -1 };
 let selectedDir   = 'Long';
 let selectedTag   = '';

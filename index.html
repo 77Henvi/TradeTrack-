@@ -109,7 +109,10 @@
 <!-- ===== EQUITY CURVE ===== -->
 <section class="equity-section">
   <div class="equity-label">EQUITY CURVE</div>
-  <canvas id="equityCanvas"></canvas>
+  <div class="equity-canvas-wrap" style="position:relative">
+    <canvas id="equityCanvas"></canvas>
+    <div id="equityTooltip" class="chart-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:100"></div>
+  </div>
   <div class="equity-stats" id="equityStats"></div>
 </section>
 
@@ -131,6 +134,7 @@
       <div class="panel-title">TRADE LOG</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn-ghost btn-icon" onclick="openPortfolioSettings()" title="Portfolio settings">⚙</button>
+        <button class="btn-ghost" onclick="openImportModal()" title="Import trades from CSV">↑ CSV</button>
         <button class="btn-ghost" onclick="exportCSV()">↓ CSV</button>
         <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
         <button class="btn-accent" onclick="openModal()">+ NEW TRADE</button>
@@ -143,6 +147,11 @@
       <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
       <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
       <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+      <span class="filter-sep" aria-hidden="true"></span>
+      <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)">ALL TIME</button>
+      <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
+      <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
+      <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30 DAYS</button>
       <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL...">
     </div>
 
@@ -295,6 +304,41 @@
       <textarea id="notionText" readonly></textarea>
       <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()">COPY TO CLIPBOARD</button>
       <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s">✓ COPIED!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== IMPORT CSV MODAL ===== -->
+<div class="modal-overlay" id="importModalOverlay" onclick="closeImportModal(event)" ondragover="event.preventDefault()" ondrop="event.preventDefault()">
+  <div class="modal modal-import">
+    <div class="modal-header">
+      <div class="modal-title">IMPORT FROM CSV</div>
+      <button class="btn-close" onclick="closeImportModalDirect()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="import-drop" id="importDrop" for="importFile"
+             ondragover="importDragOver(event)" ondragleave="importDragLeave(event)" ondrop="importDrop(event)">
+        <span class="import-drop-icon">↑</span>
+        <span class="import-drop-text">DROP CSV FILE HERE <em>or click to browse</em></span>
+        <span class="import-drop-file" id="importFileName"></span>
+        <input type="file" id="importFile" accept=".csv,text/csv" onchange="importFileChosen(this)">
+      </label>
+      <div class="import-hint">
+        Works with TrackTrade CSV exports and common broker/platform headers.<br>
+        <b>Required:</b> <code>date</code> (or <code>time</code>, <code>open time</code>), <code>symbol</code>, <code>direction</code> (<code>buy</code>/<code>sell</code> or <code>long</code>/<code>short</code>), <code>entry</code>, <code>exit</code><br>
+        <b>Optional:</b> <code>size</code>/<code>lots</code>, <code>stop_loss</code>/<code>sl</code>, <code>take_profit</code>/<code>tp</code>, <code>multiplier</code>, <code>note</code>/<code>setup</code>, <code>tag</code>
+      </div>
+      <div class="import-summary" id="importSummary" aria-live="polite"></div>
+      <div class="table-scroll" id="importPreviewWrap" style="display:none">
+        <table class="import-preview">
+          <thead><tr><th>DATE</th><th>SYM</th><th>DIR</th><th>ENTRY</th><th>EXIT</th><th>SIZE</th><th>SL</th><th>R</th></tr></thead>
+          <tbody id="importPreviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeImportModalDirect()">CANCEL</button>
+      <button class="btn-accent" id="importConfirmBtn" onclick="confirmImport()" disabled>IMPORT 0 TRADES ▸</button>
     </div>
   </div>
 </div>

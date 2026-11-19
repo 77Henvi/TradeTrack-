@@ -893,3 +893,45 @@ main {
 .cf-turnstile * {
   cursor: auto !important;
 }
+/* ─── SPRINT 2-B: EQUITY TOOLTIP · DATE FILTER · CSV IMPORT ─────────────── */
+.equity-canvas-wrap { position: relative; }
+#equityCanvas { cursor: crosshair; }
+.chart-tooltip {
+  background: var(--bg2); border: 1px solid var(--border2);
+  padding: 8px 12px; border-radius: 4px;
+  font-family: var(--mono); font-size: 11px; white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.chart-tooltip .dir-tag { margin-left: 4px; }
+
+.filter-sep { width: 1px; height: 16px; background: var(--border2); margin: 0 6px; }
+
+.modal-import { width: 680px; }
+.import-drop {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 22px 16px; text-align: center; cursor: pointer;
+  border: 1px dashed var(--border2); border-radius: 4px; background: var(--bg3);
+  transition: border-color 0.15s, background 0.15s;
+}
+.import-drop:hover, .import-drop.dragover, .import-drop:focus-within {
+  border-color: var(--accent); background: var(--accent-dim);
+}
+.import-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.import-drop-icon { font-size: 22px; color: var(--accent); line-height: 1; }
+.import-drop-text { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--text); }
+.import-drop-text em { font-style: normal; letter-spacing: 1px; color: var(--muted); }
+.import-drop-file { font-family: var(--mono); font-size: 11px; color: var(--accent); min-height: 14px; word-break: break-all; }
+.import-hint { margin: 12px 0; font-size: 11px; line-height: 1.7; color: var(--muted); }
+.import-hint code { font-family: var(--mono); color: var(--text); }
+.import-msg { font-family: var(--mono); font-size: 11px; letter-spacing: 0.5px; padding: 3px 0; }
+.import-msg.ok   { color: var(--green); }
+.import-msg.err  { color: var(--red); }
+.import-msg.warn { color: var(--orange); }
+.import-msg.dim  { color: var(--muted); font-size: 10px; }
+.import-preview { width: 100%; margin-top: 10px; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+.import-preview th { text-align: left; padding: 6px 8px; font-size: 9px; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border2); }
+.import-preview td { padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+
+@media (max-width: 700px) {
+  .filter-sep { display: none; }
+}

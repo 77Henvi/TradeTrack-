@@ -66,6 +66,13 @@ async function dbUpdateTrade(id, d) {
   if (error) { toast('Error updating trade', 'error'); return false; }
   return true;
 }
+// Batch insert (CSV import). Returns the saved rows, or null on error.
+// No toast here — the caller reports progress/partial failure itself.
+async function dbInsertTrades(rows) {
+  const { data, error } = await sb.from('trades').insert(rows).select();
+  if (error) { console.error('Batch insert failed:', error); return null; }
+  return data || [];
+}
 async function dbDeleteTrade(id) {
   const { error } = await sb.from('trades').delete().eq('id', id);
   if (error) { toast('Error deleting trade', 'error'); return false; }

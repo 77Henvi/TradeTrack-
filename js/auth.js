@@ -17,10 +17,38 @@ async function initAuth() {
 function showAuthScreen() {
   document.getElementById('authScreen').style.display  = 'flex';
   document.getElementById('appWrapper').style.display  = 'none';
+  applyTurnstileMode();
 }
 
+// ─── TURNSTILE (Cloudflare CAPTCHA) — switched by ENABLE_TURNSTILE in config.js ─
+const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+
+// Off: hide the widget and never load Cloudflare's script. On: show it and load the script (once).
+function applyTurnstileMode() {
+  [document.querySelector('.cf-turnstile'), document.getElementById('turnstileWrap')].forEach(el => {
+    if (el) el.style.display = ENABLE_TURNSTILE ? '' : 'none';
+  });
+  if (ENABLE_TURNSTILE && !window.turnstile && !document.getElementById('turnstile-api')) {
+    const s = document.createElement('script');
+    s.id = 'turnstile-api'; s.src = TURNSTILE_SRC; s.async = true; s.defer = true;
+    document.head.appendChild(s);
+  }
+}
 function getTurnstileToken() {
   return document.querySelector('[name="cf-turnstile-response"]')?.value || '';
+}
+// Off → returns at once, the widget is never read. On → needs a solved challenge; the token is
+// handed to Supabase as captchaToken (Auth → Attack Protection must be configured to match).
+function checkTurnstile() {
+  if (ENABLE_TURNSTILE !== true) return { ok: true, token: null };
+  const token = getTurnstileToken();
+  if (!token) { authError('กรุณายืนยัน CAPTCHA (Turnstile) ก่อน'); return { ok: false, token: null }; }
+  return { ok: true, token };
+}
+// tokens are single-use: reset the widget after every attempt so the user can retry
+function resetTurnstile() {
+  if (ENABLE_TURNSTILE !== true) return;
+  try { window.turnstile?.reset(); } catch (_) { /* widget not ready */ }
 }
 
 async function showApp() {
@@ -45,26 +73,24 @@ async function register() {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) { authError('รูปแบบ email ไม่ถูกต้อง'); return; }
   if (pass.length < 6)       { authError('Password ต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
+  const ts = checkTurnstile(); if (!ts.ok) return;   // before the cooldown, so a missing CAPTCHA doesn't burn it
   if (!canSendEmail())       return;
-  // TEMP: Turnstile bypassed — re-enable when site key is configured
-  const token = getTurnstileToken() || 'dev-bypass';
 
   setAuthLoading(true);
-  const { error } = await sb.auth.signUp({ email, password: pass });
-  setAuthLoading(false);
+  const { error } = await sb.auth.signUp({ email, password: pass, ...(ts.token && { options: { captchaToken: ts.token } }) });
+  setAuthLoading(false); resetTurnstile();
   if (error) { authError(error.message); return; }
   authSuccess('สมัครสมาชิกสำเร็จ! ✓ กรุณาเช็ค email เพื่อยืนยัน');
 }
 
 async function login() {
-  // TEMP: Turnstile bypassed — re-enable when site key is configured
-  const token = getTurnstileToken() || 'dev-bypass';
   const email = document.getElementById('a-email').value.trim();
   const pass  = document.getElementById('a-pass').value;
   if (!email || !pass) { authError('กรุณาใส่ email และ password'); return; }
+  const ts = checkTurnstile(); if (!ts.ok) return;
   setAuthLoading(true);
-  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-  setAuthLoading(false);
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass, ...(ts.token && { options: { captchaToken: ts.token } }) });
+  setAuthLoading(false); resetTurnstile();
   if (error) { authError('Email หรือ Password ไม่ถูกต้อง'); return; }
 }
 
@@ -74,12 +100,13 @@ async function logout() {
 }
 
 async function forgotPassword() {
-  if (!canSendEmail()) return;
   const email = document.getElementById('a-email').value.trim();
   if (!email) { authError('ใส่ email ก่อนแล้วกด Forgot Password'); return; }
+  const ts = checkTurnstile(); if (!ts.ok) return;
+  if (!canSendEmail()) return;
   setAuthLoading(true);
-  const { error } = await sb.auth.resetPasswordForEmail(email);
-  setAuthLoading(false);
+  const { error } = await sb.auth.resetPasswordForEmail(email, ts.token ? { captchaToken: ts.token } : undefined);
+  setAuthLoading(false); resetTurnstile();
   if (error) { authError(error.message); return; }
   authSuccess('ส่ง reset link ไปที่ email แล้ว ✓');
 }

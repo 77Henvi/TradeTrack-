@@ -43,8 +43,11 @@ function drawEquity() {
   const trades = getDateFilteredTrades(), canvas = document.getElementById('equityCanvas'); if (!canvas) return;
   const dpr = window.devicePixelRatio || 1, W = canvas.offsetWidth; if (W === 0) return;
   resetEquityHover(); equityPoints = []; equityBase = null;   // data is about to change
-  canvas.width = W * dpr; canvas.height = 120 * dpr;
-  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  // Bitmap = displayed size × DPR on BOTH axes. The canvas is 160 CSS px tall but the chart is laid out in a
+  // 120-unit space; sizing the bitmap 120 tall and letting CSS stretch it 1.33× is what made it soft on Retina.
+  const cssH = canvas.offsetHeight || 120, sy = cssH / 120;
+  canvas.width = W * dpr; canvas.height = cssH * dpr;
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr * sy);
   const isLight = document.documentElement.classList.contains('light');
   const sorted  = [...trades].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -100,7 +103,7 @@ function drawEquity() {
     x: xs(i + 1), y: ys(points[i + 1]), trade: t, equity: balMap[t.id],
     color: pnl(t) > 0 ? lineColor : (isLight ? '#dc2626' : '#ff4560'),
   }));
-  equityGeom = { dpr, W, H: 120, isLight };
+  equityGeom = { dpr, W, H: 120, sy, isLight };
   try { equityBase = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch (e) { equityBase = null; }
 
   let peak = points[0], maxDD = 0;
@@ -112,7 +115,31 @@ function drawEquity() {
     `<div class="equity-stat"><div class="el">MAX DRAWDOWN</div><div class="ev neg">${fmtNum(-Math.abs(maxDD))}</div></div>` +
     `<div class="equity-stat"><div class="el">TRADES</div><div class="ev">${trades.length}</div></div>`;
 }
-window.addEventListener('resize', drawEquity);
+// Redraw when the chart's box changes size (window resize, sidebar/layout shift, rotation) or the device
+// pixel ratio changes (browser zoom, dragging the window to another monitor). One observer, created once.
+let equityResizeReady = false, equityResizeObserver = null, equityResizeRaf = 0;
+function initEquityResize() {
+  if (equityResizeReady) return;            // idempotent on BOTH paths (observer and window-resize fallback)
+  equityResizeReady = true;
+  const wrap = document.querySelector('.equity-canvas-wrap');
+  if (wrap && window.ResizeObserver) {
+    equityResizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(equityResizeRaf);                         // coalesce bursts into one frame
+      equityResizeRaf = requestAnimationFrame(() => drawEquity());
+    });
+    equityResizeObserver.observe(wrap);
+  } else {
+    window.addEventListener('resize', () => drawEquity());           // browsers without ResizeObserver
+  }
+  watchDevicePixelRatio();
+}
+function watchDevicePixelRatio() {
+  if (!window.matchMedia) return;
+  const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+  // { once } + re-arm with the new ratio: exactly one live listener at any time
+  mq.addEventListener?.('change', () => { drawEquity(); watchDevicePixelRatio(); }, { once: true });
+}
+initEquityResize();
 
 // ─── EQUITY HOVER: crosshair · pulsing ring · tooltip ─────────────────────────
 let equityPoints = [], equityGeom = null, equityBase = null, equityHover = -1, equityRaf = 0;
@@ -136,7 +163,7 @@ function clearEquityHover() {
   if (had && canvas && equityBase && equityGeom) {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(equityBase, 0, 0);
-    ctx.setTransform(equityGeom.dpr, 0, 0, equityGeom.dpr, 0, 0);
+    ctx.setTransform(equityGeom.dpr, 0, 0, equityGeom.dpr * equityGeom.sy, 0, 0);
   }
 }
 
@@ -145,7 +172,7 @@ function paintEquityOverlay(ts) {
   if (!canvas || !g || !p || !equityBase) return;
   const ctx = canvas.getContext('2d');
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(equityBase, 0, 0);
-  ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+  ctx.setTransform(g.dpr, 0, 0, g.dpr * g.sy, 0, 0);
 
   // vertical crosshair
   ctx.beginPath(); ctx.moveTo(p.x, 4); ctx.lineTo(p.x, g.H - 4);
@@ -153,7 +180,7 @@ function paintEquityOverlay(ts) {
   ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
 
   // pulsing ring — canvas is CSS-stretched vertically, so undo that to keep it circular
-  const sy = (canvas.offsetHeight || g.H) / g.H;
+  const sy = g.sy;
   const phase = equityReducedMotion() ? 0.3 : ((ts || 0) % 1200) / 1200;
   ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, 1 / sy);
   ctx.beginPath(); ctx.arc(0, 0, 6 + phase * 9, 0, Math.PI * 2);
@@ -310,6 +337,8 @@ function getFiltered() {
 function renderTable() {
   const allRows = getFiltered(), tbody = document.getElementById('tradeBody');
   document.getElementById('emptyState').style.display = allRows.length ? 'none' : 'block';
+  // "log first trade" only makes sense for an empty portfolio — not when filters merely hide the trades
+  const cta = document.getElementById('emptyCta'); if (cta) cta.style.display = getActiveTrades().length ? 'none' : '';
   const totalPages = Math.ceil(allRows.length / rowsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
   const rowsToRender = allRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -346,8 +375,8 @@ function renderTable() {
       <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis" class="col-setup">${escHtml(t.note) || '—'}</td>
       <td class="col-tag">${t.tag ? `<span class="tag-pill">${escHtml(t.tag)}</span>` : ''}</td>
       <td style="display:flex;gap:8px;">
-        <button class="del-btn" style="color:var(--blue)" onclick="editTrade('${t.id}')" title="Edit">✏️</button>
-        <button class="del-btn" onclick="delTrade('${t.id}')" title="Delete">✕</button>
+        <button class="del-btn" style="color:var(--blue)" onclick="editTrade('${t.id}')" title="Edit" aria-label="Edit trade">✏️</button>
+        <button class="del-btn" onclick="delTrade('${t.id}')" title="Delete" aria-label="Delete trade">✕</button>
       </td></tr>`;
   }).join('');
 
@@ -446,8 +475,8 @@ function renderHeatmap() {
     `<div class="hmap-label">${['S','M','T','W','T','F','S'].map(d => `<div class="hmap-day-label">${d}</div>`).join('')}</div>` +
     `<div class="heatmap-grid">${cells}</div>` +
     `<div style="display:flex;justify-content:space-between;align-items:center;padding:0 20px 12px;">` +
-    `<button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(-1)">◀</button>` +
+    `<button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(-1)" aria-label="Previous month">◀</button>` +
     `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">${heatmapDate.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}</div>` +
-    `<button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(1)">▶</button>` +
+    `<button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(1)" aria-label="Next month">▶</button>` +
     `</div>`;
 }

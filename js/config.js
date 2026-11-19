@@ -2,6 +2,9 @@
 const SUPABASE_URL = 'https://urgrcxjeackcvaaoayja.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_9dNez8F0loJTUNq0_dLd3w_wqn8K_vQ';
 
+// AUTH & SECURITY
+const ENABLE_TURNSTILE = false; // Toggle to true once Cloudflare Turnstile sitekey is set in index.html
+
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 

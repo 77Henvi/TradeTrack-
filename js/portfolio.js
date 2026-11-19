@@ -10,7 +10,7 @@ function renderPortfolioTabs() {
   const container = document.getElementById('portfolioTabs'); if (!container) return;
   container.innerHTML = portfolios.map(p =>
     `<button class="portfolio-tab ${p.id === activePortfolioId ? 'active' : ''}" onclick="switchPortfolio('${p.id}')">${escHtml(p.name)}</button>`
-  ).join('') + `<button class="portfolio-tab-add" onclick="openNewPortfolioModal()" title="New portfolio">+</button>`;
+  ).join('') + `<button class="portfolio-tab-add" onclick="openNewPortfolioModal()" title="New portfolio" aria-label="Add new portfolio">+</button>`;
 }
 
 // ─── PORTFOLIO SETTINGS MODAL ─────────────────────────────────────────────────

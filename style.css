@@ -551,6 +551,7 @@ main {
   font-family: var(--mono); font-size: 13px; letter-spacing: 3px; color: var(--muted2);
 }
 .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.3; }
+.empty-state .btn-accent { margin-top: 4px; }
 
 /* ─── SIDEBAR ────────────────────────────────────────────────────────────── */
 .breakdown-bar { padding: 16px 20px; }

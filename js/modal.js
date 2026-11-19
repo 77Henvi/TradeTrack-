@@ -20,28 +20,33 @@ function applySymbolPreset() {
 }
 
 // ─── TRADE MODAL OPEN / CLOSE ─────────────────────────────────────────────────
+// Back to a pristine form. Runs on every open (new AND edit) so nothing leaks between sessions.
+// (Not on close: saveTrade() still needs editingId after its await, even if the modal was dismissed.)
+function resetTradeForm() {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  ['f-entry', 'f-exit', 'f-sl', 'f-tp', 'f-note'].forEach(id => set(id, ''));
+  set('f-size', '1');
+  set('f-date', localDateStr(new Date()));          // local "today" — toISOString() is UTC, wrong 00:00–07:00 in UTC+7
+
+  const sel = document.getElementById('f-sym-select'), custom = document.getElementById('f-sym-custom');
+  if (custom) { custom.value = ''; custom.style.display = 'none'; }
+  if (sel) { sel.value = 'XAUUSD'; applySymbolPreset(); }       // also resets f-mult and the contract-size hint
+
+  selectedTag = ''; document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
+  setDir('Long');
+
+  const pv = document.getElementById('previewVal'), pr = document.getElementById('previewRR');
+  if (pv) { pv.textContent = '—'; pv.className = 'preview-val'; }
+  if (pr) pr.innerHTML = '';
+  updatePreview();
+}
+
 function openModal() {
   editingId = null;
   document.querySelector('.modal-title').textContent = "NEW TRADE ENTRY";
   document.querySelector('.modal-footer .btn-accent').textContent = "SAVE TRADE ▸";
   document.getElementById('modalOverlay').classList.add('open');
-  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
-
-  ['f-entry','f-exit','f-size','f-sl','f-tp'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  if (document.getElementById('f-note')) document.getElementById('f-note').value = '';
-
-  const sel = document.getElementById('f-sym-select');
-  const custom = document.getElementById('f-sym-custom');
-  if (sel) {
-    sel.value = 'XAUUSD';
-    if (custom) custom.style.display = 'none';
-    applySymbolPreset();
-  }
-
-  selectedTag = ''; document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
-  setDir('Long');
+  resetTradeForm();
 
   // แสดง balance ของพอร์ตปัจจุบันใน read-only field
   const dispEl = document.getElementById('f-account-display');
@@ -59,6 +64,7 @@ function editTrade(id) {
   editingId = id;
   document.querySelector('.modal-title').textContent = "EDIT TRADE";
   document.getElementById('modalOverlay').classList.add('open');
+  resetTradeForm();
 
   document.getElementById('f-date').value  = t.date;
   document.getElementById('f-entry').value = t.entry_price || t.entry;

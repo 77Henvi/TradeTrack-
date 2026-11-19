@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="style.css">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
 </head>
 <body>
 
@@ -41,15 +41,15 @@
       <div id="authTitle" style="font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:0.5px;color:var(--accent);margin-bottom:24px">LOGIN</div>
       <div id="authMsg" class="auth-msg" style="display:none"></div>
       <div class="field" style="margin-bottom:14px">
-        <label>EMAIL</label>
+        <label for="a-email">EMAIL</label>
         <input type="email" id="a-email" placeholder="trader@email.com" autocomplete="email">
       </div>
       <div class="field" style="margin-bottom:20px">
-        <label>PASSWORD</label>
+        <label for="a-pass">PASSWORD</label>
         <input type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
 
-      <div style="margin-bottom:16px">
+      <div id="turnstileWrap" style="margin-bottom:16px">
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADAXRSiDPr8tsPB0"></div>
       </div>
       <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()">LOGIN ▸</button>
@@ -133,7 +133,7 @@
     <div class="panel-header">
       <div class="panel-title">TRADE LOG</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn-ghost btn-icon" onclick="openPortfolioSettings()" title="Portfolio settings">⚙</button>
+        <button class="btn-ghost btn-icon" onclick="openPortfolioSettings()" title="Portfolio settings" aria-label="Portfolio settings">⚙</button>
         <button class="btn-ghost" onclick="openImportModal()" title="Import trades from CSV">↑ CSV</button>
         <button class="btn-ghost" onclick="exportCSV()">↓ CSV</button>
         <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
@@ -152,7 +152,7 @@
       <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
       <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
       <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30 DAYS</button>
-      <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL...">
+      <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL..." aria-label="Search symbol">
     </div>
 
     <div class="table-scroll">
@@ -177,7 +177,8 @@
       </table>
       <div class="empty-state" id="emptyState" style="display:none">
         <div class="empty-icon">◎</div>
-        <div>Start logging your first trade →</div>
+        <div style="margin-bottom:12px;">NO TRADES FOUND</div>
+        <button class="btn-accent" id="emptyCta" onclick="openModal()">+ LOG FIRST TRADE</button>
       </div>
     </div>
   </div>
@@ -209,12 +210,12 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">NEW TRADE ENTRY</div>
-      <button class="btn-close" onclick="closeModalDirect()">✕</button>
+      <button class="btn-close" onclick="closeModalDirect()" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field full">
-          <label>SYMBOL</label>
+          <label for="f-sym-select">SYMBOL</label>
           <div style="display:flex; gap:8px;">
             <select id="f-sym-select" onchange="applySymbolPreset()" style="padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px; font-family:var(--sans); flex:1; outline:none; cursor:pointer;">
               <option value="XAUUSD">XAUUSD (Gold)</option>
@@ -223,28 +224,28 @@
               <option value="NQ1!">NQ1! (Nasdaq)</option>
               <option value="OTHER">OTHER (พิมพ์เอง)...</option>
             </select>
-            <input type="text" id="f-sym-custom" placeholder="e.g. BTCUSD" style="display:none; flex:1; padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px;">
+            <input type="text" id="f-sym-custom" aria-label="Custom symbol" placeholder="e.g. BTCUSD" style="display:none; flex:1; padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px;">
             <input type="hidden" id="f-mult" value="1">
           </div>
           <div id="sym-hint" style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:5px;letter-spacing:1px;min-height:14px"></div>
         </div>
         <div class="field">
-          <label>DATE</label>
+          <label for="f-date">DATE</label>
           <input type="date" id="f-date">
         </div>
         <div class="field">
-          <label>DIRECTION</label>
-          <div class="dir-toggle">
+          <label id="f-dir-label">DIRECTION</label>
+          <div class="dir-toggle" role="group" aria-labelledby="f-dir-label">
             <button class="dir-btn active" id="btn-long" onclick="setDir('Long')">▲ LONG</button>
             <button class="dir-btn" id="btn-short" onclick="setDir('Short')">▼ SHORT</button>
           </div>
         </div>
         <div class="field">
-          <label>ENTRY PRICE</label>
+          <label for="f-entry">ENTRY PRICE</label>
           <input type="number" id="f-entry" step="any" placeholder="0.00">
         </div>
         <div class="field">
-          <label>EXIT PRICE</label>
+          <label for="f-exit">EXIT PRICE</label>
           <input type="number" id="f-exit" step="any" placeholder="0.00">
         </div>
         <div class="field">
@@ -256,20 +257,20 @@
           <input type="number" id="f-tp" step="any" placeholder="Optional">
         </div>
         <div class="field">
-          <label>POSITION SIZE</label>
+          <label for="f-size">POSITION SIZE</label>
           <input type="number" id="f-size" step="any" placeholder="1">
         </div>
         <div class="field">
-          <label>PORTFOLIO BALANCE</label>
-          <div id="f-account-display" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:1px">—</div>
+          <label for="f-account-display">PORTFOLIO BALANCE</label>
+          <output id="f-account-display" style="display:block;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:1px">—</output>
         </div>
         <div class="field full">
-          <label>SETUP / NOTES</label>
+          <label for="f-note">SETUP / NOTES</label>
           <input type="text" id="f-note" placeholder="Breakout, Support bounce, Trend follow...">
         </div>
         <div class="field full">
-          <label>TAG</label>
-          <div class="tag-options" id="tagOptions">
+          <label id="f-tag-label">TAG</label>
+          <div class="tag-options" id="tagOptions" role="group" aria-labelledby="f-tag-label">
             <button class="tag-btn" onclick="toggleTag(this,'Scalp')">SCALP</button>
             <button class="tag-btn" onclick="toggleTag(this,'Swing')">SWING</button>
             <button class="tag-btn" onclick="toggleTag(this,'Position')">POSITION</button>
@@ -297,11 +298,11 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">EXPORT FOR NOTION</div>
-      <button class="btn-close" onclick="document.getElementById('notionOverlay').classList.remove('open')">✕</button>
+      <button class="btn-close" onclick="document.getElementById('notionOverlay').classList.remove('open')" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <p style="color:var(--muted);font-size:13px;margin-bottom:12px">คัดลอก → เปิด Notion → สร้าง Table → Ctrl+V วางได้เลย</p>
-      <textarea id="notionText" readonly></textarea>
+      <textarea id="notionText" readonly aria-label="Trade log in Notion table format"></textarea>
       <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()">COPY TO CLIPBOARD</button>
       <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s">✓ COPIED!</div>
     </div>
@@ -348,7 +349,7 @@
   <div class="modal" style="width:560px">
     <div class="modal-header">
       <div class="modal-title">TICKER SETTINGS</div>
-      <button class="btn-close" onclick="closeTickerSettings()">✕</button>
+      <button class="btn-close" onclick="closeTickerSettings()" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <div class="ticker-info-box">
@@ -368,21 +369,21 @@
       </div>
       <div class="form-grid" style="margin-top:20px;margin-bottom:0">
         <div class="field full">
-          <label>SCROLL SPEED (seconds per loop)</label>
+          <label for="ts-speed">SCROLL SPEED (seconds per loop)</label>
           <div style="display:flex;align-items:center;gap:14px">
             <input type="range" id="ts-speed" min="15" max="90" step="5" style="flex:1;accent-color:var(--accent)">
             <span id="speed-val" style="font-family:var(--mono);font-size:13px;color:var(--accent);min-width:36px">30s</span>
           </div>
         </div>
         <div class="field full">
-          <label>HIGHLIGHT COLOR</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap" id="ts-color-btns">
-            <button class="ticker-color-btn" data-color="#c8f03c" style="background:#c8f03c" onclick="selectTickerColor(this,'#c8f03c')"></button>
-            <button class="ticker-color-btn" data-color="#3cffa0" style="background:#3cffa0" onclick="selectTickerColor(this,'#3cffa0')"></button>
-            <button class="ticker-color-btn" data-color="#38bdf8" style="background:#38bdf8" onclick="selectTickerColor(this,'#38bdf8')"></button>
-            <button class="ticker-color-btn" data-color="#f59e0b" style="background:#f59e0b" onclick="selectTickerColor(this,'#f59e0b')"></button>
-            <button class="ticker-color-btn" data-color="#ff4560" style="background:#ff4560" onclick="selectTickerColor(this,'#ff4560')"></button>
-            <button class="ticker-color-btn" data-color="#a78bfa" style="background:#a78bfa" onclick="selectTickerColor(this,'#a78bfa')"></button>
+          <label id="ts-color-label">HIGHLIGHT COLOR</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="ts-color-btns" role="group" aria-labelledby="ts-color-label">
+            <button class="ticker-color-btn" data-color="#c8f03c" aria-label="Highlight color: Lime" style="background:#c8f03c" onclick="selectTickerColor(this,'#c8f03c')"></button>
+            <button class="ticker-color-btn" data-color="#3cffa0" aria-label="Highlight color: Green" style="background:#3cffa0" onclick="selectTickerColor(this,'#3cffa0')"></button>
+            <button class="ticker-color-btn" data-color="#38bdf8" aria-label="Highlight color: Sky blue" style="background:#38bdf8" onclick="selectTickerColor(this,'#38bdf8')"></button>
+            <button class="ticker-color-btn" data-color="#f59e0b" aria-label="Highlight color: Amber" style="background:#f59e0b" onclick="selectTickerColor(this,'#f59e0b')"></button>
+            <button class="ticker-color-btn" data-color="#ff4560" aria-label="Highlight color: Red" style="background:#ff4560" onclick="selectTickerColor(this,'#ff4560')"></button>
+            <button class="ticker-color-btn" data-color="#a78bfa" aria-label="Highlight color: Violet" style="background:#a78bfa" onclick="selectTickerColor(this,'#a78bfa')"></button>
           </div>
           <input type="hidden" id="ts-color" value="#f59e0b">
         </div>
@@ -411,11 +412,11 @@
       </p>
       <div class="form-grid">
         <div class="field full">
-          <label>PORTFOLIO NAME</label>
+          <label for="w-name">PORTFOLIO NAME</label>
           <input type="text" id="w-name" placeholder="Crypto Main, Stock US, Futures...">
         </div>
         <div class="field full">
-          <label>STARTING BALANCE ($)</label>
+          <label for="w-balance">STARTING BALANCE ($)</label>
           <input type="number" id="w-balance" step="any" placeholder="10000">
         </div>
       </div>
@@ -431,16 +432,16 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">NEW PORTFOLIO</div>
-      <button class="btn-close" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')">✕</button>
+      <button class="btn-close" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field full">
-          <label>PORTFOLIO NAME</label>
+          <label for="np-name">PORTFOLIO NAME</label>
           <input type="text" id="np-name" placeholder="Crypto Main, Stock US...">
         </div>
         <div class="field full">
-          <label>STARTING BALANCE ($)</label>
+          <label for="np-balance">STARTING BALANCE ($)</label>
           <input type="number" id="np-balance" step="any" placeholder="10000">
         </div>
       </div>
@@ -457,16 +458,16 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">PORTFOLIO SETTINGS</div>
-      <button class="btn-close" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')">✕</button>
+      <button class="btn-close" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field full">
-          <label>PORTFOLIO NAME</label>
+          <label for="ps-name">PORTFOLIO NAME</label>
           <input type="text" id="ps-name">
         </div>
         <div class="field full">
-          <label>STARTING BALANCE ($)</label>
+          <label for="ps-balance">STARTING BALANCE ($)</label>
           <input type="number" id="ps-balance" step="any">
         </div>
       </div>

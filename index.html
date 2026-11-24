@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.4">
+  <link rel="stylesheet" href="style.css?v=2.5">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -543,6 +543,79 @@
   </div>
 </div>
 
+<!-- ===== ORDER DETAILS / INSPECTOR MODAL ===== -->
+<div class="modal-overlay" id="tradeDetailsOverlay" onclick="closeTradeDetails(event)">
+  <div class="modal modal-trade-details" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="details-header-title-wrap">
+        <span class="details-badge-label">ORDER INSPECTOR</span>
+        <div class="details-title-row">
+          <span class="modal-title" id="dtlSym">—</span>
+          <span class="feed-dir-pill" id="dtlDir">—</span>
+        </div>
+      </div>
+      <button class="btn-close" onclick="closeTradeDetailsDirect()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Big P&L Hero Card -->
+      <div class="details-pnl-hero" id="dtlPnlHero">
+        <div class="dtl-pnl-label">NET REALIZED P&L</div>
+        <div class="dtl-pnl-num" id="dtlPnlNum">$0.00</div>
+        <div class="dtl-pnl-sub" id="dtlPnlSub">+0.00% • 0.00R</div>
+      </div>
+
+      <!-- Key Details Grid -->
+      <div class="details-info-grid">
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">TRADE DATE</div>
+          <div class="dtl-item-val" id="dtlDate">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">POSITION SIZE</div>
+          <div class="dtl-item-val" id="dtlSize">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">ENTRY PRICE</div>
+          <div class="dtl-item-val" id="dtlEntry">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">EXIT PRICE</div>
+          <div class="dtl-item-val" id="dtlExit">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">STOP LOSS</div>
+          <div class="dtl-item-val" id="dtlSl">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">TAKE PROFIT</div>
+          <div class="dtl-item-val" id="dtlTp">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">ACTUAL R-MULTIPLE</div>
+          <div class="dtl-item-val" id="dtlR">—</div>
+        </div>
+        <div class="dtl-grid-item">
+          <div class="dtl-item-label">STRATEGY / TAG</div>
+          <div class="dtl-item-val" id="dtlTag">—</div>
+        </div>
+      </div>
+
+      <!-- Setup & Notes Section -->
+      <div class="dtl-notes-card">
+        <div class="dtl-notes-label">SETUP / EXECUTION NOTES</div>
+        <div class="dtl-notes-body" id="dtlNote">—</div>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;justify-content:space-between">
+      <button class="btn-ghost" style="color:var(--red);border-color:rgba(255,69,96,0.3)" id="dtlBtnDelete" onclick="deleteFromDetails()">🗑 Delete Trade</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" onclick="closeTradeDetailsDirect()">Close</button>
+        <button class="btn-accent" id="dtlBtnEdit" onclick="editFromDetails()">✏ Edit Trade</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== NOTION EXPORT MODAL ===== -->
 <div class="modal-overlay" id="notionOverlay" onclick="closeNotion(event)">
   <div class="modal">
@@ -753,14 +826,14 @@
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/config.js?v=2.4"></script>    <!-- state, helpers, Supabase init -->
-<script src="js/db.js?v=2.4"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=2.4"></script>      <!-- login / register / logout -->
-<script src="js/portfolio.js?v=2.4"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=2.4"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.4"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=2.4"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=2.4"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/config.js?v=2.5"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js?v=2.5"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js?v=2.5"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js?v=2.5"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js?v=2.5"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=2.5"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js?v=2.5"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/ui.js?v=2.5"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>

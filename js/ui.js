@@ -23,12 +23,14 @@ function initAppListeners() {
   });
 
   initEquityHover();
+  initBentoAnimations();
 }
 
 // ─── GLOBAL KEYBOARD SHORTCUTS ────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeAllExpandedCards();
+    closeTradeDetailsDirect();
     closeModalDirect();
     closeImportModalDirect();
     document.getElementById('notionOverlay')?.classList.remove('open');
@@ -484,6 +486,8 @@ function renderStreak() {
 }
 
 // ─── HEATMAP (CALENDAR MATRIX) ────────────────────────────────────────────────
+let selectedHeatmapDate = null;
+
 function changeHeatmapMonth(offset) {
   heatmapDate = new Date(heatmapDate.getFullYear(), heatmapDate.getMonth() + offset, 1);
   renderHeatmap();
@@ -568,7 +572,11 @@ function renderHeatmap() {
       ? `${dateStr}: ${fmtNum(val)} (${count} trades: ${info.wins}W / ${info.losses}L)`
       : dateStr;
 
-    html += `<div class="hmap-day-cell" style="background:${bg};border-color:${border};" onclick="filterByDate('${dateStr}')" title="${titleAttr}">
+    const isSelected = selectedHeatmapDate === dateStr;
+    const selectedClass = isSelected ? ' selected' : '';
+    const selectedBorder = isSelected ? (isLight ? '#0f172a' : '#ffffff') : border;
+
+    html += `<div class="hmap-day-cell${selectedClass}" style="background:${bg};border-color:${selectedBorder};" onclick="filterByDate('${dateStr}')" title="${titleAttr}">
       <span class="hmap-day-num">${d}</span>
       ${pnlStr}
       ${dotsHtml}
@@ -582,38 +590,65 @@ function renderHeatmap() {
 
 // ─── FILTER BY HEATMAP DATE CLICK ─────────────────────────────────────────────
 function filterByDate(dateStr) {
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    if (searchInput.value === dateStr) {
-      searchInput.value = '';
-      toast(`Cleared date filter`);
-    } else {
-      searchInput.value = dateStr;
-      toast(`Filtered for ${dateStr}`);
-    }
-    currentPage = 1;
-    renderTable();
-    renderRecentFeed();
+  if (selectedHeatmapDate === dateStr) {
+    selectedHeatmapDate = null;
+    toast(`Cleared date filter`);
+  } else {
+    selectedHeatmapDate = dateStr;
+    toast(`Filtered for ${dateStr}`);
   }
+  renderHeatmap();
+  renderRecentFeed();
+  renderTable();
+}
+
+function clearHeatmapDateFilter() {
+  selectedHeatmapDate = null;
+  toast(`Showing all recent trades`);
+  renderHeatmap();
+  renderRecentFeed();
+  renderTable();
 }
 
 // ─── RECENT TRADES FEED (LIVE STREAM) ─────────────────────────────────────────
 function renderRecentFeed() {
   const container = document.getElementById('recentTradesFeed');
   if (!container) return;
-  const filtered = getFiltered();
   const emptyEl = document.getElementById('emptyStateCompact');
   
-  if (!filtered.length) {
-    container.innerHTML = '';
-    if (emptyEl) emptyEl.style.display = 'block';
+  let list = getFiltered();
+  let bannerHtml = '';
+
+  if (selectedHeatmapDate) {
+    const dayTrades = list.filter(t => t.date === selectedHeatmapDate);
+    const dayPnl = dayTrades.reduce((acc, t) => acc + pnl(t), 0);
+    const isPos = dayPnl >= 0;
+    
+    bannerHtml = `
+      <div class="feed-active-date-banner">
+        <div class="feed-date-info">
+          <div class="feed-date-title">📅 ${selectedHeatmapDate}</div>
+          <div class="feed-date-meta">
+            <span>${dayTrades.length} Trade${dayTrades.length !== 1 ? 's' : ''}</span>
+            <span class="feed-date-sep">•</span>
+            <span class="feed-date-pnl ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : ''}${fmtAbs(dayPnl)} USD</span>
+          </div>
+        </div>
+        <button class="btn-clear-date-filter" onclick="clearHeatmapDateFilter()" title="Show all trades">✕ Reset</button>
+      </div>`;
+    list = dayTrades;
+  }
+
+  if (!list.length) {
+    container.innerHTML = bannerHtml + `<div class="feed-empty-sub">No trades found ${selectedHeatmapDate ? `on ${selectedHeatmapDate}` : 'with current filters'}</div>`;
+    if (emptyEl) emptyEl.style.display = selectedHeatmapDate ? 'none' : 'block';
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
 
-  // Take the most recent 12 trades
-  const recent = filtered.slice(0, 12);
-  container.innerHTML = recent.map(t => {
+  // Take the most recent 15 trades (or all trades if filtered by date)
+  const recent = selectedHeatmapDate ? list : list.slice(0, 15);
+  container.innerHTML = bannerHtml + recent.map(t => {
     const p = pnl(t);
     const win = p > 0;
     const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
@@ -622,7 +657,7 @@ function renderRecentFeed() {
       : rVal < 0 ? `<span class="feed-r-badge neg">${rVal.toFixed(2)}R</span>`
       : `<span class="feed-r-badge">0.00R</span>`;
 
-    return `<div class="feed-trade-item" onclick="editTrade('${t.id}')" title="Click to edit ${escHtml(t.sym)}">
+    return `<div class="feed-trade-item" onclick="openTradeDetails('${t.id}')" title="Click to view details of ${escHtml(t.sym)}">
       <div class="feed-item-left">
         <span class="feed-sym-badge">${escHtml(t.sym)}</span>
         <span class="feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span>
@@ -631,6 +666,7 @@ function renderRecentFeed() {
       <div class="feed-item-right">
         <span class="feed-pnl-val ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span>
         ${rBadge}
+        <button class="btn-trade-dots" onclick="event.stopPropagation(); openTradeDetails('${t.id}')" title="Order details">•••</button>
       </div>
     </div>`;
   }).join('');
@@ -681,10 +717,7 @@ function toggleExpandCard(cardId) {
   const isExpanded = card.classList.contains('is-expanded');
   
   // Close any already open expanded card
-  document.querySelectorAll('.bento-card.is-expanded').forEach(c => {
-    c.classList.remove('is-expanded');
-  });
-  document.body.classList.remove('card-modal-open');
+  closeAllExpandedCards();
 
   let backdrop = document.getElementById('cardExpandBackdrop');
   if (!backdrop) {
@@ -692,27 +725,20 @@ function toggleExpandCard(cardId) {
     backdrop.id = 'cardExpandBackdrop';
     backdrop.className = 'card-expand-backdrop';
     backdrop.onclick = closeAllExpandedCards;
-    document.body.appendChild(backdrop);
+    const parent = document.getElementById('appWrapper') || document.body;
+    parent.appendChild(backdrop);
   }
 
   if (!isExpanded) {
     card.classList.add('is-expanded');
     document.body.classList.add('card-modal-open');
     backdrop.classList.add('active');
-    
-    // Auto-scroll inside card to top
     card.scrollTop = 0;
     
-    // Re-draw chart on equity card expand
     if (cardId === 'cardEquity') {
       setTimeout(drawEquity, 200);
     }
     toast(`Extended view mode`);
-  } else {
-    backdrop.classList.remove('active');
-    if (cardId === 'cardEquity') {
-      setTimeout(drawEquity, 200);
-    }
   }
 }
 
@@ -727,4 +753,100 @@ function closeAllExpandedCards() {
   if (hadExpanded && hadExpanded.id === 'cardEquity') {
     setTimeout(drawEquity, 200);
   }
+}
+
+// ─── ORDER DETAILS INSPECTOR MODAL ────────────────────────────────────────────
+let activeDetailTradeId = null;
+
+function openTradeDetails(tradeId) {
+  const trades = getActiveTrades();
+  const t = trades.find(x => x.id === tradeId);
+  if (!t) return;
+  activeDetailTradeId = tradeId;
+
+  const p = pnl(t);
+  const pct = pnlPct(t);
+  const win = p > 0;
+  const isZero = p === 0;
+
+  // Header
+  const dtlSym = document.getElementById('dtlSym');
+  if (dtlSym) dtlSym.textContent = t.sym;
+  const dtlDir = document.getElementById('dtlDir');
+  if (dtlDir) {
+    dtlDir.className = `feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}`;
+    dtlDir.textContent = (t.dir === 'Long' ? '▲ LONG' : '▼ SHORT');
+  }
+
+  // P&L Hero
+  const dtlPnlNum = document.getElementById('dtlPnlNum');
+  if (dtlPnlNum) {
+    dtlPnlNum.textContent = `${p >= 0 ? '+' : ''}${fmtAbs(p)} USD`;
+    dtlPnlNum.className = `dtl-pnl-num ${win ? 'pos' : (isZero ? '' : 'neg')}`;
+  }
+  const dtlPnlSub = document.getElementById('dtlPnlSub');
+  if (dtlPnlSub) {
+    const rText = t.actual_r != null && !isNaN(t.actual_r) ? `${Number(t.actual_r).toFixed(2)}R` : '— R';
+    dtlPnlSub.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% Return • ${rText}`;
+  }
+
+  // Grid items
+  const setEl = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text || '—';
+  };
+  setEl('dtlDate', t.date);
+  setEl('dtlSize', `${t.size} units`);
+  setEl('dtlEntry', fmtNum(t.entry));
+  setEl('dtlExit', fmtNum(t.exit));
+  setEl('dtlSl', t.sl ? fmtNum(t.sl) : 'None');
+  setEl('dtlTp', t.tp ? fmtNum(t.tp) : 'None');
+  setEl('dtlR', t.actual_r != null ? `${Number(t.actual_r).toFixed(2)}R` : '—');
+  setEl('dtlTag', t.tag || 'No tag');
+  setEl('dtlNote', t.note ? t.note : 'No notes entered for this trade execution.');
+
+  const overlay = document.getElementById('tradeDetailsOverlay');
+  if (overlay) overlay.classList.add('open');
+}
+
+function closeTradeDetails(e) {
+  if (e && e.target !== e.currentTarget) return;
+  closeTradeDetailsDirect();
+}
+
+function closeTradeDetailsDirect() {
+  const overlay = document.getElementById('tradeDetailsOverlay');
+  if (overlay) overlay.classList.remove('open');
+  activeDetailTradeId = null;
+}
+
+function editFromDetails() {
+  const id = activeDetailTradeId;
+  closeTradeDetailsDirect();
+  if (id) editTrade(id);
+}
+
+async function deleteFromDetails() {
+  const id = activeDetailTradeId;
+  if (!id) return;
+  if (!confirm('Are you sure you want to delete this trade?')) return;
+  closeTradeDetailsDirect();
+  await deleteTrade(id);
+}
+
+// ─── BENTO MOUSE INTERACTION & ANIMATIONS ────────────────────────────────────
+function initBentoAnimations() {
+  const container = document.getElementById('bentoDashboardView');
+  if (!container) return;
+  
+  container.addEventListener('mousemove', e => {
+    const cards = container.querySelectorAll('.bento-card');
+    cards.forEach(card => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+    });
+  });
 }

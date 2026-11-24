@@ -9,7 +9,10 @@ function initAppListeners() {
     themeToggle.addEventListener('click', () => {
       document.documentElement.classList.toggle('light');
       localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
-      setTimeout(drawEquity, 50);
+      setTimeout(() => {
+        drawEquity();
+        renderHeatmap();
+      }, 50);
     });
   }
 
@@ -25,6 +28,7 @@ function initAppListeners() {
 // ─── GLOBAL KEYBOARD SHORTCUTS ────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    closeAllExpandedCards();
     closeModalDirect();
     closeImportModalDirect();
     document.getElementById('notionOverlay')?.classList.remove('open');
@@ -542,18 +546,18 @@ function renderHeatmap() {
     let dotsHtml = '';
 
     if (info && count > 0) {
-      const intensity = Math.min(0.85, 0.20 + (Math.abs(val) / maxAbs) * 0.70);
+      const intensity = Math.min(0.88, 0.22 + (Math.abs(val) / maxAbs) * 0.68);
       if (val > 0) {
-        bg = `rgba(60,255,160,${intensity.toFixed(2)})`;
-        border = `rgba(60,255,160,0.45)`;
-        pnlStr = `<span class="hmap-day-pnl pos">+${fmtAbs(val, 0)}</span>`;
+        bg = isLight ? `rgba(22,163,74,${intensity.toFixed(2)})` : `rgba(60,255,160,${intensity.toFixed(2)})`;
+        border = isLight ? `rgba(22,163,74,0.55)` : `rgba(60,255,160,0.55)`;
+        pnlStr = `<span class="hmap-day-pnl pos">+${fmtAbs(Math.abs(val), 0)} USD</span>`;
       } else if (val < 0) {
-        bg = `rgba(255,69,96,${intensity.toFixed(2)})`;
-        border = `rgba(255,69,96,0.45)`;
-        pnlStr = `<span class="hmap-day-pnl neg">-${fmtAbs(val, 0)}</span>`;
+        bg = isLight ? `rgba(220,38,38,${intensity.toFixed(2)})` : `rgba(255,69,96,${intensity.toFixed(2)})`;
+        border = isLight ? `rgba(220,38,38,0.55)` : `rgba(255,69,96,0.55)`;
+        pnlStr = `<span class="hmap-day-pnl neg">-${fmtAbs(Math.abs(val), 0)} USD</span>`;
       } else {
-        bg = `rgba(255,255,255,0.08)`;
-        pnlStr = `<span class="hmap-day-pnl" style="color:var(--muted)">0</span>`;
+        bg = isLight ? `rgba(0,0,0,0.06)` : `rgba(255,255,255,0.08)`;
+        pnlStr = `<span class="hmap-day-pnl zero">0 USD</span>`;
       }
       dotsHtml = `<div class="hmap-day-dots">` + 
         info.trades.slice(0, 4).map(t => `<div class="hmap-dot ${pnl(t) > 0 ? 'win' : 'loss'}"></div>`).join('') +
@@ -667,5 +671,60 @@ function scrollToBentoCard(cardId) {
       el.style.borderColor = '';
       el.style.boxShadow = '';
     }, 1500);
+  }
+}
+
+// ─── CARD EXPAND / FULLSCREEN EXTEND ─────────────────────────────────────────
+function toggleExpandCard(cardId) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const isExpanded = card.classList.contains('is-expanded');
+  
+  // Close any already open expanded card
+  document.querySelectorAll('.bento-card.is-expanded').forEach(c => {
+    c.classList.remove('is-expanded');
+  });
+  document.body.classList.remove('card-modal-open');
+
+  let backdrop = document.getElementById('cardExpandBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'cardExpandBackdrop';
+    backdrop.className = 'card-expand-backdrop';
+    backdrop.onclick = closeAllExpandedCards;
+    document.body.appendChild(backdrop);
+  }
+
+  if (!isExpanded) {
+    card.classList.add('is-expanded');
+    document.body.classList.add('card-modal-open');
+    backdrop.classList.add('active');
+    
+    // Auto-scroll inside card to top
+    card.scrollTop = 0;
+    
+    // Re-draw chart on equity card expand
+    if (cardId === 'cardEquity') {
+      setTimeout(drawEquity, 200);
+    }
+    toast(`Extended view mode`);
+  } else {
+    backdrop.classList.remove('active');
+    if (cardId === 'cardEquity') {
+      setTimeout(drawEquity, 200);
+    }
+  }
+}
+
+function closeAllExpandedCards() {
+  const hadExpanded = document.querySelector('.bento-card.is-expanded');
+  document.querySelectorAll('.bento-card.is-expanded').forEach(c => {
+    c.classList.remove('is-expanded');
+  });
+  document.body.classList.remove('card-modal-open');
+  const backdrop = document.getElementById('cardExpandBackdrop');
+  if (backdrop) backdrop.classList.remove('active');
+  if (hadExpanded && hadExpanded.id === 'cardEquity') {
+    setTimeout(drawEquity, 200);
   }
 }

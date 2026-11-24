@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.3">
+  <link rel="stylesheet" href="style.css?v=2.4">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -230,6 +230,10 @@
               <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
               <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
               <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30D</button>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardEquity')" title="Extend Fullscreen" aria-label="Extend">
+                <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+              </button>
             </div>
           </div>
           
@@ -252,10 +256,16 @@
                 <span class="bento-card-tag green">PERFORMANCE MATRIX</span>
                 <h3 class="bento-card-title">Trading P&L Heatmap</h3>
               </div>
-              <div class="heatmap-nav-controls" id="heatmapNavControls">
-                <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(-1)" aria-label="Previous month">◀</button>
-                <span id="heatmapMonthTitle" class="heatmap-month-title">NOVEMBER 2026</span>
-                <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(1)" aria-label="Next month">▶</button>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="heatmap-nav-controls" id="heatmapNavControls">
+                  <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(-1)" aria-label="Previous month">◀</button>
+                  <span id="heatmapMonthTitle" class="heatmap-month-title">NOVEMBER 2026</span>
+                  <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(1)" aria-label="Next month">▶</button>
+                </div>
+                <button class="btn-extend-card" onclick="toggleExpandCard('cardHeatmap')" title="Extend Fullscreen" aria-label="Extend">
+                  <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                  <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+                </button>
               </div>
             </div>
             
@@ -276,6 +286,10 @@
                 <span class="bento-card-tag cyan">EXECUTION INTELLIGENCE</span>
                 <h3 class="bento-card-title">Win / Loss & Symbols</h3>
               </div>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardAnalytics')" title="Extend Fullscreen" aria-label="Extend">
+                <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+              </button>
             </div>
             
             <div class="bento-analytics-content">
@@ -301,7 +315,13 @@
               <span class="bento-card-tag orange">MY PORTFOLIOS</span>
               <h3 class="bento-card-title">Trading Accounts</h3>
             </div>
-            <button class="btn-ghost btn-sm-pill" onclick="openNewPortfolioModal()" title="Add new portfolio">+ New</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn-ghost btn-sm-pill" onclick="openNewPortfolioModal()" title="Add new portfolio">+ New</button>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardAccounts')" title="Extend Fullscreen" aria-label="Extend">
+                <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+              </button>
+            </div>
           </div>
           
           <!-- Active Portfolio Virtual Card -->
@@ -343,7 +363,13 @@
               <span class="bento-card-tag">LIVE EXECUTION</span>
               <h3 class="bento-card-title">Recent Trades</h3>
             </div>
-            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')">View All →</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')">View All →</button>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardTrades')" title="Extend Fullscreen" aria-label="Extend">
+                <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+              </button>
+            </div>
           </div>
           
           <!-- Quick Filter Pills for Feed -->
@@ -727,14 +753,14 @@
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/config.js?v=2.3"></script>    <!-- state, helpers, Supabase init -->
-<script src="js/db.js?v=2.3"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=2.3"></script>      <!-- login / register / logout -->
-<script src="js/portfolio.js?v=2.3"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=2.3"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.3"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=2.3"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=2.3"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/config.js?v=2.4"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js?v=2.4"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js?v=2.4"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js?v=2.4"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js?v=2.4"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=2.4"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js?v=2.4"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/ui.js?v=2.4"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>

@@ -15,6 +15,7 @@ async function initAuth() {
 }
 
 function showAuthScreen() {
+  if (window.ScrollyIntro) window.ScrollyIntro.teardown();     // logged out mid-intro
   document.getElementById('authScreen').style.display  = 'flex';
   document.getElementById('appWrapper').style.display  = 'none';
   applyTurnstileMode();
@@ -52,6 +53,8 @@ function resetTurnstile() {
 }
 
 async function showApp() {
+  // 3D intro (first visit only). Idempotent: showApp() also runs on every auth event.
+  if (window.ScrollyIntro) window.ScrollyIntro.prepare();
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appWrapper').style.display  = 'block';
   document.getElementById('userEmail').textContent = currentUser.email;

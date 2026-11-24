@@ -936,3 +936,91 @@ main {
 @media (max-width: 700px) {
   .filter-sep { display: none; }
 }
+
+/* ═══ SPRINT 3: 3D SCROLLYTELLING INTRO ═══════════════════════════════════════
+   The intro is always dark (neon on light would wash out), so the colour tokens are
+   re-declared here instead of inheriting the light theme.                         */
+.scrolly-container {
+  display: none; position: relative; height: 600vh;
+  --bg: #05070b; --bg2: #0d1018; --bg3: #131720; --text: #e8eaf0; --muted: #8c93a4;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --accent: #c8f03c; --green: #3cffa0; --blue: #38bdf8; --red: #ff4560;
+  color: var(--text);
+}
+/* while it plays: the dashboard slides up 100vh underneath the last screen so its header is
+   visible (and dockable) when the story ends */
+html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
+
+/* dark backdrop for the first 500vh only — the final 100vh is transparent so the dashboard shows through */
+.scrolly-bg {
+  position: absolute; top: 0; left: 0; right: 0; height: calc(100% - 100vh);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 38%, rgba(60,255,160,0.09), transparent 62%),
+    radial-gradient(ellipse 60% 50% at 82% 82%, rgba(56,189,248,0.07), transparent 60%),
+    #05070b;
+}
+/* z-index 50: above the dashboard header (z 10) so the coin is never painted under it, below the ticker (z 100) */
+#webgl-canvas { display: block; position: sticky; top: 0; left: 0; width: 100%; height: 100vh; z-index: 50; pointer-events: none; }
+
+/* text layer: pinned like the canvas and pulled up over it. z 60 (above the 3D) so the glass cards really blur the scene
+   behind them and the terrain wire never cuts through the copy */
+.scrolly-sections { position: sticky; top: 0; height: 100vh; margin-top: -100vh; z-index: 60; pointer-events: none; }
+.scrolly-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 8vw; }
+
+#frame-1 { flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; padding: 0 6vw 13vh; }
+.hero-title {
+  font-family: var(--display); font-weight: 800; font-size: clamp(44px, 11vw, 160px);
+  line-height: 0.95; letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #ffffff 25%, rgba(255,255,255,0.28));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero-subtitle { margin-top: 16px; font-size: clamp(10px, 1.3vw, 15px); font-weight: 600; letter-spacing: 0.42em; color: var(--muted); }
+.scroll-indicator {
+  position: absolute; bottom: 4.5vh; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: 0.32em; color: var(--muted);
+}
+.scroll-chevron { color: var(--accent); font-size: 12px; animation: scrolly-bob 1.6s ease-in-out infinite; }
+@keyframes scrolly-bob { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(6px); opacity: 1; } }
+
+.scrolly-card {
+  max-width: min(440px, 84vw); padding: 24px; border-radius: 8px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: rgba(13, 16, 24, 0.7); border: 1px solid var(--border2);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+.scrolly-card.right { margin-left: auto; }
+.badge-tag {
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
+  color: var(--blue); border: 1px solid rgba(56,189,248,0.4); background: rgba(56,189,248,0.08);
+}
+.badge-tag.green { color: var(--green); border-color: rgba(60,255,160,0.4); background: rgba(60,255,160,0.08); }
+.scrolly-card h2 { margin: 14px 0 10px; font-family: var(--display); font-weight: 800; font-size: clamp(22px, 2.6vw, 34px); line-height: 1.1; letter-spacing: -0.01em; }
+.scrolly-card p { font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+.btn-skip { position: fixed; top: 16px; right: 16px; z-index: 999; pointer-events: auto; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.scrolly-progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 998; pointer-events: none; background: rgba(255,255,255,0.06); }
+.scrolly-progress-fill {
+  height: 100%; transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(90deg, var(--green), var(--blue)); box-shadow: 0 0 12px var(--green);
+}
+
+/* while the intro plays: keep dashboard chrome out of the way (the timeline fades the ticker + logo back in) */
+html.intro-active .ticker-wrap { opacity: 0; }
+html.intro-active header .logo-mark { opacity: 0; }
+html.intro-active .modal-overlay { visibility: hidden !important; }   /* e.g. the first-run "create portfolio" modal waits */
+
+/* Lenis (smooth scroll) — it must own scrolling, so the global `html { scroll-behavior: smooth }` has to yield.
+   Lenis only adds .lenis-smooth after a wheel event, so keying on that class alone is not enough: while the
+   intro plays, every programmatic scrollTo() (Lenis, ScrollTrigger's refresh) must be instant. */
+html.intro-active { scroll-behavior: auto !important; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+@media (max-width: 700px) {
+  .scrolly-frame { align-items: flex-end; padding: 0 5vw 9vh; }
+  #frame-1 { padding: 0 5vw 15vh; }
+  .scrolly-card, .scrolly-card.right { max-width: none; width: 100%; margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .scroll-chevron { animation: none; } }

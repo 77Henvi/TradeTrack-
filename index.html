@@ -63,6 +63,45 @@
   </div>
 </div>
 
+<!-- ===== 3D SCROLLYTELLING INTRO ===== -->
+<!-- Hidden unless js/scrolly3d.js decides to play it (first visit, WebGL ok, motion allowed). -->
+<div id="scrolly-container" class="scrolly-container" role="region" aria-label="TrackTrade introduction">
+  <div class="scrolly-bg" aria-hidden="true"></div>
+  <canvas id="webgl-canvas" aria-hidden="true"></canvas>
+  <button class="btn-ghost btn-skip" id="btn-skip-intro" onclick="skipToDashboard()">SKIP INTRO ✕</button>
+  <div class="scrolly-progress-bar" aria-hidden="true"><div id="scrolly-progress" class="scrolly-progress-fill"></div></div>
+
+  <!-- Floating text overlays for the storyboard frames (frames 2, 5, 7, 8, 9 are purely visual) -->
+  <div class="scrolly-sections">
+    <section class="scrolly-frame" id="frame-1">
+      <h1 class="hero-title">MASTER THE EDGE.</h1>
+      <p class="hero-subtitle">Where every trade becomes data. Where every decision becomes an edge.</p>
+      <div class="scroll-indicator"><span>SCROLL TO ENTER THE SYSTEM</span><div class="scroll-chevron">↓</div></div>
+    </section>
+    <section class="scrolly-frame" id="frame-3">
+      <div class="scrolly-card">
+        <span class="badge-tag">01 / CAPITAL PROTECTION</span>
+        <h2>PROTECT THE DOWNSIDE.</h2>
+        <p>Define your risk before you enter. Set your limits. Never let emotion decide.</p>
+      </div>
+    </section>
+    <section class="scrolly-frame" id="frame-4">
+      <div class="scrolly-card right">
+        <span class="badge-tag green">MEASURE WHAT MATTERS</span>
+        <h2>THINK IN R. NOT MONEY.</h2>
+        <p>Stop chasing numbers. Start measuring execution. Understand your edge through Risk-to-Reward, not account size.</p>
+      </div>
+    </section>
+    <section class="scrolly-frame" id="frame-6">
+      <div class="scrolly-card">
+        <span class="badge-tag">DEEP ANALYTICS</span>
+        <h2>FACE THE NUMBERS. FIND THE TRUTH.</h2>
+        <p>Dissect every trade. Expose every pattern. Your strengths. Your weaknesses. Your true edge.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
 <!-- ===== APP WRAPPER (shown after login) ===== -->
 <div id="appWrapper" style="display:none">
 
@@ -86,11 +125,12 @@
       <span class="logo-mark">▲</span>
       <div>
         <div class="logo-title">TrackTrade!</div>
-        <div class="logo-sub">Track your retirement</div>
+        <div class="logo-sub">THE EDGE IS ENGINEERED</div>
       </div>
     </div>
   </div>
   <div class="header-right">
+    <a href="?intro=1" class="btn-ghost" style="padding:5px 10px;font-size:10px;text-decoration:none" title="Replay 3D Intro">▶ 3D INTRO</a>
     <div class="header-divider"></div>
     <div class="user-info">
       <span class="user-email" id="userEmail"></span>
@@ -509,6 +549,7 @@
 <script src="js/portfolio.js"></script> <!-- portfolio tabs & modals -->
 <script src="js/ticker.js"></script>    <!-- ticker tape & settings -->
 <script src="js/modal.js"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
 <script src="js/ui.js"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->

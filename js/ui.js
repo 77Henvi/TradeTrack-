@@ -33,10 +33,24 @@ document.addEventListener('keydown', e => {
     document.getElementById('newPortfolioOverlay')?.classList.remove('open');
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openModal(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    const s = document.getElementById('searchInput');
+    if (s) { s.focus(); s.select(); }
+  }
 });
 
 // ─── RENDER ALL ───────────────────────────────────────────────────────────────
-function render() { drawEquity(); renderMetrics(); renderTable(); renderBreakdown(); renderSymPerf(); renderStreak(); renderHeatmap(); }
+function render() {
+  drawEquity();
+  renderMetrics();
+  renderTable();
+  renderRecentFeed();
+  renderBreakdown();
+  renderSymPerf();
+  renderStreak();
+  renderHeatmap();
+}
 
 // ─── EQUITY CURVE ─────────────────────────────────────────────────────────────
 function drawEquity() {
@@ -114,6 +128,22 @@ function drawEquity() {
     `<div class="equity-stat"><div class="el">WIN RATE</div><div class="ev ${wr >= 50 ? 'pos' : 'neg'}">${wr.toFixed(1)}%</div></div>` +
     `<div class="equity-stat"><div class="el">MAX DRAWDOWN</div><div class="ev neg">${fmtNum(-Math.abs(maxDD))}</div></div>` +
     `<div class="equity-stat"><div class="el">TRADES</div><div class="ev">${trades.length}</div></div>`;
+
+  // Update Hero Balance Card
+  const port = getActivePortfolio();
+  const allActiveTrades = getActiveTrades();
+  const allTotalPnl = allActiveTrades.reduce((s, t) => s + pnl(t), 0);
+  const curBal = (port?.balance || 0) + allTotalPnl;
+  const portRet = port && port.balance ? (allTotalPnl / port.balance * 100) : 0;
+
+  const heroBalEl = document.getElementById('heroBalanceDisplay');
+  if (heroBalEl) heroBalEl.textContent = `$${fmtAbs(curBal, 2)}`;
+
+  const heroRetEl = document.getElementById('heroReturnBadge');
+  if (heroRetEl) {
+    heroRetEl.textContent = `${portRet >= 0 ? '+' : ''}${portRet.toFixed(2)}%`;
+    heroRetEl.className = `hero-return-badge ${portRet >= 0 ? 'pos' : 'neg'}`;
+  }
 }
 // Redraw when the chart's box changes size (window resize, sidebar/layout shift, rotation) or the device
 // pixel ratio changes (browser zoom, dragging the window to another monitor). One observer, created once.
@@ -449,34 +479,193 @@ function renderStreak() {
     `</div>`;
 }
 
-// ─── HEATMAP ──────────────────────────────────────────────────────────────────
+// ─── HEATMAP (CALENDAR MATRIX) ────────────────────────────────────────────────
 function changeHeatmapMonth(offset) {
-  heatmapDate = new Date(heatmapDate.getFullYear(), heatmapDate.getMonth() + offset, 1); renderHeatmap();
+  heatmapDate = new Date(heatmapDate.getFullYear(), heatmapDate.getMonth() + offset, 1);
+  renderHeatmap();
 }
+
 function renderHeatmap() {
   const isLight = document.documentElement.classList.contains('light');
-  const emptyBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
-  const pnlByDate = {}; getActiveTrades().forEach(t => { pnlByDate[t.date] = (pnlByDate[t.date] || 0) + pnl(t); });
-  const year = heatmapDate.getFullYear(), month = heatmapDate.getMonth();
-  const startDow = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate();
-  const vals = Object.values(pnlByDate).filter(v => v !== 0), maxAbs = vals.length ? Math.max(...vals.map(Math.abs)) : 1;
+  const emptyBg = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)';
+  const trades = getActiveTrades();
+  
+  // Calculate P&L and trades grouped by date
+  const dataByDate = {};
+  trades.forEach(t => {
+    if (!dataByDate[t.date]) dataByDate[t.date] = { pnl: 0, count: 0, wins: 0, losses: 0, trades: [] };
+    const p = pnl(t);
+    dataByDate[t.date].pnl += p;
+    dataByDate[t.date].count += 1;
+    if (p > 0) dataByDate[t.date].wins += 1;
+    else dataByDate[t.date].losses += 1;
+    dataByDate[t.date].trades.push(t);
+  });
 
-  let cells = '';
-  for (let i = 0; i < startDow; i++) cells += `<div class="hmap-cell" style="background:transparent"></div>`;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, val = pnlByDate[dateStr] || 0;
-    const bg = val === 0 ? emptyBg
-      : val > 0 ? `rgba(60,255,160,${Math.min(0.9, 0.15 + (val / maxAbs) * 0.75).toFixed(2)})`
-      : `rgba(255,69,96,${Math.min(0.9, 0.15 + (Math.abs(val) / maxAbs) * 0.75).toFixed(2)})`;
-    cells += `<div class="hmap-cell" style="background:${bg}" title="${val !== 0 ? dateStr + ': ' + fmtNum(val) : dateStr}"></div>`;
+  const year = heatmapDate.getFullYear(), month = heatmapDate.getMonth();
+  // Monday as first day of week: (day + 6) % 7
+  const firstDay = new Date(year, month, 1);
+  const startDow = (firstDay.getDay() + 6) % 7; 
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  const vals = Object.values(dataByDate).map(d => Math.abs(d.pnl)).filter(v => v > 0);
+  const maxAbs = vals.length ? Math.max(...vals) : 1;
+
+  // Month title in header
+  const titleEl = document.getElementById('heatmapMonthTitle');
+  if (titleEl) {
+    titleEl.textContent = heatmapDate.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
   }
 
-  document.getElementById('heatmap').innerHTML =
-    `<div class="hmap-label">${['S','M','T','W','T','F','S'].map(d => `<div class="hmap-day-label">${d}</div>`).join('')}</div>` +
-    `<div class="heatmap-grid">${cells}</div>` +
-    `<div style="display:flex;justify-content:space-between;align-items:center;padding:0 20px 12px;">` +
-    `<button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(-1)" aria-label="Previous month">◀</button>` +
-    `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">${heatmapDate.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}</div>` +
-    `<button class="btn-ghost" style="padding:2px 8px;font-size:10px" onclick="changeHeatmapMonth(1)" aria-label="Next month">▶</button>` +
-    `</div>`;
+  let html = `<div class="hmap-calendar-grid">`;
+  // Day headers (Mon - Sun)
+  const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  dayNames.forEach(d => {
+    html += `<div class="hmap-col-header">${d}</div>`;
+  });
+
+  // Empty cells before start of month
+  for (let i = 0; i < startDow; i++) {
+    html += `<div class="hmap-day-cell empty"></div>`;
+  }
+
+  // Days of current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const info = dataByDate[dateStr];
+    const val = info ? info.pnl : 0;
+    const count = info ? info.count : 0;
+
+    let bg = emptyBg;
+    let border = 'var(--border)';
+    let pnlStr = '';
+    let dotsHtml = '';
+
+    if (info && count > 0) {
+      const intensity = Math.min(0.85, 0.20 + (Math.abs(val) / maxAbs) * 0.70);
+      if (val > 0) {
+        bg = `rgba(60,255,160,${intensity.toFixed(2)})`;
+        border = `rgba(60,255,160,0.45)`;
+        pnlStr = `<span class="hmap-day-pnl pos">+${fmtAbs(val, 0)}</span>`;
+      } else if (val < 0) {
+        bg = `rgba(255,69,96,${intensity.toFixed(2)})`;
+        border = `rgba(255,69,96,0.45)`;
+        pnlStr = `<span class="hmap-day-pnl neg">-${fmtAbs(val, 0)}</span>`;
+      } else {
+        bg = `rgba(255,255,255,0.08)`;
+        pnlStr = `<span class="hmap-day-pnl" style="color:var(--muted)">0</span>`;
+      }
+      dotsHtml = `<div class="hmap-day-dots">` + 
+        info.trades.slice(0, 4).map(t => `<div class="hmap-dot ${pnl(t) > 0 ? 'win' : 'loss'}"></div>`).join('') +
+        `</div>`;
+    }
+
+    const titleAttr = info 
+      ? `${dateStr}: ${fmtNum(val)} (${count} trades: ${info.wins}W / ${info.losses}L)`
+      : dateStr;
+
+    html += `<div class="hmap-day-cell" style="background:${bg};border-color:${border};" onclick="filterByDate('${dateStr}')" title="${titleAttr}">
+      <span class="hmap-day-num">${d}</span>
+      ${pnlStr}
+      ${dotsHtml}
+    </div>`;
+  }
+
+  html += `</div>`;
+  const container = document.getElementById('heatmap');
+  if (container) container.innerHTML = html;
+}
+
+// ─── FILTER BY HEATMAP DATE CLICK ─────────────────────────────────────────────
+function filterByDate(dateStr) {
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    if (searchInput.value === dateStr) {
+      searchInput.value = '';
+      toast(`Cleared date filter`);
+    } else {
+      searchInput.value = dateStr;
+      toast(`Filtered for ${dateStr}`);
+    }
+    currentPage = 1;
+    renderTable();
+    renderRecentFeed();
+  }
+}
+
+// ─── RECENT TRADES FEED (LIVE STREAM) ─────────────────────────────────────────
+function renderRecentFeed() {
+  const container = document.getElementById('recentTradesFeed');
+  if (!container) return;
+  const filtered = getFiltered();
+  const emptyEl = document.getElementById('emptyStateCompact');
+  
+  if (!filtered.length) {
+    container.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Take the most recent 12 trades
+  const recent = filtered.slice(0, 12);
+  container.innerHTML = recent.map(t => {
+    const p = pnl(t);
+    const win = p > 0;
+    const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
+    const rBadge = isNaN(rVal) ? ''
+      : rVal > 0 ? `<span class="feed-r-badge pos">+${rVal.toFixed(2)}R</span>`
+      : rVal < 0 ? `<span class="feed-r-badge neg">${rVal.toFixed(2)}R</span>`
+      : `<span class="feed-r-badge">0.00R</span>`;
+
+    return `<div class="feed-trade-item" onclick="editTrade('${t.id}')" title="Click to edit ${escHtml(t.sym)}">
+      <div class="feed-item-left">
+        <span class="feed-sym-badge">${escHtml(t.sym)}</span>
+        <span class="feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span>
+        <span class="feed-date-text">${escHtml(t.date)}</span>
+      </div>
+      <div class="feed-item-right">
+        <span class="feed-pnl-val ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span>
+        ${rBadge}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── VIEW SWITCHER & NAVIGATION ───────────────────────────────────────────────
+function switchMainView(view) {
+  const dashView = document.getElementById('bentoDashboardView');
+  const journalView = document.getElementById('fullJournalView');
+  const btnDash = document.getElementById('navBtnDashboard');
+  const btnJournal = document.getElementById('navBtnJournal');
+
+  if (view === 'journal') {
+    if (dashView) dashView.style.display = 'none';
+    if (journalView) journalView.style.display = 'block';
+    if (btnDash) btnDash.classList.remove('active');
+    if (btnJournal) btnJournal.classList.add('active');
+    renderTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    if (dashView) dashView.style.display = 'grid';
+    if (journalView) journalView.style.display = 'none';
+    if (btnDash) btnDash.classList.add('active');
+    if (btnJournal) btnJournal.classList.remove('active');
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function scrollToBentoCard(cardId) {
+  switchMainView('dashboard');
+  const el = document.getElementById(cardId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.borderColor = 'var(--green)';
+    el.style.boxShadow = '0 0 25px rgba(60,255,160,0.3)';
+    setTimeout(() => {
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+    }, 1500);
+  }
 }

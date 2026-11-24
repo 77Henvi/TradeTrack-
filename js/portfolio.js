@@ -7,7 +7,30 @@ function switchPortfolio(id) {
   activePortfolioId = id; saveActivePortfolio(); currentPage = 1; renderPortfolioTabs(); render();
 }
 function renderPortfolioTabs() {
-  const container = document.getElementById('portfolioTabs'); if (!container) return;
+  const container = document.getElementById('portfolioTabs');
+  const activePort = getActivePortfolio();
+
+  // Sync with Bento Virtual Trading Card
+  if (activePort) {
+    const nameEl = document.getElementById('cardAccountName');
+    if (nameEl) nameEl.textContent = activePort.name;
+
+    const trades = getActiveTrades();
+    const totalPnl = trades.reduce((s, t) => s + pnl(t), 0);
+    const curBal = (activePort.balance || 0) + totalPnl;
+    const retPct = activePort.balance ? (totalPnl / activePort.balance * 100) : 0;
+
+    const balEl = document.getElementById('cardBalanceDisplay');
+    if (balEl) balEl.textContent = `$${fmtAbs(curBal, 2)}`;
+
+    const retEl = document.getElementById('cardReturnPill');
+    if (retEl) {
+      retEl.textContent = `${retPct >= 0 ? '+' : ''}${retPct.toFixed(2)}%`;
+      retEl.style.color = retPct >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+  }
+
+  if (!container) return;
   container.innerHTML = portfolios.map(p =>
     `<button class="portfolio-tab ${p.id === activePortfolioId ? 'active' : ''}" onclick="switchPortfolio('${p.id}')">${escHtml(p.name)}</button>`
   ).join('') + `<button class="portfolio-tab-add" onclick="openNewPortfolioModal()" title="New portfolio" aria-label="Add new portfolio">+</button>`;

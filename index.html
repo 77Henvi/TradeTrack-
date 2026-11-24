@@ -111,139 +111,316 @@
 <!-- BACKGROUND GRID -->
 <div class="bg-grid"></div>
 
-<!-- TICKER TAPE -->
-<div class="ticker-wrap">
-  <div class="ticker-scroll-area">
-    <div class="ticker" id="ticker"></div>
+<!-- APP WRAPPER LAYOUT -->
+<div class="app-layout">
+
+  <!-- 1. LEFT SLIM NAV RAIL -->
+  <aside class="app-nav-rail" aria-label="Main Navigation">
+    <div class="nav-rail-top">
+      <div class="nav-logo logo-mark" title="TrackTrade" onclick="switchMainView('dashboard')">▲</div>
+    </div>
+    
+    <nav class="nav-rail-menu">
+      <button class="nav-rail-btn active" id="navBtnDashboard" onclick="switchMainView('dashboard')" title="Dashboard Overview">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-rail-tooltip">Dashboard</span>
+      </button>
+      <button class="nav-rail-btn" id="navBtnJournal" onclick="switchMainView('journal')" title="Full Trade Journal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span class="nav-rail-tooltip">Journal</span>
+      </button>
+      <button class="nav-rail-btn" id="navBtnHeatmap" onclick="scrollToBentoCard('cardHeatmap')" title="Trading Heatmap">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="nav-rail-tooltip">Heatmap</span>
+      </button>
+      <button class="nav-rail-btn" id="navBtnAnalytics" onclick="scrollToBentoCard('cardAnalytics')" title="Analytics & Breakdown">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-rail-tooltip">Analytics</span>
+      </button>
+      <button class="nav-rail-btn" onclick="openPortfolioSettings()" title="Portfolio Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-rail-tooltip">Settings</span>
+      </button>
+    </nav>
+    
+    <div class="nav-rail-bottom">
+      <a href="?intro=1" class="nav-rail-btn" title="Replay 3D Intro">
+        <span style="font-size:11px;font-weight:800;letter-spacing:-0.5px">3D</span>
+        <span class="nav-rail-tooltip">3D Intro</span>
+      </a>
+      <div class="theme-toggle" id="themeToggle" title="Toggle dark / light">
+        <div class="toggle-ball"></div>
+      </div>
+      <button class="nav-rail-btn nav-logout-btn" onclick="logout()" title="Logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="nav-rail-tooltip">Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 2. MAIN APP CONTENT AREA -->
+  <div class="app-main-content">
+    
+    <!-- TOP COMMAND HEADER -->
+    <header class="bento-header">
+      <div class="bento-header-left">
+        <div class="logo-block mobile-only">
+          <span class="logo-mark">▲</span>
+          <span class="logo-title">TrackTrade</span>
+        </div>
+        <div class="search-command-pill">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="bento-search-input" id="searchInput" placeholder="Search trades, symbols, setups..." aria-label="Search trades">
+          <kbd class="shortcut-badge">⌘ K</kbd>
+        </div>
+      </div>
+      
+      <div class="bento-header-right">
+        <!-- Compact Live FX Ticker -->
+        <div class="ticker-compact-wrap">
+          <div class="ticker" id="ticker"></div>
+        </div>
+        
+        <div class="header-divider"></div>
+        
+        <!-- Live Clock Badge -->
+        <div class="live-clock-badge">
+          <div class="live-dot"></div>
+          <span class="live-label" id="liveTime">—</span>
+        </div>
+        
+        <div class="header-divider"></div>
+        
+        <!-- User Profile Pill -->
+        <div class="user-profile-pill">
+          <div class="user-avatar-circle">TR</div>
+          <div class="user-profile-info">
+            <span class="user-email" id="userEmail"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- BENTO GRID OVERVIEW -->
+    <div class="bento-container" id="bentoDashboardView">
+      
+      <!-- LEFT SECTION (HERO CURVE + HEATMAP & ANALYTICS) -->
+      <div class="bento-col-left">
+        
+        <!-- CARD A: TOTAL EQUITY & HERO CURVE -->
+        <section class="bento-card bento-hero-curve" id="cardEquity">
+          <div class="bento-card-header">
+            <div class="hero-balance-wrap">
+              <span class="bento-label">TOTAL PORTFOLIO BALANCE</span>
+              <div class="hero-balance-row">
+                <span class="hero-balance-num" id="heroBalanceDisplay">$0.00</span>
+                <span class="hero-return-badge" id="heroReturnBadge">+0.00%</span>
+              </div>
+            </div>
+            
+            <div class="timeframe-pill-group">
+              <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)">ALL TIME</button>
+              <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
+              <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
+              <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30D</button>
+            </div>
+          </div>
+          
+          <div class="equity-canvas-wrap" style="position:relative">
+            <canvas id="equityCanvas"></canvas>
+            <div id="equityTooltip" class="chart-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:100"></div>
+          </div>
+          
+          <!-- Integrated Hero KPI Footer -->
+          <div class="equity-stats" id="equityStats"></div>
+        </section>
+
+        <!-- BOTTOM SPLIT ROW: CARD B (HEATMAP) & CARD C (ANALYTICS) -->
+        <div class="bento-split-row">
+          
+          <!-- CARD B: TRADING P&L HEATMAP CALENDAR (STAR COMPONENT) -->
+          <section class="bento-card bento-card-heatmap" id="cardHeatmap">
+            <div class="bento-card-header">
+              <div class="bento-title-group">
+                <span class="bento-card-tag green">PERFORMANCE MATRIX</span>
+                <h3 class="bento-card-title">Trading P&L Heatmap</h3>
+              </div>
+              <div class="heatmap-nav-controls" id="heatmapNavControls">
+                <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(-1)" aria-label="Previous month">◀</button>
+                <span id="heatmapMonthTitle" class="heatmap-month-title">NOVEMBER 2026</span>
+                <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(1)" aria-label="Next month">▶</button>
+              </div>
+            </div>
+            
+            <!-- Heatmap Calendar Grid -->
+            <div id="heatmap" class="bento-heatmap-body"></div>
+            
+            <div class="heatmap-legend-footer">
+              <span class="hmap-legend-item"><span class="hmap-cell-dot loss"></span> Loss Day</span>
+              <span class="hmap-legend-item"><span class="hmap-cell-dot zero"></span> No Trade</span>
+              <span class="hmap-legend-item"><span class="hmap-cell-dot win"></span> Profit Day</span>
+            </div>
+          </section>
+
+          <!-- CARD C: EXECUTION METRICS & BREAKDOWN -->
+          <section class="bento-card bento-card-analytics" id="cardAnalytics">
+            <div class="bento-card-header">
+              <div class="bento-title-group">
+                <span class="bento-card-tag cyan">EXECUTION INTELLIGENCE</span>
+                <h3 class="bento-card-title">Win / Loss & Symbols</h3>
+              </div>
+            </div>
+            
+            <div class="bento-analytics-content">
+              <div id="breakdown"></div>
+              <div class="analytics-divider"></div>
+              <div class="panel-subtitle">SYMBOL PERFORMANCE</div>
+              <div id="symPerf"></div>
+              <div class="analytics-divider"></div>
+              <div id="streakBlock"></div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- RIGHT SECTION (ACCOUNTS CARD STACK + LIVE RECENT TRADES FEED) -->
+      <div class="bento-col-right">
+        
+        <!-- CARD D: PORTFOLIO DIGITAL CARD STACK -->
+        <section class="bento-card bento-card-accounts" id="cardAccounts">
+          <div class="bento-card-header">
+            <div class="bento-title-group">
+              <span class="bento-card-tag orange">MY PORTFOLIOS</span>
+              <h3 class="bento-card-title">Trading Accounts</h3>
+            </div>
+            <button class="btn-ghost btn-sm-pill" onclick="openNewPortfolioModal()" title="Add new portfolio">+ New</button>
+          </div>
+          
+          <!-- Active Portfolio Virtual Card -->
+          <div class="virtual-trading-card" id="activeVirtualCard">
+            <div class="card-chip-row">
+              <span class="card-logo-badge">▲ TRACKTRADE</span>
+              <span class="card-prop-tag" id="cardAccountType">ACTIVE ACCOUNT</span>
+            </div>
+            <div class="card-balance-block">
+              <div class="card-balance-label">ACCOUNT BALANCE</div>
+              <div class="card-balance-val" id="cardBalanceDisplay">$0.00</div>
+            </div>
+            <div class="card-footer-row">
+              <div class="card-account-name" id="cardAccountName">Main Portfolio</div>
+              <div class="card-return-pill" id="cardReturnPill">+0.00%</div>
+            </div>
+          </div>
+          
+          <!-- Mini Portfolio Tabs Row -->
+          <div class="portfolio-tabs-wrap">
+            <div class="portfolio-tabs" id="portfolioTabs"></div>
+          </div>
+
+          <!-- Quick Action Buttons Row -->
+          <div class="bento-account-actions">
+            <button class="btn-primary-cta" onclick="openModal()">+ NEW TRADE</button>
+            <div class="action-btn-subgroup">
+              <button class="btn-ghost btn-action-sub" onclick="openImportModal()" title="Import CSV">↑ CSV</button>
+              <button class="btn-ghost btn-action-sub" onclick="exportCSV()" title="Export CSV">↓ CSV</button>
+              <button class="btn-ghost btn-action-sub" onclick="openPortfolioSettings()" title="Settings">⚙</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD E: RECENT TRADES STREAM (FEED) -->
+        <section class="bento-card bento-card-trades" id="cardTrades">
+          <div class="bento-card-header">
+            <div class="bento-title-group">
+              <span class="bento-card-tag">LIVE EXECUTION</span>
+              <h3 class="bento-card-title">Recent Trades</h3>
+            </div>
+            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')">View All →</button>
+          </div>
+          
+          <!-- Quick Filter Pills for Feed -->
+          <div class="compact-filter-row">
+            <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+            <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
+            <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
+            <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
+            <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+          </div>
+
+          <!-- Compact Live Feed List -->
+          <div class="recent-trades-feed" id="recentTradesFeed"></div>
+          
+          <div class="empty-state" id="emptyStateCompact" style="display:none">
+            <div class="empty-icon">◎</div>
+            <div style="font-size:12px;color:var(--muted)">NO TRADES LOGGED YET</div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- FULL JOURNAL TABLE VIEW (EXPANDABLE / TOGGLEABLE) -->
+    <div class="full-journal-view" id="fullJournalView" style="display:none">
+      <div class="panel panel-log">
+        <div class="panel-header">
+          <div class="panel-title-with-back">
+            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('dashboard')">← Back to Overview</button>
+            <span class="panel-title" style="margin-left:12px">FULL TRADE JOURNAL</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
+            <button class="btn-accent" onclick="openModal()">+ NEW TRADE</button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+          <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
+          <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
+          <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
+          <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+          <span class="filter-sep" aria-hidden="true"></span>
+          <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)">ALL TIME</button>
+          <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
+          <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
+          <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30 DAYS</button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="trade-table">
+            <thead>
+              <tr>
+                <th onclick="sortBy('date')">DATE <span class="sort-icon">↕</span></th>
+                <th onclick="sortBy('sym')">SYM <span class="sort-icon">↕</span></th>
+                <th>DIR</th>
+                <th onclick="sortBy('entry')">ENTRY <span class="sort-icon">↕</span></th>
+                <th onclick="sortBy('exit')">EXIT <span class="sort-icon">↕</span></th>
+                <th>SIZE</th>
+                <th onclick="sortBy('pnl')">P&L <span class="sort-icon">↕</span></th>
+                <th>%</th>
+                <th onclick="sortBy('actual_r')">R <span class="sort-icon">↕</span></th>
+                <th class="col-setup">SETUP</th>
+                <th class="col-tag">TAG</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tradeBody"></tbody>
+          </table>
+          <div class="empty-state" id="emptyState" style="display:none">
+            <div class="empty-icon">◎</div>
+            <div style="margin-bottom:12px;">NO TRADES FOUND</div>
+            <button class="btn-accent" id="emptyCta" onclick="openModal()">+ LOG FIRST TRADE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden compatibility container for metricsRow so any legacy script doesn't throw -->
+    <div id="metricsRow" style="display:none"></div>
+
   </div>
 </div>
-
-<!-- ===== HEADER ===== -->
-<header>
-  <div class="header-left">
-    <div class="logo-block">
-      <span class="logo-mark">▲</span>
-      <div>
-        <div class="logo-title">TrackTrade!</div>
-        <div class="logo-sub">THE EDGE IS ENGINEERED</div>
-      </div>
-    </div>
-  </div>
-  <div class="header-right">
-    <a href="?intro=1" class="btn-ghost" style="padding:5px 10px;font-size:10px;text-decoration:none" title="Replay 3D Intro">▶ 3D INTRO</a>
-    <div class="header-divider"></div>
-    <div class="user-info">
-      <span class="user-email" id="userEmail"></span>
-      <button class="btn-ghost" style="padding:5px 10px;font-size:10px" onclick="logout()" title="Logout">⎋ LOGOUT</button>
-    </div>
-    <div class="header-divider"></div>
-    <div class="theme-toggle" id="themeToggle" title="Toggle dark / light">
-      <div class="toggle-ball"></div>
-    </div>
-    <div class="header-divider"></div>
-    <div class="live-dot"></div>
-    <span class="live-label" id="liveTime">—</span>
-  </div>
-</header>
-
-<!-- ===== EQUITY CURVE ===== -->
-<section class="equity-section">
-  <div class="equity-label">EQUITY CURVE</div>
-  <div class="equity-canvas-wrap" style="position:relative">
-    <canvas id="equityCanvas"></canvas>
-    <div id="equityTooltip" class="chart-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:100"></div>
-  </div>
-  <div class="equity-stats" id="equityStats"></div>
-</section>
-
-<!-- ===== METRICS ROW ===== -->
-<section class="metrics-row" id="metricsRow"></section>
-
-<!-- ===== MAIN LAYOUT ===== -->
-<main>
-
-  <!-- LEFT: TRADE LOG TABLE -->
-  <div class="panel panel-log">
-
-    <!-- PORTFOLIO TABS — ยื่นขึ้นด้านบนแบบแฟ้มเอกสาร -->
-    <div class="portfolio-tabs-wrap">
-      <div class="portfolio-tabs" id="portfolioTabs"></div>
-    </div>
-
-    <div class="panel-header">
-      <div class="panel-title">TRADE LOG</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn-ghost btn-icon" onclick="openPortfolioSettings()" title="Portfolio settings" aria-label="Portfolio settings">⚙</button>
-        <button class="btn-ghost" onclick="openImportModal()" title="Import trades from CSV">↑ CSV</button>
-        <button class="btn-ghost" onclick="exportCSV()">↓ CSV</button>
-        <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
-        <button class="btn-accent" onclick="openModal()">+ NEW TRADE</button>
-      </div>
-    </div>
-
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
-      <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
-      <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
-      <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
-      <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
-      <span class="filter-sep" aria-hidden="true"></span>
-      <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)">ALL TIME</button>
-      <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
-      <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
-      <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30 DAYS</button>
-      <input class="search-input" id="searchInput" placeholder="SEARCH SYMBOL..." aria-label="Search symbol">
-    </div>
-
-    <div class="table-scroll">
-      <table class="trade-table">
-        <thead>
-          <tr>
-            <th onclick="sortBy('date')">DATE <span class="sort-icon">↕</span></th>
-            <th onclick="sortBy('sym')">SYM <span class="sort-icon">↕</span></th>
-            <th>DIR</th>
-            <th onclick="sortBy('entry')">ENTRY <span class="sort-icon">↕</span></th>
-            <th onclick="sortBy('exit')">EXIT <span class="sort-icon">↕</span></th>
-            <th>SIZE</th>
-            <th onclick="sortBy('pnl')">P&L <span class="sort-icon">↕</span></th>
-            <th>%</th>
-            <th onclick="sortBy('actual_r')">R <span class="sort-icon">↕</span></th>
-            <th class="col-setup">SETUP</th>
-            <th class="col-tag">TAG</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tradeBody"></tbody>
-      </table>
-      <div class="empty-state" id="emptyState" style="display:none">
-        <div class="empty-icon">◎</div>
-        <div style="margin-bottom:12px;">NO TRADES FOUND</div>
-        <button class="btn-accent" id="emptyCta" onclick="openModal()">+ LOG FIRST TRADE</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT: SIDEBAR -->
-  <div class="sidebar">
-    <div class="panel panel-sm">
-      <div class="panel-header"><div class="panel-title">BREAKDOWN</div></div>
-      <div id="breakdown"></div>
-    </div>
-    <div class="panel panel-sm">
-      <div class="panel-header"><div class="panel-title">SYMBOL PERFORMANCE</div></div>
-      <div id="symPerf"></div>
-    </div>
-    <div class="panel panel-sm">
-      <div class="panel-header"><div class="panel-title">STREAK TRACKER</div></div>
-      <div id="streakBlock"></div>
-    </div>
-    <div class="panel panel-sm">
-      <div class="panel-header"><div class="panel-title">MONTHLY HEATMAP</div></div>
-      <div id="heatmap"></div>
-    </div>
-  </div>
-
-</main>
 
 <!-- ===== ADD TRADE MODAL ===== -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">

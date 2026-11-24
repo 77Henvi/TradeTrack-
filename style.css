@@ -1024,3 +1024,751 @@ html.intro-active { scroll-behavior: auto !important; }
   .scrolly-card, .scrolly-card.right { max-width: none; width: 100%; margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .scroll-chevron { animation: none; } }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   NEXT-GEN BENTO GRID FINTECH LAYOUT
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── 1. LEFT SLIM NAV RAIL ──────────────────────────────────────────────── */
+.app-nav-rail {
+  width: 72px;
+  min-width: 72px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  z-index: 100;
+}
+
+.nav-rail-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nav-logo {
+  font-size: 22px;
+  color: var(--green);
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+  filter: drop-shadow(0 0 10px rgba(60,255,160,0.5));
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+.nav-logo:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 16px rgba(60,255,160,0.8));
+}
+
+.nav-rail-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nav-rail-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-decoration: none;
+}
+.nav-rail-btn:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border2);
+}
+.nav-rail-btn.active {
+  color: #041008;
+  background: var(--green);
+  box-shadow: 0 0 18px rgba(60,255,160,0.45);
+}
+
+.nav-rail-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #111722;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 200;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+}
+.nav-rail-btn:hover .nav-rail-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(2px);
+}
+
+.nav-rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ─── 2. MAIN APP CONTENT AREA ───────────────────────────────────────────── */
+.app-main-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TOP COMMAND HEADER */
+.bento-header {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,13,18,0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.bento-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  max-width: 480px;
+}
+
+.search-command-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 7px 14px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+.search-command-pill:focus-within {
+  border-color: var(--green);
+  background: rgba(60,255,160,0.04);
+  box-shadow: 0 0 12px rgba(60,255,160,0.15);
+}
+.search-icon { color: var(--muted); flex-shrink: 0; }
+.bento-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--sans);
+  width: 100%;
+}
+.shortcut-badge {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+  background: rgba(255,255,255,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.bento-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ticker-compact-wrap {
+  max-width: 320px;
+  overflow: hidden;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+.live-clock-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.user-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  padding: 4px 12px 4px 6px;
+  border-radius: 30px;
+}
+.user-avatar-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #041008;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── 3. BENTO GRID CONTAINER ────────────────────────────────────────────── */
+.bento-container {
+  display: grid;
+  grid-template-columns: 1fr 390px;
+  gap: 20px;
+  padding: 24px 28px;
+  width: 100%;
+  max-width: 1720px;
+  margin: 0 auto;
+}
+
+.bento-col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.bento-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 390px;
+  flex-shrink: 0;
+}
+.bento-split-row {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px;
+}
+
+.bento-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.bento-card:hover {
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+}
+
+.bento-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.bento-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bento-card-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bento-card-tag.green { color: var(--green); }
+.bento-card-tag.cyan { color: var(--blue); }
+.bento-card-tag.orange { color: var(--orange); }
+.bento-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+/* CARD A: HERO BALANCE & CURVE */
+.hero-balance-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bento-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+}
+.hero-balance-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 2px;
+}
+.hero-balance-num {
+  font-size: 32px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.hero-return-badge {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--green);
+  background: rgba(60,255,160,0.12);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(60,255,160,0.3);
+}
+.hero-return-badge.neg {
+  color: var(--red);
+  background: rgba(255,69,96,0.12);
+  border-color: rgba(255,69,96,0.3);
+}
+.bento-hero-curve .equity-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.bento-hero-curve .equity-stat .el {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.bento-hero-curve .equity-stat .ev {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}
+.timeframe-pill-group {
+  display: flex;
+  gap: 6px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+/* CARD B: TRADING HEATMAP CALENDAR */
+.bento-heatmap-body {
+  margin: 12px 0 16px;
+}
+.heatmap-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.heatmap-month-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+.btn-icon-sm {
+  padding: 3px 8px;
+  font-size: 10px;
+  border-radius: 6px;
+}
+.hmap-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.hmap-col-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  padding: 4px 0;
+}
+.hmap-day-cell {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  min-height: 48px;
+}
+.hmap-day-cell:hover {
+  transform: translateY(-2px);
+  border-color: var(--green);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 5;
+}
+.hmap-day-cell.empty {
+  background: transparent !important;
+  border-color: transparent !important;
+  pointer-events: none;
+}
+.hmap-day-num {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.hmap-day-pnl {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hmap-day-pnl.pos { color: var(--green); }
+.hmap-day-pnl.neg { color: var(--red); }
+.hmap-day-dots {
+  display: flex;
+  gap: 2px;
+}
+.hmap-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.hmap-dot.win { background: var(--green); }
+.hmap-dot.loss { background: var(--red); }
+
+.heatmap-legend-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.hmap-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hmap-cell-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.hmap-cell-dot.win { background: var(--green); }
+.hmap-cell-dot.zero { background: rgba(255,255,255,0.1); }
+.hmap-cell-dot.loss { background: var(--red); }
+
+/* CARD C: ANALYTICS CONTENT */
+.bento-analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.analytics-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+.panel-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+/* CARD D: VIRTUAL TRADING CARD */
+.virtual-trading-card {
+  background: linear-gradient(135deg, #16241c 0%, #0c1410 50%, #131a24 100%);
+  border: 1px solid rgba(60,255,160,0.3);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.card-chip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-logo-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--green);
+}
+.card-prop-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.card-balance-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.card-balance-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.6);
+}
+.card-balance-val {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.card-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-account-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+}
+.card-return-pill {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--green);
+  background: rgba(60,255,160,0.15);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.bento-account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.btn-primary-cta {
+  width: 100%;
+  height: 46px;
+  background: linear-gradient(135deg, #3cffa0 0%, #16a34a 100%);
+  color: #041008;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(60,255,160,0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-primary-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(60,255,160,0.5);
+}
+.action-btn-subgroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr 44px;
+  gap: 8px;
+}
+.btn-action-sub {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+.btn-sm-pill {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
+/* CARD E: RECENT TRADES FEED */
+.compact-filter-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+.compact-filter-row .filter-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+}
+.recent-trades-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.feed-trade-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.feed-trade-item:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border2);
+  transform: translateX(2px);
+}
+.feed-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.feed-sym-badge {
+  font-weight: 700;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+.feed-dir-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.feed-dir-pill.long {
+  background: rgba(60,255,160,0.12);
+  color: var(--green);
+}
+.feed-dir-pill.short {
+  background: rgba(251,146,60,0.12);
+  color: var(--orange);
+}
+.feed-date-text {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.feed-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: right;
+}
+.feed-pnl-val {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.feed-pnl-val.pos { color: var(--green); }
+.feed-pnl-val.neg { color: var(--red); }
+.feed-r-badge {
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+.feed-r-badge.pos {
+  color: var(--green);
+  border-color: rgba(60,255,160,0.4);
+  background: rgba(60,255,160,0.08);
+}
+.feed-r-badge.neg {
+  color: var(--red);
+  border-color: rgba(255,69,96,0.4);
+  background: rgba(255,69,96,0.08);
+}
+
+/* ─── FULL JOURNAL VIEW (EXPANDABLE) ─────────────────────────────────────── */
+.full-journal-view {
+  padding: 24px 28px;
+  max-width: 1720px;
+  width: 100%;
+  margin: 0 auto;
+}
+.panel-title-with-back {
+  display: flex;
+  align-items: center;
+}
+
+/* RESPONSIVE BREAKPOINTS */
+.mobile-only { display: none; }
+
+@media (max-width: 1280px) {
+  .bento-container {
+    grid-template-columns: 1fr;
+  }
+  .bento-col-right {
+    width: 100%;
+  }
+  .bento-split-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-nav-rail { display: none; }
+  .mobile-only { display: flex; }
+  .bento-header { padding: 0 16px; }
+  .bento-container { padding: 16px; }
+  .ticker-compact-wrap { display: none; }
+}
+

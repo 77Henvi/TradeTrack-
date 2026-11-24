@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.7">
+  <link rel="stylesheet" href="style.css?v=2.8">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -78,25 +78,32 @@
       <p class="hero-subtitle">Where every trade becomes data. Where every decision becomes an edge.</p>
       <div class="scroll-indicator"><span>SCROLL TO ENTER THE SYSTEM</span><div class="scroll-chevron">↓</div></div>
     </section>
-    <section class="scrolly-frame" id="frame-3">
+    <section class="scrolly-frame" id="frame-5">
       <div class="scrolly-card">
-        <span class="badge-tag">01 / CAPITAL PROTECTION</span>
-        <h2>PROTECT THE DOWNSIDE.</h2>
-        <p>Define your risk before you enter. Set your limits. Never let emotion decide.</p>
+        <span class="badge-tag">01 / RISK MANAGEMENT</span>
+        <h2>NAVIGATE THE VOLATILITY.</h2>
+        <p>Define your risk before you enter. Real-time calculated sizing. Never let market noise decide.</p>
       </div>
     </section>
-    <section class="scrolly-frame" id="frame-4">
+    <section class="scrolly-frame" id="frame-7">
       <div class="scrolly-card right">
-        <span class="badge-tag green">MEASURE WHAT MATTERS</span>
+        <span class="badge-tag sunset">02 / ASYMMETRIC RETURNS</span>
         <h2>THINK IN R. NOT MONEY.</h2>
-        <p>Stop chasing numbers. Start measuring execution. Understand your edge through Risk-to-Reward, not account size.</p>
+        <p>Stop chasing numbers. Start measuring execution. Understand your edge through Risk-to-Reward.</p>
       </div>
     </section>
-    <section class="scrolly-frame" id="frame-6">
+    <section class="scrolly-frame" id="frame-11">
       <div class="scrolly-card">
-        <span class="badge-tag">DEEP ANALYTICS</span>
-        <h2>FACE THE NUMBERS. FIND THE TRUTH.</h2>
-        <p>Dissect every trade. Expose every pattern. Your strengths. Your weaknesses. Your true edge.</p>
+        <span class="badge-tag">03 / DEEP EXECUTION AUDIT</span>
+        <h2>DISSECT EVERY LAYER.</h2>
+        <p>Expose hidden patterns. Analyze Win Rate, Profit Factor, and true statistical expectancy.</p>
+      </div>
+    </section>
+    <section class="scrolly-frame" id="frame-13">
+      <div class="scrolly-card right">
+        <span class="badge-tag sunset">04 / MULTI-PORTFOLIO SCALE</span>
+        <h2>ONE SYSTEM. EVERY ACCOUNT.</h2>
+        <p>Personal, prop firm, and crypto portfolios synced with seamless multi-account intelligence.</p>
       </div>
     </section>
   </div>
@@ -863,14 +870,14 @@
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/config.js?v=2.7"></script>    <!-- state, helpers, Supabase init -->
-<script src="js/db.js?v=2.7"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=2.7"></script>      <!-- login / register / logout -->
-<script src="js/portfolio.js?v=2.7"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=2.7"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.7"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=2.7"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=2.7"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/config.js?v=2.8"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js?v=2.8"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js?v=2.8"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js?v=2.8"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js?v=2.8"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=2.8"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js?v=2.8"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/ui.js?v=2.8"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>

@@ -1,5 +1,10 @@
 ﻿// ─── AUTH ─────────────────────────────────────────────────────────────────────
 async function initAuth() {
+  const isIntroReq = new URLSearchParams(location.search).get('intro') === '1';
+  if (isIntroReq && window.ScrollyIntro) {
+    window.ScrollyIntro.prepare();
+  }
+
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     currentUser = session.user;
@@ -15,7 +20,10 @@ async function initAuth() {
 }
 
 function showAuthScreen() {
-  if (window.ScrollyIntro) window.ScrollyIntro.teardown();     // logged out mid-intro
+  const isIntroReq = new URLSearchParams(location.search).get('intro') === '1';
+  if (!isIntroReq && !document.documentElement.classList.contains('intro-active')) {
+    if (window.ScrollyIntro) window.ScrollyIntro.teardown();     // logged out mid-intro
+  }
   document.getElementById('authScreen').style.display  = 'flex';
   document.getElementById('appWrapper').style.display  = 'none';
   applyTurnstileMode();

@@ -661,23 +661,24 @@ body {
    The intro is always dark (neon on light would wash out), so the colour tokens are
    re-declared here instead of inheriting the light theme.                         */
 .scrolly-container {
-  display: none; position: relative; height: 600vh;
-  --bg: #05070b; --bg2: #0d1018; --bg3: #131720; --text: #e8eaf0; --muted: #8c93a4;
-  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
-  --accent: #c8f03c; --green: #3cffa0; --blue: #38bdf8; --red: #ff4560;
+  display: none; position: relative; height: 800vh;
+  --bg: #050302; --bg2: #0d0a08; --bg3: #14100c; --text: #f5f2ef; --muted: #a39791;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,97,41,0.25);
+  --accent: #FF6129; --sunset: #FF6129; --vermillion: #FC3B00; --peach: #FF7145;
+  --green: #22c55e; --blue: #38bdf8; --red: #ff4560;
   color: var(--text);
 }
 /* while it plays: the dashboard slides up 100vh underneath the last screen so its header is
    visible (and dockable) when the story ends */
 html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
 
-/* dark backdrop for the first 500vh only — the final 100vh is transparent so the dashboard shows through */
+/* dark backdrop for the first 700vh only — the final 100vh is transparent so the dashboard shows through */
 .scrolly-bg {
   position: absolute; top: 0; left: 0; right: 0; height: calc(100% - 100vh);
   background:
-    radial-gradient(ellipse 80% 60% at 50% 38%, rgba(60,255,160,0.09), transparent 62%),
-    radial-gradient(ellipse 60% 50% at 82% 82%, rgba(56,189,248,0.07), transparent 60%),
-    #05070b;
+    radial-gradient(ellipse 80% 60% at 50% 38%, rgba(255,97,41,0.14), transparent 62%),
+    radial-gradient(ellipse 60% 50% at 82% 82%, rgba(252,59,0,0.10), transparent 60%),
+    #050302;
 }
 /* z-index 50: above the dashboard header (z 10) so the coin is never painted under it, below the ticker (z 100) */
 #webgl-canvas { display: block; position: sticky; top: 0; left: 0; width: 100%; height: 100vh; z-index: 50; pointer-events: none; }
@@ -716,6 +717,7 @@ html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
   color: var(--blue); border: 1px solid rgba(56,189,248,0.4); background: rgba(56,189,248,0.08);
 }
 .badge-tag.green { color: var(--green); border-color: rgba(60,255,160,0.4); background: rgba(60,255,160,0.08); }
+.badge-tag.sunset { color: var(--accent); border-color: rgba(255,97,41,0.45); background: rgba(255,97,41,0.12); }
 .scrolly-card h2 { margin: 14px 0 10px; font-family: var(--display); font-weight: 800; font-size: clamp(22px, 2.6vw, 34px); line-height: 1.1; letter-spacing: -0.01em; }
 .scrolly-card p { font-size: 14px; line-height: 1.6; color: var(--muted); }
 
@@ -723,12 +725,13 @@ html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
 .scrolly-progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 998; pointer-events: none; background: rgba(255,255,255,0.06); }
 .scrolly-progress-fill {
   height: 100%; transform-origin: 0 50%; transform: scaleX(0);
-  background: linear-gradient(90deg, var(--green), var(--blue)); box-shadow: 0 0 12px var(--green);
+  background: linear-gradient(90deg, #FF6129, #FC3B00); box-shadow: 0 0 12px rgba(255,97,41,0.6);
 }
 
 /* while the intro plays: keep dashboard chrome out of the way (the timeline fades the ticker + logo back in) */
-html.intro-active .ticker-wrap { opacity: 0; }
-html.intro-active header .logo-mark { opacity: 0; }
+html.intro-active .nav-logo,
+html.intro-active .logo-mark { opacity: 0; }
+html.intro-active #authScreen { display: none !important; }
 html.intro-active .modal-overlay { visibility: hidden !important; }   /* e.g. the first-run "create portfolio" modal waits */
 
 /* Lenis (smooth scroll) — it must own scrolling, so the global `html { scroll-behavior: smooth }` has to yield.

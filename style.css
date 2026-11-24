@@ -65,7 +65,9 @@ body {
 .noise {
   position: fixed; inset: 0; z-index: 1000; pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
-  opacity: 0.15;
+  opacity: 0.12;
+  transform: translateZ(0);
+  pointer-events: none;
 }
 
 .bg-grid {
@@ -1029,7 +1031,7 @@ html.intro-active { scroll-behavior: auto !important; }
    NEXT-GEN BENTO GRID FINTECH LAYOUT
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* ─── MOVING AMBIENT LIGHT MESH ─────────────────────────────────────────── */
+/* ─── MOVING AMBIENT LIGHT MESH (GPU-ACCELERATED & FEATHERED) ────────── */
 .ambient-light-container {
   position: fixed;
   inset: 0;
@@ -1037,54 +1039,57 @@ html.intro-active { scroll-behavior: auto !important; }
   z-index: 0;
   overflow: hidden;
   opacity: 1;
+  contain: strict;
+  transform: translateZ(0);
 }
 .ambient-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  -webkit-filter: blur(90px);
-  will-change: transform, opacity;
+  filter: blur(35px);
+  -webkit-filter: blur(35px);
+  will-change: transform;
   pointer-events: none;
+  transform: translate3d(0, 0, 0);
 }
 .orb-1 {
   width: 750px;
   height: 750px;
-  background: radial-gradient(circle, rgba(60, 255, 160, 0.35) 0%, rgba(34, 197, 94, 0.15) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(60, 255, 160, 0.32) 0%, rgba(34, 197, 94, 0.14) 35%, rgba(60, 255, 160, 0.04) 55%, transparent 70%);
   top: -160px;
   left: 10%;
-  animation: orb-float-1 22s ease-in-out infinite alternate;
+  animation: orb-float-1 26s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 .orb-2 {
   width: 850px;
   height: 850px;
-  background: radial-gradient(circle, rgba(251, 146, 60, 0.36) 0%, rgba(245, 158, 11, 0.15) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.34) 0%, rgba(245, 158, 11, 0.14) 35%, rgba(251, 146, 60, 0.04) 55%, transparent 70%);
   top: 15%;
   right: -140px;
-  animation: orb-float-2 25s ease-in-out infinite alternate;
+  animation: orb-float-2 30s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 .orb-3 {
   width: 720px;
   height: 720px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.30) 0%, rgba(14, 165, 233, 0.12) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(14, 165, 233, 0.12) 35%, rgba(56, 189, 248, 0.03) 55%, transparent 70%);
   bottom: -140px;
   left: 22%;
-  animation: orb-float-3 20s ease-in-out infinite alternate;
+  animation: orb-float-3 24s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 
 @keyframes orb-float-1 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(140px, 90px) scale(1.15); }
-  100% { transform: translate(-80px, 150px) scale(0.95); }
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(120px, 80px, 0) scale(1.1); }
+  100% { transform: translate3d(-60px, 130px, 0) scale(0.96); }
 }
 @keyframes orb-float-2 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-130px, -110px) scale(1.12); }
-  100% { transform: translate(70px, 90px) scale(1.05); }
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-110px, -90px, 0) scale(1.08); }
+  100% { transform: translate3d(60px, 80px, 0) scale(1.03); }
 }
 @keyframes orb-float-3 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-110px, -80px) scale(1.18); }
-  100% { transform: translate(130px, -60px) scale(0.92); }
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-90px, -70px, 0) scale(1.12); }
+  100% { transform: translate3d(110px, -50px, 0) scale(0.94); }
 }
 
 .app-layout {
@@ -1108,11 +1113,12 @@ html.intro-active { scroll-behavior: auto !important; }
   justify-content: space-between;
   padding: 20px 0;
   background: rgba(10, 14, 22, 0.65);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
   z-index: 100;
+  transform: translateZ(0);
 }
 
 .nav-rail-top {
@@ -1222,11 +1228,12 @@ html.intro-active { scroll-behavior: auto !important; }
   padding: 0 28px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(10, 14, 22, 0.55);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
   position: sticky;
   top: 0;
   z-index: 90;
+  transform: translateZ(0);
 }
 
 .bento-header-left {
@@ -1347,33 +1354,34 @@ html.intro-active { scroll-behavior: auto !important; }
 }
 
 .bento-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 35%, rgba(10, 14, 22, 0.5) 100%), rgba(13, 17, 26, 0.55);
-  backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.015) 35%, rgba(10, 14, 22, 0.5) 100%), rgba(13, 17, 26, 0.60);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 22px 24px;
   position: relative;
   overflow: hidden;
   box-shadow: 
-    0 20px 50px rgba(0, 0, 0, 0.45),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 0 25px rgba(255, 255, 255, 0.02);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.015);
+  transform: translateZ(0);
+  contain: layout style paint;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .bento-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   pointer-events: none;
 }
 .bento-card:hover {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 
-    0 25px 60px rgba(0, 0, 0, 0.55),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 0 30px rgba(255, 255, 255, 0.03);
+    0 22px 50px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.32);
   transform: translateY(-2px);
 }
 
@@ -1608,13 +1616,13 @@ html.intro-active { scroll-behavior: auto !important; }
 /* CARD D: VIRTUAL TRADING CARD */
 .virtual-trading-card {
   background: linear-gradient(135deg, rgba(26, 42, 32, 0.75) 0%, rgba(14, 23, 18, 0.9) 55%, rgba(18, 26, 35, 0.75) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(60, 255, 160, 0.35);
   box-shadow: 
     0 16px 40px rgba(0, 0, 0, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.25),
-    inset 0 0 30px rgba(60, 255, 160, 0.08);
+    inset 0 0 25px rgba(60, 255, 160, 0.08);
   border-radius: 18px;
   padding: 22px;
   position: relative;
@@ -1623,7 +1631,8 @@ html.intro-active { scroll-behavior: auto !important; }
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transform: translateZ(0);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .virtual-trading-card:hover {
   transform: translateY(-2px);

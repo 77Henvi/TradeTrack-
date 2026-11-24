@@ -16,7 +16,14 @@ function initAppListeners() {
     });
   }
 
-  document.getElementById('searchInput')?.addEventListener('input', () => { currentPage = 1; renderTable(); });
+  document.getElementById('searchInput')?.addEventListener('input', () => {
+    currentPage = 1;
+    renderTable();
+    renderRecentFeed();
+    if (document.getElementById('cardTrades')?.classList.contains('is-expanded')) {
+      renderExtendedTradesTable();
+    }
+  });
 
   ['f-entry','f-exit','f-size','f-mult','f-sl','f-tp'].forEach(id => {
     const el = document.getElementById(id); if (el) el.addEventListener('input', updatePreview);
@@ -37,6 +44,7 @@ document.addEventListener('keydown', e => {
     document.getElementById('tickerSettingsOverlay')?.classList.remove('open');
     document.getElementById('portfolioSettingsOverlay')?.classList.remove('open');
     document.getElementById('newPortfolioOverlay')?.classList.remove('open');
+    document.getElementById('confirmOverlay')?.classList.remove('open');
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openModal(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -451,6 +459,8 @@ function initEquityHover() {
 
 // ─── METRICS ──────────────────────────────────────────────────────────────────
 function renderMetrics() {
+  const el = document.getElementById('metricsRow');
+  if (!el || el.style.display === 'none') return;
   const trades = getActiveTrades(), wins = trades.filter(t => pnl(t) > 0), losses = trades.filter(t => pnl(t) <= 0);
   const totalPnl = trades.reduce((s, t) => s + pnl(t), 0);
   const winRate  = trades.length ? (wins.length / trades.length * 100) : 0;
@@ -951,13 +961,13 @@ function renderExtendedTradesTable() {
         <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(t.date)}</td>
         <td style="font-weight:800;font-size:13px">${escHtml(t.sym)}</td>
         <td><span class="feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span></td>
-        <td style="font-family:var(--mono);">${fmtNum(t.entry)}</td>
-        <td style="font-family:var(--mono);">${fmtNum(t.exit)}</td>
+        <td style="font-family:var(--mono);">${fmtNum(t.entry_price ?? t.entry)}</td>
+        <td style="font-family:var(--mono);">${fmtNum(t.exit_price ?? t.exit)}</td>
         <td style="font-family:var(--mono);">${t.size}</td>
         <td style="font-family:var(--mono);font-weight:800;" class="${win ? 'pos' : 'neg'}">${p >= 0 ? '+' : ''}${fmtAbs(p)} USD</td>
         <td style="font-family:var(--mono);" class="${p >= 0 ? 'pos' : 'neg'}">${pnlPct(t).toFixed(2)}%</td>
         <td style="font-family:var(--mono);" class="${rClass}">${rText}</td>
-        <td><span style="font-size:11px;color:var(--muted)">${escHtml(t.setup || '—')}</span></td>
+        <td><span style="font-size:11px;color:var(--muted)">${escHtml(t.note || t.setup || '—')}</span></td>
         <td><span class="tag-pill">${escHtml(t.tag || 'None')}</span></td>
         <td style="text-align:right">
           <button class="btn-trade-dots" onclick="openTradeDetails('${t.id}')" title="Inspect order details">••• Inspect</button>
@@ -1031,10 +1041,10 @@ function openTradeDetails(tradeId) {
   };
   setEl('dtlDate', t.date);
   setEl('dtlSize', `${t.size} units`);
-  setEl('dtlEntry', fmtNum(t.entry));
-  setEl('dtlExit', fmtNum(t.exit));
-  setEl('dtlSl', t.sl ? fmtNum(t.sl) : 'None');
-  setEl('dtlTp', t.tp ? fmtNum(t.tp) : 'None');
+  setEl('dtlEntry', fmtNum(t.entry_price ?? t.entry));
+  setEl('dtlExit', fmtNum(t.exit_price ?? t.exit));
+  setEl('dtlSl', (t.stop_loss ?? t.sl) ? fmtNum(t.stop_loss ?? t.sl) : 'None');
+  setEl('dtlTp', (t.take_profit ?? t.tp) ? fmtNum(t.take_profit ?? t.tp) : 'None');
   setEl('dtlR', t.actual_r != null ? `${Number(t.actual_r).toFixed(2)}R` : '—');
   setEl('dtlTag', t.tag || 'No tag');
   setEl('dtlNote', t.note ? t.note : 'No notes entered for this trade execution.');
@@ -1063,9 +1073,8 @@ function editFromDetails() {
 async function deleteFromDetails() {
   const id = activeDetailTradeId;
   if (!id) return;
-  if (!confirm('Are you sure you want to delete this trade?')) return;
   closeTradeDetailsDirect();
-  await deleteTrade(id);
+  await delTrade(id);
 }
 
 // ─── BENTO MOUSE INTERACTION & ANIMATIONS ────────────────────────────────────

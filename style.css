@@ -87,85 +87,7 @@ body {
 }
 
 /* ─── TICKER TAPE ────────────────────────────────────────────────────────── */
-.ticker-wrap {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 44px;
-  display: flex; align-items: center; overflow: hidden;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border2);
-}
-
-:root.light .ticker-wrap {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border2);
-}
-
-.ticker-wrap::after {
-  content: '';
-  position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(255,255,255,0.015) 0px,
-    transparent 1px,
-    transparent 48px
-  );
-}
-
-:root.light .ticker-wrap::after {
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(0,0,0,0.03) 0px,
-    transparent 1px,
-    transparent 48px
-  );
-}
-
-.ticker-left-ui {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 12px 0 14px;
-  background: transparent;
-  height: 100%; flex-shrink: 0;
-  border-right: 1px solid var(--border2);
-  position: relative; z-index: 1;
-}
-
-.ticker-live-label {
-  font-family: var(--mono); font-size: 9px; font-weight: 700;
-  color: var(--orange); letter-spacing: 2px; white-space: nowrap;
-}
-
-.market-badge {
-  font-family: var(--mono); font-size: 9px; font-weight: 700;
-  letter-spacing: 1.5px; padding: 2px 7px;
-  background: var(--green-dim); color: var(--green);
-  border: 1px solid rgba(60,255,160,0.3); border-radius: 2px;
-  white-space: nowrap;
-}
-
-.ticker-status-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--green); flex-shrink: 0;
-  box-shadow: 0 0 5px var(--green);
-  animation: pulseDot 2s ease-in-out infinite;
-}
-
-@keyframes pulseDot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.5; }
-}
-
-.ticker-update-label {
-  font-family: var(--mono); font-size: 9px; font-weight: 700;
-  color: rgba(255,255,255,0.35); letter-spacing: 1px; white-space: nowrap;
-}
-
-.ticker-scroll-area {
-  flex: 1; overflow: hidden; height: 100%;
-  display: flex; align-items: center;
-  position: relative; z-index: 1;
-}
-
-.ticker-scroll-area:hover .ticker {
+.ticker {
   animation-play-state: paused;
 }
 
@@ -188,20 +110,13 @@ body {
 .ticker-item .chg.orange { color: var(--orange); }
 .ticker-sep { color: var(--border2); font-size: 14px; opacity: 0.6; }
 
-.spark { margin-left: 4px; opacity: 0.75; display: flex; align-items: center; }
-.spark svg { display: block; }
 
 @keyframes tickerScroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
-@keyframes tickerFlash {
-  0% { filter: brightness(1); }
-  50% { filter: brightness(1.3); }
-  100% { filter: brightness(1); }
-}
-.ticker-wrap.flash { animation: tickerFlash 0.3s ease; }
+
 
 /* ─── TICKER INFO BOX ────────────────────────────────────────────────────── */
 .ticker-info-box {
@@ -236,7 +151,6 @@ body {
 .auth-msg.success { background: var(--green-dim);  color: var(--green); border-left: 3px solid var(--green); }
 
 /* ─── USER INFO (header) ─────────────────────────────────────────────────── */
-.user-info { display: flex; align-items: center; gap: 8px; }
 .user-email {
   font-family: var(--mono); font-size: 11px; color: var(--muted);
   max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -253,34 +167,8 @@ body {
 .ticker-color-btn.active-color { border-color: var(--text); transform: scale(1.15); box-shadow: 0 0 0 2px var(--bg2); }
 
 
-.coin-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: 8px;
-}
-.coin-pick-btn {
-  font-family: var(--mono); font-size: 11px; font-weight: 700;
-  letter-spacing: 1px; padding: 10px 6px;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 3px; color: var(--muted);
-  cursor: pointer; text-align: center;
-  transition: all 0.15s;
-}
-.coin-pick-btn:hover { border-color: rgba(245,158,11,0.4); color: var(--text); background: rgba(245,158,11,0.04); }
-.coin-pick-btn.active {
-  background: rgba(245,158,11,0.1); color: #f59e0b;
-  border-color: #f59e0b;
-  box-shadow: inset 0 0 0 1px rgba(245,158,11,0.2);
-}
 
-/* ─── HEADER ─────────────────────────────────────────────────────────────── */
-header {
-  position: relative; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 32px 36px 20px;
-  border-bottom: 1px solid var(--border);
-  margin-top: 44px;
-}
+/* ─── HEADER CONTROLS ────────────────────────────────────────────────────── */
 .logo-block { display: flex; align-items: center; gap: 14px; }
 .logo-mark {
   font-size: 28px; color: var(--accent);
@@ -291,7 +179,6 @@ header {
   font-size: clamp(24px, 3vw, 36px);
   letter-spacing: -0.5px; color: var(--text); line-height: 1;
 }
-.logo-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 4px; }
 .header-right { display: flex; align-items: center; gap: 12px; }
 
 .theme-toggle {
@@ -318,29 +205,8 @@ header {
 
 .header-divider { width: 1px; height: 18px; background: var(--border2); }
 
-.header-ticker-btn {
-  display: flex; align-items: center; gap: 6px;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
-  padding: 6px 12px;
-  background: transparent; border: 1px solid var(--border);
-  border-radius: 3px; color: var(--muted); cursor: pointer;
-  transition: all 0.15s;
-}
-.header-ticker-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-.header-ticker-btn:active { transform: scale(0.96); }
-.header-ticker-icon { font-size: 12px; transition: transform 0.3s; }
-.header-ticker-btn:hover .header-ticker-icon { transform: rotate(60deg); }
-.header-ticker-label { letter-spacing: 2px; }
 
 /* ─── EQUITY CURVE ───────────────────────────────────────────────────────── */
-.equity-section {
-  position: relative; z-index: 5;
-  margin: 0 36px; padding: 32px 0 0;
-}
-.equity-label {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 3px;
-  color: var(--muted); margin-bottom: 10px;
-}
 #equityCanvas { width: 100%; height: 160px; display: block; }
 .equity-stats { display: flex; gap: 40px; margin-top: 16px; flex-wrap: wrap; }
 .equity-stat .el { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; }
@@ -348,54 +214,7 @@ header {
 .equity-stat .ev.pos { color: var(--green); }
 .equity-stat .ev.neg { color: var(--red); }
 
-/* ─── METRICS ROW ────────────────────────────────────────────────────────── */
-.metrics-row {
-  position: relative; z-index: 5;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px;
-  margin: 32px 36px;
-  border: 1px solid var(--border);
-  border-radius: 4px; overflow: hidden;
-}
-.metric-card {
-  background: var(--panel); padding: 20px 22px;
-  position: relative; transition: background 0.2s, transform 0.2s;
-}
-.metric-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: transparent; transition: background 0.2s;
-}
-@media (hover: hover) {
-  .metric-card:hover { background: var(--bg3); transform: translateY(-1px); }
-  .metric-card:hover::before { background: var(--accent); }
-}
-.mc-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; }
-.mc-val { font-family: var(--display); font-weight: 700; font-size: 25px; letter-spacing: -0.5px; color: var(--text); line-height: 1; }
-.mc-val.pos { color: var(--green); }
-.mc-val.neg { color: var(--red); }
-.mc-val.accent { color: var(--accent); }
-.mc-sub { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: var(--mono); }
-
-/* Primary metric (Total P&L) emphasis */
-.metric-card.primary {
-  background: var(--bg3);
-}
-.metric-card.primary::before { background: var(--accent); }
-.metric-card.primary .mc-label { color: var(--text); }
-.metric-card.primary .mc-val { font-size: 25px; white-space: nowrap; }
-
-/* ─── MAIN LAYOUT ────────────────────────────────────────────────────────── */
-main {
-  position: relative; z-index: 5;
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1px;
-  margin: 0 36px 36px;
-  align-items: start;
-}
-
-/* ─── PANELS ─────────────────────────────────────────────────────────────── */
+/* ─── PANELS (FULL JOURNAL VIEW) ─────────────────────────────────────────── */
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -406,7 +225,6 @@ main {
   padding: 16px 22px; border-bottom: 1px solid var(--border);
 }
 .panel-title { font-family: var(--mono); font-size: 12px; letter-spacing: 3px; color: var(--text); }
-.sidebar { display: flex; flex-direction: column; gap: 1px; }
 
 /* ─── PORTFOLIO TABS ─────────────────────────────────────────────────────── */
 .portfolio-tabs-wrap {
@@ -593,18 +411,6 @@ main {
 .streak-dot.w { background: var(--green); }
 .streak-dot.l { background: var(--red); }
 
-/* ─── HEATMAP ────────────────────────────────────────────────────────────── */
-.heatmap-grid {
-  display: grid; grid-template-columns: repeat(7, 1fr);
-  gap: 3px; padding: 16px 20px;
-}
-.hmap-cell { aspect-ratio: 1; border-radius: 2px; cursor: default; transition: transform 0.15s; }
-.hmap-cell:hover { transform: scale(1.3); z-index: 10; }
-.hmap-label {
-  display: grid; grid-template-columns: repeat(7, 1fr);
-  gap: 3px; padding: 0 20px 4px;
-}
-.hmap-day-label { font-family: var(--mono); font-size: 8px; letter-spacing: 1px; color: var(--muted2); text-align: center; }
 
 /* ─── BUTTONS ────────────────────────────────────────────────────────────── */
 .btn-accent {
@@ -758,132 +564,39 @@ main {
 
 /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
 
-/* Tablet landscape / small desktop: 1024px */
-@media (max-width: 1100px) {
-  main { grid-template-columns: 1fr; }
-  .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
-  .metrics-row { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-}
-
-/* Tablet portrait: 768px */
+/* Responsive Breakpoints & Mobile Overrides */
 @media (max-width: 768px) {
-  /* Layout spacing */
-  header          { padding: 16px 16px 12px; margin-top: 44px; }
-  .equity-section { margin: 0 16px; }
-  .metrics-row    { margin: 16px 16px; grid-template-columns: repeat(3, 1fr); }
-  main            { margin: 0 16px 24px; }
-
-  /* Header — stack logo and right controls */
-  header { flex-wrap: wrap; gap: 10px; }
-  .header-right { gap: 8px; }
-  .logo-sub { display: none; }
-  .user-email { max-width: 130px; font-size: 10px; }
-
-  /* Sidebar stacks to single column */
-  .sidebar { grid-template-columns: 1fr; }
-
-  /* Form */
   .form-grid { grid-template-columns: 1fr; }
-
-  /* Equity stats wrap tighter */
-  .equity-stats { gap: 16px; }
-  .equity-stat .ev { font-size: 22px; }
-
-  /* Metrics smaller */
-  .mc-val { font-size: 24px; }
-
-  /* Table — allow horizontal scroll, tighten padding */
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .trade-table td, .trade-table th { padding: 10px 10px; }
-
-  /* Search goes full-width on its own row */
   .filter-bar { gap: 5px; }
-  .search-input { width: 100%; margin-left: 0; margin-top: 6px; }
-
-  /* Panel header buttons shrink */
   .panel-header { flex-wrap: wrap; gap: 6px; }
   .panel-header > div:last-child { gap: 6px; }
-
-  /* Noise & cursor off */
   .noise { display: none; }
-  
   body { cursor: auto; }
 }
 
-/* Mobile: 480px */
 @media (max-width: 480px) {
-  /* Even tighter spacing */
-  header          { padding: 12px 12px 10px; }
-  .equity-section { margin: 0 12px; padding: 16px 0 0; }
-  .metrics-row    { margin: 12px 12px; grid-template-columns: repeat(2, 1fr); }
-  main            { margin: 0 12px 20px; }
-
-  /* Header: hide live clock label, keep dot */
   .live-label { display: none; }
   .header-divider:last-of-type { display: none; }
-  .logo-mark { font-size: 20px; }
-  .logo-title { font-size: 22px; }
-
-  /* Auth card full-width */
   .auth-card { width: 100%; border-radius: 0; border-left: none; border-right: none; }
   .auth-body { padding: 20px 20px 28px; }
   .auth-logo { padding: 20px 20px 16px; }
-
-  /* Metrics: 2 columns, smaller text */
-  .mc-val   { font-size: 20px; }
-  .mc-label { font-size: 8px; }
-  .mc-sub   { font-size: 10px; }
-  .metric-card { padding: 12px 14px; }
-
-  /* Equity stats: 2 per row */
-  .equity-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .equity-stat .ev { font-size: 20px; }
-  .equity-stat .el { font-size: 9px; }
-
-  /* Filter bar: wrap tightly */
   .filter-bar { padding: 10px 12px; }
   .filter-btn { font-size: 9px; padding: 4px 7px; }
-
-  /* Table: hide lower-priority columns on very small screens */
   .trade-table .col-setup,
   .trade-table .col-tag { display: none; }
   .trade-table td, .trade-table th { padding: 9px 8px; font-size: 11px; }
-
-  /* Panel header: stack title and buttons */
   .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .panel-header > div:last-child { width: 100%; justify-content: flex-end; }
-
-  /* Modal full-screen on mobile */
   .modal-overlay { align-items: flex-end; }
   .modal {
     width: 100% !important; max-width: 100%;
     border-radius: 16px 16px 0 0;
     max-height: 92vh;
   }
-
-  /* Portfolio tabs scroll */
   .portfolio-tabs-wrap { padding: 8px 12px 0; }
   .portfolio-tab { font-size: 9px; padding: 5px 10px; }
-
-  /* Sidebar panels tighter */
-  .breakdown-bar { padding: 12px 14px; }
-  .sym-row { padding: 8px 14px; }
-  .streak-block { padding: 16px; }
-  .streak-num { font-size: 48px; }
-}
-
-/* Tiny phones: 360px */
-@media (max-width: 360px) {
-  .metrics-row { grid-template-columns: 1fr; }
-  .equity-stats { grid-template-columns: 1fr 1fr; }
-  .header-right { gap: 6px; }
-  .user-email { display: none; }
-}
-
-/* Touch devices — restore cursor */
-@media (pointer: coarse) {
-  
-  
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2296,11 +2009,6 @@ body.card-modal-open .bento-header {
     0 16px 40px rgba(0, 0, 0, 0.06),
     inset 0 1px 1px 0 rgba(255, 255, 255, 1);
 }
-:root.light .bento-card.is-expanded {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.18) !important;
-}
 
 /* Typography in Cards */
 :root.light .hero-balance-num {
@@ -2398,9 +2106,6 @@ body.card-modal-open .bento-header {
 }
 :root.light .feed-sym {
   color: #0f172a;
-}
-:root.light .feed-time {
-  color: #64748b;
 }
 :root.light .analytics-divider {
   background: rgba(0, 0, 0, 0.06);

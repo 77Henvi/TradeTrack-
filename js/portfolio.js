@@ -96,10 +96,8 @@ async function saveWelcome() {
 function renderExtendedPortfolios() {
   const container = document.getElementById('extendedPortfolioGrid');
   if (!container) return;
-  const allTrades = trades; // global trades
-
   container.innerHTML = portfolios.map(p => {
-    const pTrades = allTrades.filter(t => t.portfolio_id === p.id);
+    const pTrades = p.trades || [];
     const pnlSum = pTrades.reduce((s, t) => s + pnl(t), 0);
     const curBal = (p.balance || 0) + pnlSum;
     const retPct = p.balance ? (pnlSum / p.balance * 100) : 0;

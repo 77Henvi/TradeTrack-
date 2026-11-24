@@ -133,15 +133,3 @@ function closeTickerSettings(e) {
   if (!e || e.target === document.getElementById('tickerSettingsOverlay'))
     document.getElementById('tickerSettingsOverlay')?.classList.remove('open');
 }
-
-// KEYBOARD SHORTCUTS
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.key === 'n') {
-    e.preventDefault();
-    openModal();
-  }
-  if (e.key === 'Escape') {
-    closeModalDirect();
-    document.getElementById('confirmOverlay')?.classList.remove('open');
-  }
-});

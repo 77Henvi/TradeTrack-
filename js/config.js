@@ -37,25 +37,6 @@ const SYMBOL_PRESETS = {
 function getActivePortfolio() { return portfolios.find(p => p.id === activePortfolioId) || portfolios[0]; }
 function getActiveTrades()    { return getActivePortfolio()?.trades || []; }
 
-// SOUND
-let soundUnlocked = false, tickAudio = null;
-function unlockSound() {
-  if (soundUnlocked) return; soundUnlocked = true;
-  try { tickAudio = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-}
-document.addEventListener('click',   unlockSound, { once: true });
-document.addEventListener('keydown', unlockSound, { once: true });
-function playTick() {
-  if (!soundUnlocked || !tickAudio) return;
-  try {
-    const o = tickAudio.createOscillator(), g = tickAudio.createGain();
-    o.connect(g); g.connect(tickAudio.destination);
-    o.frequency.value = 880; g.gain.setValueAtTime(0.08, tickAudio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, tickAudio.currentTime + 0.08);
-    o.start(tickAudio.currentTime); o.stop(tickAudio.currentTime + 0.08);
-  } catch(e) {}
-}
-
 // PURE HELPERS
 function pnl(t) {
   const entry = t.entry_price ?? t.entry;
@@ -65,9 +46,11 @@ function pnl(t) {
   return diff * t.size * mult;
 }
 function pnlPct(t) {
-  if (!t.entry_price) return 0;
-  const diff = t.dir === 'Long' ? t.exit_price - t.entry_price : t.entry_price - t.exit_price;
-  return (diff / t.entry_price * 100);
+  const entry = t.entry_price ?? t.entry;
+  const exit  = t.exit_price  ?? t.exit;
+  if (!entry) return 0;
+  const diff  = t.dir === 'Long' ? exit - entry : entry - exit;
+  return (diff / entry * 100);
 }
 function fmtNum(n, dec = 2) {
   return (n === undefined || n === null || isNaN(n)) ? '-'

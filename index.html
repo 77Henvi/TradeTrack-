@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=2.7">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -183,8 +183,8 @@
       </div>
       
       <div class="bento-header-right">
-        <!-- Compact Live FX Ticker -->
-        <div class="ticker-compact-wrap">
+        <!-- Compact Live FX Ticker (click to configure) -->
+        <div class="ticker-compact-wrap" onclick="openTickerSettings()" style="cursor:pointer" title="Configure Live FX Ticker">
           <div class="ticker" id="ticker"></div>
         </div>
         
@@ -485,8 +485,6 @@
       </div>
     </div>
 
-    <!-- Hidden compatibility container for metricsRow so any legacy script doesn't throw -->
-    <div id="metricsRow" style="display:none"></div>
 
   </div>
 </div>
@@ -859,17 +857,20 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- CARD EXPAND BACKDROP -->
+<div class="card-expand-backdrop" id="cardExpandBackdrop" onclick="closeAllExpandedCards()"></div>
+
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/config.js?v=2.6"></script>    <!-- state, helpers, Supabase init -->
-<script src="js/db.js?v=2.6"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=2.6"></script>      <!-- login / register / logout -->
-<script src="js/portfolio.js?v=2.6"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=2.6"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.6"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=2.6"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=2.6"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/config.js?v=2.7"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js?v=2.7"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js?v=2.7"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js?v=2.7"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js?v=2.7"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=2.7"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js?v=2.7"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/ui.js?v=2.7"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>

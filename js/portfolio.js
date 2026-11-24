@@ -91,3 +91,44 @@ async function saveWelcome() {
   document.getElementById('welcomeOverlay').classList.remove('open');
   renderPortfolioTabs(); render();
 }
+
+// ─── EXTENDED MULTI-PORTFOLIO GRID ───────────────────────────────────────────
+function renderExtendedPortfolios() {
+  const container = document.getElementById('extendedPortfolioGrid');
+  if (!container) return;
+  const allTrades = trades; // global trades
+
+  container.innerHTML = portfolios.map(p => {
+    const pTrades = allTrades.filter(t => t.portfolio_id === p.id);
+    const pnlSum = pTrades.reduce((s, t) => s + pnl(t), 0);
+    const curBal = (p.balance || 0) + pnlSum;
+    const retPct = p.balance ? (pnlSum / p.balance * 100) : 0;
+    const wins = pTrades.filter(t => pnl(t) > 0).length;
+    const wr = pTrades.length ? (wins / pTrades.length * 100).toFixed(1) : '0.0';
+    const isActive = p.id === activePortfolioId;
+
+    return `
+      <div class="virtual-trading-card portfolio-grid-card ${isActive ? 'is-active-card' : ''}">
+        <div class="card-chip-row">
+          <span class="card-logo-badge">▲ TRACKTRADE</span>
+          <span class="card-prop-tag ${isActive ? 'active-tag' : ''}">${isActive ? '● CURRENT ACTIVE' : 'SUB-ACCOUNT'}</span>
+        </div>
+        <div class="card-balance-block">
+          <div class="card-balance-label">ACCOUNT BALANCE</div>
+          <div class="card-balance-val">$${fmtAbs(curBal, 2)}</div>
+        </div>
+        <div class="card-stats-grid">
+          <div class="cs-item"><span class="cs-label">NET P&L</span> <span class="cs-val ${pnlSum >= 0 ? 'pos' : 'neg'}">${pnlSum >= 0 ? '+' : ''}$${fmtAbs(pnlSum)}</span></div>
+          <div class="cs-item"><span class="cs-label">RETURN</span> <span class="cs-val ${retPct >= 0 ? 'pos' : 'neg'}">${retPct >= 0 ? '+' : ''}${retPct.toFixed(2)}%</span></div>
+          <div class="cs-item"><span class="cs-label">WIN RATE</span> <span class="cs-val">${wr}% (${pTrades.length} Trades)</span></div>
+        </div>
+        <div class="card-footer-row" style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px;">
+          <div class="card-account-name" style="font-size:14px;font-weight:800">${escHtml(p.name)}</div>
+          ${!isActive
+            ? `<button class="btn-ghost btn-sm-pill" onclick="switchPortfolio('${p.id}'); renderExtendedPortfolios();">Switch Account</button>`
+            : `<span class="active-badge-pill">✓ ACTIVE</span>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}

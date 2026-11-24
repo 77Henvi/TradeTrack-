@@ -58,18 +58,20 @@ function render() {
   renderHeatmap();
 }
 
-// ─── EQUITY CURVE ─────────────────────────────────────────────────────────────
+// ─── EQUITY CURVE (SMOOTH BEZIER SPLINE & HATCH SHADING) ─────────────────────
 function drawEquity() {
   const trades = getDateFilteredTrades(), canvas = document.getElementById('equityCanvas'); if (!canvas) return;
-  const dpr = window.devicePixelRatio || 1, W = canvas.offsetWidth; if (W === 0) return;
-  resetEquityHover(); equityPoints = []; equityBase = null;   // data is about to change
-  // Bitmap = displayed size × DPR on BOTH axes. The canvas is 160 CSS px tall but the chart is laid out in a
-  // 120-unit space; sizing the bitmap 120 tall and letting CSS stretch it 1.33× is what made it soft on Retina.
-  const cssH = canvas.offsetHeight || 120, sy = cssH / 120;
-  canvas.width = W * dpr; canvas.height = cssH * dpr;
-  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr * sy);
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth; if (W === 0) return;
+  const H = canvas.offsetHeight || 220;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
   const isLight = document.documentElement.classList.contains('light');
   const sorted  = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+
+  resetEquityHover(); equityPoints = []; equityBase = null;
 
   if (sorted.length === 0) {
     document.getElementById('equityStats').innerHTML =
@@ -80,50 +82,218 @@ function drawEquity() {
     return;
   }
 
+  // 1. Dotted Matrix Background (matching Image 2)
+  ctx.fillStyle = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.04)';
+  for (let x = 16; x < W - 16; x += 22) {
+    for (let y = 16; y < H - 16; y += 22) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2. Data Calculation
   const points = [0]; let running = 0;
   sorted.forEach(t => { running += pnl(t); points.push(running); });
-  const min = Math.min(...points), max = Math.max(...points), range = max - min || 1, pad = 10;
-  const xs = i => (i / (points.length - 1)) * (W - pad * 2) + pad;
-  const ys = v => 100 - ((v - min) / range) * 80 + 10;
-  const isPos = running >= 0;
-  const lineColor = isPos ? (isLight ? '#16a34a' : '#3cffa0') : (isLight ? '#dc2626' : '#ff4560');
-  const fillA     = isPos ? (isLight ? 'rgba(22,163,74,0.15)' : 'rgba(60,255,160,0.2)') : (isLight ? 'rgba(220,38,38,0.15)' : 'rgba(255,69,96,0.2)');
-  const grad = ctx.createLinearGradient(0, 0, 0, 120);
-  grad.addColorStop(0, fillA); grad.addColorStop(1, 'rgba(0,0,0,0)');
+  const min = Math.min(...points), max = Math.max(...points), range = max - min || 1;
+  const padLeft = 68, padRight = W > 600 ? 140 : 24, padTop = 32, padBottom = 32;
+  const xs = i => padLeft + (i / (points.length - 1)) * (W - padLeft - padRight);
+  const ys = v => padTop + (1 - (v - min) / range) * (H - padTop - padBottom);
 
-  ctx.beginPath(); ctx.moveTo(xs(0), ys(points[0]));
-  points.forEach((p, i) => { if (i > 0) ctx.lineTo(xs(i), ys(p)); });
-  ctx.lineTo(xs(points.length - 1), 120); ctx.lineTo(xs(0), 120); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
-
-  ctx.beginPath(); ctx.moveTo(xs(0), ys(points[0]));
-  points.forEach((p, i) => { if (i > 0) ctx.lineTo(xs(i), ys(p)); });
-  ctx.strokeStyle = lineColor; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
-
-  ctx.beginPath(); ctx.moveTo(pad, ys(0)); ctx.lineTo(W - pad, ys(0));
-  ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 1; ctx.setLineDash([4, 6]); ctx.stroke(); ctx.setLineDash([]);
-
-  points.forEach((p, i) => {
-    const win = i > 0 && pnl(sorted[i - 1]) > 0;
-    ctx.beginPath(); ctx.arc(xs(i), ys(p), 4, 0, Math.PI * 2);
-    ctx.fillStyle = i === 0
-      ? (isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)')
-      : (win ? lineColor : (isLight ? '#dc2626' : '#ff4560'));
+  // 3. Y-Axis Capsule Pills on Left (matching Image 2)
+  const yTicks = [min, min + range * 0.5, max];
+  yTicks.forEach(val => {
+    const y = ys(val);
+    const pw = 50, ph = 20, px = 8, py = y - ph / 2;
+    ctx.fillStyle = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+    ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.09)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(px, py, pw, ph, 10);
+    else ctx.rect(px, py, pw, ph);
     ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isLight ? '#475569' : '#cbd5e1';
+    ctx.font = '700 9.5px var(--mono)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const txt = Math.abs(val) >= 1000 ? `$${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}K` : `$${Math.round(val)}`;
+    ctx.fillText(txt, px + pw / 2, y);
   });
 
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Space Mono"'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-  ctx.fillText(fmtNum(max, 0), W - pad, ys(max) + (max === points[points.length - 1] ? -10 : 10));
-  if (min !== max) ctx.fillText(fmtNum(min, 0), W - pad, ys(min) - 10);
-  if (min < 0 && max > 0) ctx.fillText('0', W - pad, ys(0) - 6);
+  // 4. Coordinates & Bezier Spline Helper
+  const pts = points.map((p, i) => ({ x: xs(i), y: ys(p) }));
+  function traceSpline(c, pList) {
+    if (pList.length < 2) return;
+    c.moveTo(pList[0].x, pList[0].y);
+    for (let i = 0; i < pList.length - 1; i++) {
+      const p0 = pList[Math.max(0, i - 1)];
+      const p1 = pList[i];
+      const p2 = pList[i + 1];
+      const p3 = pList[Math.min(pList.length - 1, i + 2)];
+      const cp1x = p1.x + (p2.x - p0.x) / 4.5;
+      const cp1y = p1.y + (p2.y - p0.y) / 4.5;
+      const cp2x = p2.x - (p3.x - p1.x) / 4.5;
+      const cp2y = p2.y - (p3.y - p1.y) / 4.5;
+      c.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+  }
 
-  // geometry + snapshot of the finished chart, used by the hover overlay
+  // 5. Diagonal Hatch Shading under Main Curve (matching Image 2)
+  const hatchCanvas = document.createElement('canvas');
+  hatchCanvas.width = 16; hatchCanvas.height = 16;
+  const hpCtx = hatchCanvas.getContext('2d');
+  hpCtx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.07)' : 'rgba(56, 189, 248, 0.12)';
+  hpCtx.lineWidth = 1.5;
+  hpCtx.beginPath();
+  hpCtx.moveTo(0, 16); hpCtx.lineTo(16, 0);
+  hpCtx.moveTo(-4, 4); hpCtx.lineTo(4, -4);
+  hpCtx.moveTo(12, 20); hpCtx.lineTo(20, 12);
+  hpCtx.stroke();
+  const hatchPattern = ctx.createPattern(hatchCanvas, 'repeat');
+
+  ctx.save();
+  ctx.beginPath();
+  traceSpline(ctx, pts);
+  const lastPt = pts[pts.length - 1];
+  ctx.lineTo(lastPt.x, H - 15);
+  ctx.lineTo(pts[0].x, H - 15);
+  ctx.closePath();
+  ctx.clip();
+
+  // Gradient fill under curve
+  const fillGrad = ctx.createLinearGradient(0, padTop, 0, H);
+  fillGrad.addColorStop(0, isLight ? 'rgba(37, 99, 235, 0.16)' : 'rgba(56, 189, 248, 0.22)');
+  fillGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = fillGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Diagonal hatch stripes overlay
+  ctx.fillStyle = hatchPattern;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // 6. Secondary Smooth Benchmark Line (matching Image 2 gray curve)
+  const compPts = points.map((p, i) => {
+    const baselineY = ys(0) + (ys(points[i]) - ys(0)) * 0.45;
+    return { x: xs(i), y: baselineY };
+  });
+  ctx.beginPath();
+  traceSpline(ctx, compPts);
+  ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.22)' : 'rgba(148, 163, 184, 0.35)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  const lastComp = compPts[compPts.length - 1];
+  ctx.beginPath();
+  ctx.arc(lastComp.x, lastComp.y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = isLight ? '#94a3b8' : '#64748b';
+  ctx.fill();
+
+  // 7. Primary Gradient Bezier Stroke (Emerald -> Cyan/Blue)
+  const strokeGrad = ctx.createLinearGradient(padLeft, 0, lastPt.x, 0);
+  strokeGrad.addColorStop(0, '#22c55e'); // emerald green
+  strokeGrad.addColorStop(0.5, '#38bdf8'); // electric cyan
+  strokeGrad.addColorStop(1, '#00a8ff'); // vibrant blue
+
+  ctx.beginPath();
+  traceSpline(ctx, pts);
+  ctx.strokeStyle = strokeGrad;
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = isLight ? 'rgba(37, 99, 235, 0.3)' : 'rgba(56, 189, 248, 0.55)';
+  ctx.shadowBlur = 10;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Primary Endpoint Dot
+  ctx.beginPath();
+  ctx.arc(lastPt.x, lastPt.y, 5.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#00a8ff';
+  ctx.shadowColor = '#00a8ff';
+  ctx.shadowBlur = 12;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(lastPt.x, lastPt.y, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // 8. Vertical Guideline & Right-Side Floating Glass Pills (matching Image 2)
+  ctx.beginPath();
+  ctx.moveTo(lastPt.x, padTop - 10);
+  ctx.lineTo(lastPt.x, H - padBottom + 10);
+  ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (W > 560) {
+    const pillX = Math.min(W - 134, lastPt.x + 14);
+    const topPillY = Math.max(padTop - 8, lastPt.y - 14);
+    
+    // Top Callout Pill
+    ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
+    ctx.font = '600 8.5px var(--mono)';
+    ctx.textAlign = 'left';
+    ctx.fillText('Growth Trend', pillX, topPillY - 5);
+
+    ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(18, 22, 32, 0.88)';
+    ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    const pillW = 118, pillH = 24;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(pillX, topPillY, pillW, pillH, 12);
+    else ctx.rect(pillX, topPillY, pillW, pillH);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(pillX + 10, topPillY + pillH / 2, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#22c55e';
+    ctx.fill();
+
+    ctx.fillStyle = isLight ? '#0f172a' : '#ffffff';
+    ctx.font = '800 10.5px var(--mono)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${running >= 0 ? '+' : ''}$${fmtAbs(running)}`, pillX + 20, topPillY + pillH / 2 + 3);
+
+    // Bottom Comparison Pill
+    const btmPillY = Math.min(H - padBottom, lastComp.y + 4);
+    ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
+    ctx.font = '600 8.5px var(--mono)';
+    ctx.fillText('Benchmark Base', pillX, btmPillY - 5);
+
+    ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(18, 22, 32, 0.88)';
+    ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(pillX, btmPillY, pillW, pillH, 12);
+    else ctx.rect(pillX, btmPillY, pillW, pillH);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(pillX + 10, btmPillY + pillH / 2, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#64748b';
+    ctx.fill();
+
+    const port = getActivePortfolio();
+    const baseBal = port?.balance || 5000;
+    ctx.fillStyle = isLight ? '#0f172a' : '#ffffff';
+    ctx.font = '800 10.5px var(--mono)';
+    ctx.fillText(`$${fmtAbs(baseBal)}`, pillX + 20, btmPillY + pillH / 2 + 3);
+  }
+
+  // Hover Overlay Geometry
   const balMap = buildBalanceMap();
   equityPoints = sorted.map((t, i) => ({
     x: xs(i + 1), y: ys(points[i + 1]), trade: t, equity: balMap[t.id],
-    color: pnl(t) > 0 ? lineColor : (isLight ? '#dc2626' : '#ff4560'),
+    color: pnl(t) > 0 ? '#22c55e' : (isLight ? '#dc2626' : '#ff4560'),
   }));
-  equityGeom = { dpr, W, H: 120, sy, isLight };
+  equityGeom = { dpr, W, H, isLight };
   try { equityBase = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch (e) { equityBase = null; }
 
   let peak = points[0], maxDD = 0;
@@ -199,7 +369,7 @@ function clearEquityHover() {
   if (had && canvas && equityBase && equityGeom) {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(equityBase, 0, 0);
-    ctx.setTransform(equityGeom.dpr, 0, 0, equityGeom.dpr * equityGeom.sy, 0, 0);
+    ctx.setTransform(equityGeom.dpr, 0, 0, equityGeom.dpr, 0, 0);
   }
 }
 
@@ -208,17 +378,16 @@ function paintEquityOverlay(ts) {
   if (!canvas || !g || !p || !equityBase) return;
   const ctx = canvas.getContext('2d');
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.putImageData(equityBase, 0, 0);
-  ctx.setTransform(g.dpr, 0, 0, g.dpr * g.sy, 0, 0);
+  ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
 
   // vertical crosshair
   ctx.beginPath(); ctx.moveTo(p.x, 4); ctx.lineTo(p.x, g.H - 4);
   ctx.strokeStyle = g.isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)';
   ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
 
-  // pulsing ring — canvas is CSS-stretched vertically, so undo that to keep it circular
-  const sy = g.sy;
+  // pulsing ring
   const phase = equityReducedMotion() ? 0.3 : ((ts || 0) % 1200) / 1200;
-  ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, 1 / sy);
+  ctx.save(); ctx.translate(p.x, p.y);
   ctx.beginPath(); ctx.arc(0, 0, 6 + phase * 9, 0, Math.PI * 2);
   ctx.strokeStyle = p.color; ctx.globalAlpha = 1 - phase; ctx.lineWidth = 2; ctx.stroke();
   ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
@@ -736,7 +905,11 @@ function toggleExpandCard(cardId) {
     card.scrollTop = 0;
     
     if (cardId === 'cardEquity') {
-      setTimeout(drawEquity, 200);
+      setTimeout(drawEquity, 100);
+    } else if (cardId === 'cardAccounts') {
+      if (typeof renderExtendedPortfolios === 'function') renderExtendedPortfolios();
+    } else if (cardId === 'cardTrades') {
+      renderExtendedTradesTable();
     }
     toast(`Extended view mode`);
   }
@@ -751,8 +924,69 @@ function closeAllExpandedCards() {
   const backdrop = document.getElementById('cardExpandBackdrop');
   if (backdrop) backdrop.classList.remove('active');
   if (hadExpanded && hadExpanded.id === 'cardEquity') {
-    setTimeout(drawEquity, 200);
+    setTimeout(drawEquity, 100);
   }
+}
+
+// ─── EXTENDED TRADES TABLE RENDERER ──────────────────────────────────────────
+function renderExtendedTradesTable() {
+  const container = document.getElementById('extendedTradesTable');
+  if (!container) return;
+  const list = getFiltered();
+  
+  if (!list.length) {
+    container.innerHTML = `<div class="feed-empty-sub" style="padding:48px;text-align:center">No trades found matching current filter criteria.</div>`;
+    return;
+  }
+
+  const rows = list.map(t => {
+    const p = pnl(t);
+    const win = p > 0;
+    const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
+    const rText = isNaN(rVal) ? '—' : `${rVal >= 0 ? '+' : ''}${rVal.toFixed(2)}R`;
+    const rClass = isNaN(rVal) ? '' : (rVal >= 0 ? 'pos' : 'neg');
+
+    return `
+      <tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(t.date)}</td>
+        <td style="font-weight:800;font-size:13px">${escHtml(t.sym)}</td>
+        <td><span class="feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span></td>
+        <td style="font-family:var(--mono);">${fmtNum(t.entry)}</td>
+        <td style="font-family:var(--mono);">${fmtNum(t.exit)}</td>
+        <td style="font-family:var(--mono);">${t.size}</td>
+        <td style="font-family:var(--mono);font-weight:800;" class="${win ? 'pos' : 'neg'}">${p >= 0 ? '+' : ''}${fmtAbs(p)} USD</td>
+        <td style="font-family:var(--mono);" class="${p >= 0 ? 'pos' : 'neg'}">${pnlPct(t).toFixed(2)}%</td>
+        <td style="font-family:var(--mono);" class="${rClass}">${rText}</td>
+        <td><span style="font-size:11px;color:var(--muted)">${escHtml(t.setup || '—')}</span></td>
+        <td><span class="tag-pill">${escHtml(t.tag || 'None')}</span></td>
+        <td style="text-align:right">
+          <button class="btn-trade-dots" onclick="openTradeDetails('${t.id}')" title="Inspect order details">••• Inspect</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <table class="trade-table" style="width:100%">
+      <thead>
+        <tr>
+          <th>DATE</th>
+          <th>SYMBOL</th>
+          <th>DIR</th>
+          <th>ENTRY</th>
+          <th>EXIT</th>
+          <th>SIZE</th>
+          <th>P&L (USD)</th>
+          <th>RETURN %</th>
+          <th>R</th>
+          <th>SETUP</th>
+          <th>TAG</th>
+          <th style="text-align:right">ACTION</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
 }
 
 // ─── ORDER DETAILS INSPECTOR MODAL ────────────────────────────────────────────

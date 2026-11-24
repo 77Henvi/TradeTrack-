@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.5">
+  <link rel="stylesheet" href="style.css?v=2.6">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -324,35 +324,50 @@
             </div>
           </div>
           
-          <!-- Active Portfolio Virtual Card -->
-          <div class="virtual-trading-card" id="activeVirtualCard">
-            <div class="card-chip-row">
-              <span class="card-logo-badge">▲ TRACKTRADE</span>
-              <span class="card-prop-tag" id="cardAccountType">ACTIVE ACCOUNT</span>
+          <!-- Compact View Content -->
+          <div class="compact-accounts-view">
+            <!-- Active Portfolio Virtual Card -->
+            <div class="virtual-trading-card" id="activeVirtualCard">
+              <div class="card-chip-row">
+                <span class="card-logo-badge">▲ TRACKTRADE</span>
+                <span class="card-prop-tag" id="cardAccountType">ACTIVE ACCOUNT</span>
+              </div>
+              <div class="card-balance-block">
+                <div class="card-balance-label">ACCOUNT BALANCE</div>
+                <div class="card-balance-val" id="cardBalanceDisplay">$0.00</div>
+              </div>
+              <div class="card-footer-row">
+                <div class="card-account-name" id="cardAccountName">Main Portfolio</div>
+                <div class="card-return-pill" id="cardReturnPill">+0.00%</div>
+              </div>
             </div>
-            <div class="card-balance-block">
-              <div class="card-balance-label">ACCOUNT BALANCE</div>
-              <div class="card-balance-val" id="cardBalanceDisplay">$0.00</div>
+            
+            <!-- Mini Portfolio Tabs Row -->
+            <div class="portfolio-tabs-wrap">
+              <div class="portfolio-tabs" id="portfolioTabs"></div>
             </div>
-            <div class="card-footer-row">
-              <div class="card-account-name" id="cardAccountName">Main Portfolio</div>
-              <div class="card-return-pill" id="cardReturnPill">+0.00%</div>
+
+            <!-- Quick Action Buttons Row -->
+            <div class="bento-account-actions">
+              <button class="btn-primary-cta" onclick="openModal()">+ NEW TRADE</button>
+              <div class="action-btn-subgroup">
+                <button class="btn-ghost btn-action-sub" onclick="openImportModal()" title="Import CSV">↑ CSV</button>
+                <button class="btn-ghost btn-action-sub" onclick="exportCSV()" title="Export CSV">↓ CSV</button>
+                <button class="btn-ghost btn-action-sub" onclick="openPortfolioSettings()" title="Settings">⚙</button>
+              </div>
             </div>
-          </div>
-          
-          <!-- Mini Portfolio Tabs Row -->
-          <div class="portfolio-tabs-wrap">
-            <div class="portfolio-tabs" id="portfolioTabs"></div>
           </div>
 
-          <!-- Quick Action Buttons Row -->
-          <div class="bento-account-actions">
-            <button class="btn-primary-cta" onclick="openModal()">+ NEW TRADE</button>
-            <div class="action-btn-subgroup">
-              <button class="btn-ghost btn-action-sub" onclick="openImportModal()" title="Import CSV">↑ CSV</button>
-              <button class="btn-ghost btn-action-sub" onclick="exportCSV()" title="Export CSV">↓ CSV</button>
-              <button class="btn-ghost btn-action-sub" onclick="openPortfolioSettings()" title="Settings">⚙</button>
+          <!-- Extended View Content (Active in Fullscreen Extended Mode) -->
+          <div class="extended-accounts-view">
+            <div class="extended-section-intro">
+              <div>
+                <h4 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">All Connected Trading Accounts</h4>
+                <p style="font-size:12px;color:var(--muted)">Manage balances, review win rates, and toggle between prop firm, personal, and demo accounts.</p>
+              </div>
+              <button class="btn-accent" onclick="openNewPortfolioModal()">+ Create New Portfolio</button>
             </div>
+            <div class="extended-portfolio-grid" id="extendedPortfolioGrid"></div>
           </div>
         </section>
 
@@ -372,21 +387,42 @@
             </div>
           </div>
           
-          <!-- Quick Filter Pills for Feed -->
-          <div class="compact-filter-row">
-            <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
-            <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
-            <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
-            <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
-            <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+          <!-- Compact View Content -->
+          <div class="compact-trades-view">
+            <!-- Quick Filter Pills for Feed -->
+            <div class="compact-filter-row">
+              <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+              <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
+              <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
+              <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
+              <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+            </div>
+
+            <!-- Compact Live Feed List -->
+            <div class="recent-trades-feed" id="recentTradesFeed"></div>
+            
+            <div class="empty-state" id="emptyStateCompact" style="display:none">
+              <div class="empty-icon">◎</div>
+              <div style="font-size:12px;color:var(--muted)">NO TRADES LOGGED YET</div>
+            </div>
           </div>
 
-          <!-- Compact Live Feed List -->
-          <div class="recent-trades-feed" id="recentTradesFeed"></div>
-          
-          <div class="empty-state" id="emptyStateCompact" style="display:none">
-            <div class="empty-icon">◎</div>
-            <div style="font-size:12px;color:var(--muted)">NO TRADES LOGGED YET</div>
+          <!-- Extended View Content (Active in Fullscreen Extended Mode) -->
+          <div class="extended-trades-view">
+            <div class="extended-section-intro">
+              <div>
+                <h4 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">Live Execution Ledger & Deep Inspection</h4>
+                <p style="font-size:12px;color:var(--muted)">Full multi-column trade audit trail with one-click order detail inspection.</p>
+              </div>
+              <div class="filter-bar" style="margin:0">
+                <button class="filter-btn active" onclick="setFilter('all',this); renderExtendedTradesTable();">ALL</button>
+                <button class="filter-btn" onclick="setFilter('Long',this); renderExtendedTradesTable();">LONG</button>
+                <button class="filter-btn" onclick="setFilter('Short',this); renderExtendedTradesTable();">SHORT</button>
+                <button class="filter-btn" onclick="setFilter('win',this); renderExtendedTradesTable();">WINS</button>
+                <button class="filter-btn" onclick="setFilter('loss',this); renderExtendedTradesTable();">LOSSES</button>
+              </div>
+            </div>
+            <div class="extended-trades-table-wrap" id="extendedTradesTable"></div>
           </div>
         </section>
 
@@ -826,14 +862,14 @@
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/config.js?v=2.5"></script>    <!-- state, helpers, Supabase init -->
-<script src="js/db.js?v=2.5"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=2.5"></script>      <!-- login / register / logout -->
-<script src="js/portfolio.js?v=2.5"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=2.5"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.5"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=2.5"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=2.5"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/config.js?v=2.6"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js?v=2.6"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js?v=2.6"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js?v=2.6"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js?v=2.6"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=2.6"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js?v=2.6"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/ui.js?v=2.6"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>

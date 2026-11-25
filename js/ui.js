@@ -766,14 +766,14 @@ function renderHeatmap() {
       if (val > 0) {
         bg = isLight ? `rgba(22,163,74,${intensity.toFixed(2)})` : `rgba(60,255,160,${intensity.toFixed(2)})`;
         border = isLight ? `rgba(22,163,74,0.55)` : `rgba(60,255,160,0.55)`;
-        pnlStr = `<span class="hmap-day-pnl pos">+${fmtAbs(Math.abs(val), 0)} USD</span>`;
+        pnlStr = `<span class="hmap-day-pnl pos">+${fmtAbs(Math.abs(val), 0)}<span class="hmap-usd"> USD</span></span>`;
       } else if (val < 0) {
         bg = isLight ? `rgba(220,38,38,${intensity.toFixed(2)})` : `rgba(255,69,96,${intensity.toFixed(2)})`;
         border = isLight ? `rgba(220,38,38,0.55)` : `rgba(255,69,96,0.55)`;
-        pnlStr = `<span class="hmap-day-pnl neg">-${fmtAbs(Math.abs(val), 0)} USD</span>`;
+        pnlStr = `<span class="hmap-day-pnl neg">-${fmtAbs(Math.abs(val), 0)}<span class="hmap-usd"> USD</span></span>`;
       } else {
         bg = isLight ? `rgba(0,0,0,0.06)` : `rgba(255,255,255,0.08)`;
-        pnlStr = `<span class="hmap-day-pnl zero">0 USD</span>`;
+        pnlStr = `<span class="hmap-day-pnl zero">0<span class="hmap-usd"> USD</span></span>`;
       }
       dotsHtml = `<div class="hmap-day-dots">` + 
         info.trades.slice(0, 4).map(t => `<div class="hmap-dot ${pnl(t) > 0 ? 'win' : 'loss'}"></div>`).join('') +
@@ -886,6 +886,8 @@ function renderRecentFeed() {
 
 // ─── VIEW SWITCHER & NAVIGATION ───────────────────────────────────────────────
 function switchMainView(view) {
+  document.getElementById('mtabDash')?.classList.toggle('active', view !== 'journal');      // mobile tab bar
+  document.getElementById('mtabJournal')?.classList.toggle('active', view === 'journal');
   const dashView = document.getElementById('bentoDashboardView');
   const journalView = document.getElementById('fullJournalView');
   const btnDash = document.getElementById('navBtnDashboard');
@@ -907,6 +909,17 @@ function switchMainView(view) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
+
+// "More" bottom sheet (mobile)
+function toggleMoreSheet(force) {
+  const sheet = document.getElementById('moreSheet'); if (!sheet) return;
+  const open = typeof force === 'boolean' ? force : !sheet.classList.contains('open');
+  sheet.classList.toggle('open', open);
+  document.getElementById('moreSheetBackdrop')?.classList.toggle('open', open);
+  const btn = document.getElementById('mtabMore');
+  if (btn) { btn.classList.toggle('active', open); btn.setAttribute('aria-expanded', String(open)); }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleMoreSheet(false); });
 
 function scrollToBentoCard(cardId) {
   switchMainView('dashboard');

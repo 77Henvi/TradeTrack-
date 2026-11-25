@@ -6,12 +6,13 @@
     if (theme === "light") document.documentElement.classList.add("light");
   </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
   <title>TrackTrade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.3">
+  <link rel="stylesheet" href="style.css?v=3.5">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -200,6 +201,35 @@
       </button>
     </div>
   </aside>
+
+  <!-- MOBILE TAB BAR + "MORE" SHEET (≤768px) — replaces the left nav rail on phones / small tablets -->
+  <nav class="mobile-tabbar" id="mobileTabbar" aria-label="Primary">
+    <button class="mtab active" id="mtabDash" onclick="switchMainView('dashboard')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Overview</span>
+    </button>
+    <button class="mtab" id="mtabJournal" onclick="switchMainView('journal')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>Journal</span>
+    </button>
+    <button class="mtab-fab" onclick="openModal()" aria-label="New trade">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="mtab" id="mtabAnalytics" onclick="scrollToBentoCard('cardAnalytics')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span>
+    </button>
+    <button class="mtab" id="mtabMore" onclick="toggleMoreSheet()" aria-expanded="false" aria-controls="moreSheet">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg><span>More</span>
+    </button>
+  </nav>
+  <div class="more-sheet-backdrop" id="moreSheetBackdrop" onclick="toggleMoreSheet(false)"></div>
+  <div class="more-sheet" id="moreSheet" role="dialog" aria-label="More options">
+    <div class="more-sheet-grip" aria-hidden="true"></div>
+    <button class="more-item" onclick="toggleMoreSheet(false); scrollToBentoCard('cardHeatmap')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Heatmap</span></button>
+    <button class="more-item" onclick="toggleMoreSheet(false); openPortfolioSettings()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8L7 17M17 7l2.8-2.8"/></svg><span>Portfolio settings</span></button>
+    <button class="more-item" onclick="toggleMoreSheet(false); openTickerSettings()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Ticker settings</span></button>
+    <button class="more-item" onclick="document.getElementById('themeToggle').click(); toggleMoreSheet(false)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>Switch dark / light</span></button>
+    <a class="more-item" href="?intro=1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Replay 3D intro</span></a>
+    <button class="more-item danger" onclick="logout()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span></button>
+  </div>
 
   <!-- 2. MAIN APP CONTENT AREA -->
   <div class="app-main-content">
@@ -909,7 +939,7 @@
 <script src="js/ticker.js?v=3.0"></script>    <!-- ticker tape & settings -->
 <script src="js/modal.js?v=2.8"></script>     <!-- trade modal & export -->
 <script src="js/scrolly3d.js?v=3.0"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=3.1"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/ui.js?v=3.2"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>

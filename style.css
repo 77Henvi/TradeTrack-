@@ -2504,3 +2504,234 @@ body:has(.card-expand-backdrop.active) .ambient-orb { animation-play-state: paus
 /* ticker session badge: fixed width so OPEN ⇄ CLOSED never changes the tape's width (no jump) */
 .ticker-status { display: inline-block; min-width: 9ch; }
 .ticker-time   { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE & TABLET
+   ≤768  : phone / small tablet → bottom tab bar, compact header, 2×2 stats, card-style journal, bottom-sheet modals
+   769–1100 : tablet → trimmed header
+   701–1280 : tablet → two-column lower cards
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* safety net: a stray wide child must never make the whole page scroll sideways (clip ≠ scroll container, sticky still works) */
+.app-main-content { overflow-x: clip; }
+button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* tab bar + sheet exist only on small screens */
+.mobile-tabbar, .more-sheet, .more-sheet-backdrop { display: none; }
+
+/* header: the search box shrinks before it can ever slide under the ticker */
+@media (min-width: 769px) {
+  .bento-header-left { min-width: 0; }
+  .bento-header-right { flex-shrink: 0; }
+}
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .user-profile-info, .shortcut-badge { display: none; }
+  .user-profile-pill { padding: 3px; }
+  .ticker-compact-wrap { max-width: 260px; }
+}
+
+/* ── tablets (769–1100): header was squeezed — drop the least useful bits ─────── */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .shortcut-badge, .user-profile-info { display: none; }
+  .user-profile-pill { padding: 3px; }
+  .bento-header { padding: 0 16px; }
+  .bento-header-left { max-width: 280px; }
+  .bento-header-right { gap: 10px; min-width: 0; }
+  .ticker-compact-wrap { max-width: 230px; }
+}
+
+/* ── tablets & large phones: put Accounts + Recent Trades side by side ─────────── */
+@media (min-width: 701px) and (max-width: 1280px) {
+  .bento-col-right { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  /* the feed lives in a half-width card here: let the symbol/date wrap and drop the redundant ••• button */
+  .feed-trade-item { gap: 8px; }
+  .feed-item-left { flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+  .feed-date-text { white-space: nowrap; }
+  .feed-item-right .btn-trade-dots { display: none; }
+}
+
+/* ── phones & small tablets ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .app-nav-rail { display: none; }
+  .app-main-content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  html.intro-active .mobile-tabbar, html.intro-active .more-sheet, html.intro-active .more-sheet-backdrop { display: none !important; }
+
+  /* iOS zooms the page when a focused field has font-size < 16px */
+  input, select, textarea, .bento-search-input { font-size: 16px !important; }
+  .shortcut-badge { display: none; }
+
+  /* header: [logo + search] [avatar] / ticker strip — scrolls away so it doesn't eat the screen */
+  .bento-header {
+    position: relative; height: auto; flex-wrap: wrap; justify-content: flex-start; gap: 8px 10px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+  }
+  .bento-header-left { order: 1; flex: 1 1 0; min-width: 0; max-width: none; gap: 10px; }
+  .bento-header-right { display: contents; }
+  .live-clock-badge { order: 2; }
+  .user-profile-pill { order: 2; padding: 3px; border-radius: 50%; }
+  .user-profile-info, .header-divider { display: none; }
+  .search-command-pill { min-width: 0; padding: 8px 12px; }
+  .ticker-compact-wrap {
+    display: flex !important; order: 3; flex: 0 0 100%; max-width: none; height: 32px;
+    border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  }
+
+  .bento-container { padding: 14px; gap: 14px; }
+  .bento-col-left, .bento-col-right { gap: 14px; }
+  .bento-split-row { gap: 14px; }
+  .bento-card { padding: 16px; border-radius: 18px; }
+  .bento-card::after { border-radius: 18px; }
+  .bento-card-header { flex-wrap: wrap; gap: 10px; }
+
+  /* hero chart card */
+  .hero-balance-num { font-size: 28px; }
+  .bento-card-header > .timeframe-pill-group { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 4px; padding: 3px; }
+  .timeframe-pill-group .filter-btn { min-width: 0; padding: 7px 2px; font-size: 9px; letter-spacing: 0.02em; white-space: nowrap; text-align: center; }
+  .timeframe-pill-group .btn-extend-card { margin-left: 2px; }
+  .bento-hero-curve .equity-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+
+  /* heatmap: 7 shrinkable columns so the grid can never be wider than its card */
+  .hmap-calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .hmap-day-cell { min-width: 0; min-height: 46px; aspect-ratio: auto; padding: 4px 5px; border-radius: 8px; overflow: hidden; }
+  .hmap-day-num { font-size: 9px; }
+  .hmap-day-pnl { font-size: 9px; letter-spacing: -0.02em; white-space: nowrap; }
+  .hmap-usd, .hmap-day-dots { display: none; }
+  .hmap-col-header { font-size: 9px; }
+  .heatmap-nav-controls { flex-wrap: wrap; }
+
+  /* recent trades feed */
+  .feed-item-left { flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+  .feed-date-text { white-space: nowrap; }
+  .feed-item-right .btn-trade-dots { display: none; }       /* the whole row already opens the details */
+
+  /* fullscreen-expanded cards use the whole screen (and cover the tab bar) */
+  .bento-card.is-expanded { top: 8px !important; left: 8px !important; right: 8px !important; bottom: 8px !important; }
+
+  /* full journal */
+  .full-journal-view { padding: 14px; }
+  .panel-title-with-back .btn-sm-pill, .panel-log .panel-header .btn-accent { display: none; }
+  .panel-title-with-back .panel-title { margin-left: 0 !important; }
+  .panel-log .panel-header { flex-direction: row; align-items: center; justify-content: space-between; }
+  .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ── bottom tab bar ── */
+  .mobile-tabbar {
+    display: flex; position: fixed; z-index: 400; left: 12px; right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)); height: 64px; padding: 0 6px;
+    align-items: center; justify-content: space-around; border-radius: 22px;
+    background: rgba(16, 12, 10, 0.94); border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 14px 36px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .mtab {
+    flex: 1; min-width: 0; min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: none; border: 0; border-radius: 14px; color: var(--muted); cursor: pointer;
+    font: 600 10px/1 var(--sans); letter-spacing: 0.04em; transition: color .15s ease;
+  }
+  .mtab svg { width: 22px; height: 22px; }
+  .mtab.active { color: var(--accent); }
+  .mtab-fab {
+    flex: 0 0 54px; width: 54px; height: 54px; margin: -26px 4px 0; border: 0; border-radius: 50%; cursor: pointer;
+    display: grid; place-items: center; color: #fff;
+    background: linear-gradient(135deg, var(--accent-peach), var(--accent2));
+    box-shadow: 0 10px 24px var(--accent-glow), 0 0 0 4px rgba(16, 12, 10, 0.94);
+  }
+  .mtab-fab:active { transform: scale(0.94); }
+
+  /* ── "More" bottom sheet ── */
+  .more-sheet-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 450; background: rgba(0,0,0,0.55);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .more-sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+  .more-sheet {
+    display: flex; flex-direction: column; gap: 2px; position: fixed; z-index: 460; left: 0; right: 0; bottom: 0;
+    padding: 8px 12px calc(16px + env(safe-area-inset-bottom, 0px)); border-radius: 22px 22px 0 0;
+    background: var(--bg2); border: 1px solid var(--border2); border-bottom: 0;
+    transform: translateY(105%); visibility: hidden;
+    transition: transform .28s cubic-bezier(.16,1,.3,1), visibility 0s linear .28s;
+  }
+  .more-sheet.open { transform: translateY(0); visibility: visible; transition-delay: 0s; }
+  .more-sheet-grip { width: 38px; height: 4px; border-radius: 2px; background: var(--border2); margin: 4px auto 10px; }
+  .more-item {
+    display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 0 12px; border: 0; border-radius: 14px;
+    background: none; color: var(--text); font: 600 15px var(--sans); text-align: left; text-decoration: none; cursor: pointer;
+  }
+  .more-item:active { background: rgba(255,255,255,0.06); }
+  .more-item svg { flex-shrink: 0; color: var(--muted); }
+  .more-item.danger, .more-item.danger svg { color: var(--red); }
+}
+
+/* ── phones (≤640) ─────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* stats: compact 2×2 instead of four full-width cards */
+  .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stat-card { padding: 14px; border-radius: 18px; }
+  .stat-icon { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 9px; }
+  .stat-icon svg { width: 14px; height: 14px; }
+  .stat-title { font-size: 10px; letter-spacing: 0.05em; padding-right: 30px; margin-bottom: 18px; }
+  .stat-value { font-size: 20px; }
+  .stat-change { font-size: 11px; margin-top: 6px; }
+  .stat-note { display: none; }
+
+  /* journal table → one card per trade (no markup change; cells are placed by position) */
+  .table-scroll { overflow: visible; }
+  .trade-table, .trade-table tbody { display: block; width: 100%; }
+  .trade-table thead { display: none; }
+  .trade-table tbody { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .trade-table tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: 4px 10px;
+    grid-template-areas: "sym dir pnl" "date size pct" "entry exit r" "setup setup act" "tag tag act";
+    padding: 11px 14px; border: 1px solid var(--border); border-left-width: 3px; border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+  }
+  .trade-table tbody tr.row-win  { border-left-color: var(--green); }
+  .trade-table tbody tr.row-loss { border-left-color: var(--red); }
+  .trade-table tbody td { display: block; min-width: 0; padding: 0 !important; border: 0 !important; background: none !important; white-space: normal; }
+  .trade-table tbody td:nth-child(1)  { grid-area: date; }
+  .trade-table tbody td:nth-child(2)  { grid-area: sym; font-size: 14px; }
+  .trade-table tbody td:nth-child(3)  { grid-area: dir; }
+  .trade-table tbody td:nth-child(4)  { grid-area: entry; }
+  .trade-table tbody td:nth-child(5)  { grid-area: exit; }
+  .trade-table tbody td:nth-child(6)  { grid-area: size; }
+  .trade-table tbody td:nth-child(7)  { grid-area: pnl; text-align: right; font-size: 15px; }
+  .trade-table tbody td:nth-child(8)  { grid-area: pct; text-align: right; }
+  .trade-table tbody td:nth-child(9)  { grid-area: r; text-align: right; }
+  .trade-table tbody td.col-setup     { grid-area: setup; display: block; font-size: 11px; }
+  .trade-table tbody td.col-tag       { grid-area: tag; display: block; }
+  .trade-table tbody td:nth-child(12) { grid-area: act; align-self: end; justify-self: end; }
+  .trade-table tbody td:nth-child(4)::before, .trade-table tbody td:nth-child(5)::before {
+    display: block; font: 700 8px var(--mono); letter-spacing: 0.12em; color: var(--muted); margin-bottom: 2px;
+  }
+  .trade-table tbody td:nth-child(4)::before { content: 'ENTRY'; }
+  .trade-table tbody td:nth-child(5)::before { content: 'EXIT'; }
+  .trade-table .del-btn { min-width: 40px; min-height: 40px; }
+
+  /* modals become bottom sheets */
+  .modal-overlay { align-items: flex-end; }
+  .modal { width: 100% !important; max-width: 100%; max-height: 92dvh; border-radius: 20px 20px 0 0; }
+  .modal-header { padding: 16px; }
+  .modal-title { font-size: 18px; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); position: sticky; bottom: 0; background: var(--bg2); }
+  .btn-close { min-width: 40px; min-height: 40px; }
+}
+
+@media (max-width: 480px) {
+  .logo-block.mobile-only .logo-title, .live-clock-badge { display: none; }
+  .hero-balance-row { flex-wrap: wrap; gap: 8px; }
+}
+
+/* fingers need bigger targets */
+@media (pointer: coarse) {
+  .filter-btn { min-height: 34px; }
+  .btn-extend-card { width: 36px; height: 36px; }
+  .portfolio-tab { min-height: 34px; }
+}
+
+/* light theme */
+:root.light .mobile-tabbar { background: rgba(255,255,255,0.95); border-color: rgba(15,23,42,0.1); box-shadow: 0 12px 30px rgba(15,23,42,0.18); }
+:root.light .mtab-fab { box-shadow: 0 10px 24px var(--accent-glow), 0 0 0 4px rgba(255,255,255,0.95); }
+:root.light .more-sheet { background: #fff; }
+:root.light .more-item:active { background: rgba(15,23,42,0.05); }
+:root.light .trade-table tbody tr { background: rgba(15,23,42,0.025); }

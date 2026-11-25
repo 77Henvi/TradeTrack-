@@ -37,6 +37,14 @@ const SYMBOL_PRESETS = {
 function getActivePortfolio() { return portfolios.find(p => p.id === activePortfolioId) || portfolios[0]; }
 function getActiveTrades()    { return getActivePortfolio()?.trades || []; }
 
+// Balance of ONE portfolio = starting balance + P&L of ALL its trades (never date-filtered).
+// Hero card, account card and the portfolio grid must all read from here so they can't drift apart.
+function portfolioStats(p) {
+  const start = (p && p.balance) || 0;
+  const total = ((p && p.trades) || []).reduce((s, t) => s + pnl(t), 0);
+  return { start, pnl: total, bal: start + total, ret: start ? (total / start * 100) : 0 };
+}
+
 // PURE HELPERS
 function pnl(t) {
   const entry = t.entry_price ?? t.entry;

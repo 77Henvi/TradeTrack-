@@ -59,7 +59,28 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── RENDER ALL ───────────────────────────────────────────────────────────────
+// Hero "TOTAL PORTFOLIO BALANCE" + the "Trading Accounts" card: same data, updated together,
+// independent of drawEquity()'s early returns (empty range / hidden canvas) that used to leave them stale.
+function syncBalanceDisplays() {
+  const port = getActivePortfolio(); if (!port) return;
+  const s = portfolioStats(port), sign = s.ret >= 0 ? '+' : '';
+  const money = `$${fmtAbs(s.bal, 2)}`, pct = `${sign}${s.ret.toFixed(2)}%`;
+
+  const hero = document.getElementById('heroBalanceDisplay');
+  if (hero) hero.textContent = money;
+  const heroRet = document.getElementById('heroReturnBadge');
+  if (heroRet) { heroRet.textContent = pct; heroRet.className = `hero-return-badge ${s.ret >= 0 ? 'pos' : 'neg'}`; }
+
+  const nameEl = document.getElementById('cardAccountName');
+  if (nameEl) nameEl.textContent = port.name;
+  const bal = document.getElementById('cardBalanceDisplay');
+  if (bal) bal.textContent = money;
+  const pill = document.getElementById('cardReturnPill');
+  if (pill) { pill.textContent = pct; pill.style.color = s.ret >= 0 ? 'var(--green)' : 'var(--red)'; }
+}
+
 function render() {
+  syncBalanceDisplays();
   drawEquity();
   renderMetrics();
   renderTable();
@@ -316,22 +337,6 @@ function drawEquity() {
     `<div class="equity-stat"><div class="el">WIN RATE</div><div class="ev ${wr >= 50 ? 'pos' : 'neg'}">${wr.toFixed(1)}%</div></div>` +
     `<div class="equity-stat"><div class="el">MAX DRAWDOWN</div><div class="ev neg">${fmtNum(-Math.abs(maxDD))}</div></div>` +
     `<div class="equity-stat"><div class="el">TRADES</div><div class="ev">${trades.length}</div></div>`;
-
-  // Update Hero Balance Card
-  const port = getActivePortfolio();
-  const allActiveTrades = getActiveTrades();
-  const allTotalPnl = allActiveTrades.reduce((s, t) => s + pnl(t), 0);
-  const curBal = (port?.balance || 0) + allTotalPnl;
-  const portRet = port && port.balance ? (allTotalPnl / port.balance * 100) : 0;
-
-  const heroBalEl = document.getElementById('heroBalanceDisplay');
-  if (heroBalEl) heroBalEl.textContent = `$${fmtAbs(curBal, 2)}`;
-
-  const heroRetEl = document.getElementById('heroReturnBadge');
-  if (heroRetEl) {
-    heroRetEl.textContent = `${portRet >= 0 ? '+' : ''}${portRet.toFixed(2)}%`;
-    heroRetEl.className = `hero-return-badge ${portRet >= 0 ? 'pos' : 'neg'}`;
-  }
 }
 // Redraw when the chart's box changes size (window resize, sidebar/layout shift, rotation) or the device
 // pixel ratio changes (browser zoom, dragging the window to another monitor). One observer, created once.

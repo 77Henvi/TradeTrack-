@@ -8,27 +8,8 @@ function switchPortfolio(id) {
 }
 function renderPortfolioTabs() {
   const container = document.getElementById('portfolioTabs');
-  const activePort = getActivePortfolio();
 
-  // Sync with Bento Virtual Trading Card
-  if (activePort) {
-    const nameEl = document.getElementById('cardAccountName');
-    if (nameEl) nameEl.textContent = activePort.name;
-
-    const trades = getActiveTrades();
-    const totalPnl = trades.reduce((s, t) => s + pnl(t), 0);
-    const curBal = (activePort.balance || 0) + totalPnl;
-    const retPct = activePort.balance ? (totalPnl / activePort.balance * 100) : 0;
-
-    const balEl = document.getElementById('cardBalanceDisplay');
-    if (balEl) balEl.textContent = `$${fmtAbs(curBal, 2)}`;
-
-    const retEl = document.getElementById('cardReturnPill');
-    if (retEl) {
-      retEl.textContent = `${retPct >= 0 ? '+' : ''}${retPct.toFixed(2)}%`;
-      retEl.style.color = retPct >= 0 ? 'var(--green)' : 'var(--red)';
-    }
-  }
+  syncBalanceDisplays();   // hero + account card, same source as render()
 
   if (!container) return;
   container.innerHTML = portfolios.map(p =>
@@ -98,9 +79,7 @@ function renderExtendedPortfolios() {
   if (!container) return;
   container.innerHTML = portfolios.map(p => {
     const pTrades = p.trades || [];
-    const pnlSum = pTrades.reduce((s, t) => s + pnl(t), 0);
-    const curBal = (p.balance || 0) + pnlSum;
-    const retPct = p.balance ? (pnlSum / p.balance * 100) : 0;
+    const { pnl: pnlSum, bal: curBal, ret: retPct } = portfolioStats(p);
     const wins = pTrades.filter(t => pnl(t) > 0).length;
     const wr = pTrades.length ? (wins / pTrades.length * 100).toFixed(1) : '0.0';
     const isActive = p.id === activePortfolioId;

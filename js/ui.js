@@ -457,38 +457,62 @@ function initEquityHover() {
   document.addEventListener('touchstart', e => { if (e.target !== canvas) clearEquityHover(); }, { passive: true });
 }
 
-// ─── METRICS ──────────────────────────────────────────────────────────────────
+// ─── METRICS (StatsCard — glass card, lift on hover, icon badge, ▲▼ change) ───
+const STAT_ICONS = {
+  dollar: '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  bars:   '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  trend:  '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  up:     '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+  down:   '<path d="m7 7 10 10"/><path d="M17 7v10H7"/>',
+};
+const statSvg = (k, size = 16) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${STAT_ICONS[k]}</svg>`;
+let _statsAnimated = false; // play the fade-up entrance only once, not on every render()
+
+function statCard({ title, value, change, note, icon, tone, up }, i) {
+  return `<div class="glass-card stat-card tone-${tone}" style="--i:${i}">
+    <div class="stat-top">
+      <div class="stat-body">
+        <p class="stat-title">${title}</p>
+        <h2 class="stat-value">${value}</h2>
+        <p class="stat-change ${up ? 'up' : 'down'}">${statSvg(up ? 'up' : 'down')} ${change}<span class="stat-note">${note}</span></p>
+      </div>
+      <div class="stat-icon">${statSvg(icon, 22)}</div>
+    </div>
+  </div>`;
+}
+
 function renderMetrics() {
   const el = document.getElementById('metricsRow');
-  if (!el || el.style.display === 'none') return;
+  if (!el) return;
   const trades = getActiveTrades(), wins = trades.filter(t => pnl(t) > 0), losses = trades.filter(t => pnl(t) <= 0);
   const totalPnl = trades.reduce((s, t) => s + pnl(t), 0);
   const winRate  = trades.length ? (wins.length / trades.length * 100) : 0;
   const avgWin   = wins.length   ? wins.reduce((s, t)   => s + pnl(t), 0) / wins.length   : 0;
   const avgLoss  = losses.length ? Math.abs(losses.reduce((s, t) => s + pnl(t), 0) / losses.length) : 0;
   const rr       = avgLoss ? (avgWin / avgLoss) : 0;
-  const profitFactor = losses.length
-    ? wins.reduce((s, t) => s + pnl(t), 0) / Math.abs(losses.reduce((s, t) => s + pnl(t), 0))
-    : (wins.length ? Infinity : 0);
-  const allPnls    = trades.map(t => pnl(t));
-  const bestTrade  = allPnls.length ? Math.max(...allPnls) : 0;
-  const worstTrade = allPnls.length ? Math.min(...allPnls) : 0;
-  const port       = getActivePortfolio(), portRet = port && port.balance ? (totalPnl / port.balance * 100) : 0;
+  const grossW   = wins.reduce((s, t) => s + pnl(t), 0);
+  const grossL   = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
+  const pf       = grossL ? grossW / grossL : (wins.length ? Infinity : 0);
+  const allPnls  = trades.map(t => pnl(t));
+  const best     = allPnls.length ? Math.max(...allPnls) : 0;
+  const worst    = allPnls.length ? Math.min(...allPnls) : 0;
+  const port     = getActivePortfolio(), portRet = port && port.balance ? (totalPnl / port.balance * 100) : 0;
+  const sgn = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 
-  const metrics = [
-    { label: 'TOTAL P&L',     val: fmtNum(totalPnl),                                                   cls: totalPnl  >= 0 ? 'pos' : 'neg', sub: 'USD' },
-    { label: 'NET RETURN',    val: (portRet >= 0 ? '+' : '') + portRet.toFixed(2) + '%',                cls: portRet   >= 0 ? 'pos' : 'neg', sub: 'on initial bal' },
-    { label: 'WIN RATE',      val: winRate.toFixed(1) + '%',                                            cls: winRate   >= 50 ? 'pos' : 'neg', sub: `${wins.length}W / ${losses.length}L` },
-    { label: 'AVG WIN',       val: fmtNum(avgWin),                                                      cls: 'pos',                           sub: 'per trade' },
-    { label: 'AVG LOSS',      val: '-' + fmtAbs(avgLoss),                                               cls: 'neg',                           sub: 'per trade' },
-    { label: 'BEST TRADE',    val: fmtNum(bestTrade),                                                   cls: bestTrade  >= 0 ? 'pos' : 'neg', sub: 'max profit' },
-    { label: 'WORST TRADE',   val: fmtNum(worstTrade),                                                  cls: worstTrade <= 0 ? 'neg' : 'pos', sub: 'max drawdown' },
-    { label: 'R:R RATIO',     val: rr ? rr.toFixed(2) : '—',                                           cls: rr >= 1 ? 'pos' : 'neg',         sub: 'avg win / avg loss' },
-    { label: 'PROFIT FACTOR', val: profitFactor === Infinity ? '∞' : (profitFactor ? profitFactor.toFixed(2) : '—'), cls: (profitFactor >= 1 || profitFactor === Infinity) ? 'accent' : 'neg', sub: 'gross profit / loss' },
+  const cards = [
+    { title: 'TOTAL P&L',     value: fmtNum(totalPnl),
+      change: sgn(portRet), note: 'on initial balance', icon: 'dollar', tone: 'accent', up: portRet >= 0 },
+    { title: 'WIN RATE',      value: winRate.toFixed(1) + '%',
+      change: sgn(winRate - 50), note: `vs 50% · ${wins.length}W / ${losses.length}L`, icon: 'target', tone: 'blue', up: winRate >= 50 },
+    { title: 'PROFIT FACTOR', value: pf === Infinity ? '∞' : (pf ? pf.toFixed(2) : '—'),
+      change: 'R:R ' + (rr ? rr.toFixed(2) : '—'), note: 'avg win / avg loss', icon: 'bars', tone: 'violet', up: pf >= 1 },
+    { title: 'BEST TRADE',    value: fmtNum(best),
+      change: fmtNum(worst), note: 'worst trade', icon: 'trend', tone: 'green', up: false },
   ];
-  document.getElementById('metricsRow').innerHTML = metrics.map((m, i) =>
-    `<div class="metric-card${i === 0 ? ' primary' : ''}"><div class="mc-label">${m.label}</div><div class="mc-val ${m.cls}">${m.val}</div><div class="mc-sub">${m.sub}</div></div>`
-  ).join('');
+  el.innerHTML = cards.map(statCard).join('');
+  if (!_statsAnimated && trades.length) { el.classList.add('animate'); _statsAnimated = true; }
 }
 
 // ─── TABLE + PAGINATION ───────────────────────────────────────────────────────

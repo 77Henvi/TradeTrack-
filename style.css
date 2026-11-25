@@ -2443,3 +2443,72 @@ body.card-modal-open .bento-header {
   background: radial-gradient(350px circle at var(--mouse-x, -999px) var(--mouse-y, -999px), rgba(22, 163, 74, 0.28), transparent 70%);
 }
 
+
+
+/* ─── GLASS STATS CARDS (adapted from "Glassy Dashboard V2" StatsCard) ─────── */
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.015) 40%, rgba(10,14,22,0.5) 100%), rgba(13,17,26,0.55);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
+}
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+.stat-card {
+  --tone: var(--accent);
+  --tone-dim: var(--accent-dim);
+  position: relative;
+  overflow: hidden;
+  padding: 24px;            /* p-6 */
+  border-radius: 24px;      /* rounded-2xl */
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .25s;
+}
+.stat-card.tone-blue   { --tone: var(--blue);  --tone-dim: rgba(56,189,248,.16); }
+.stat-card.tone-violet { --tone: #a78bfa;      --tone-dim: rgba(167,139,250,.16); }
+.stat-card.tone-green  { --tone: var(--green); --tone-dim: var(--green-dim); }
+.stat-card::after {          /* soft tone glow, top-right */
+  content: ''; position: absolute; width: 140px; height: 140px; right: -50px; top: -60px;
+  background: radial-gradient(circle, var(--tone-dim), transparent 70%);
+  pointer-events: none;
+}
+.stat-card:hover {           /* whileHover={{ y: -5 }} */
+  transform: translateY(-5px);
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: 0 22px 46px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.32);
+}
+.stat-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 1; }
+.stat-body { min-width: 0; }
+.stat-title { font-size: 12px; letter-spacing: .08em; color: rgba(255,255,255,0.6); margin: 0 0 6px; }  /* text-sm text-white/60 */
+.stat-value { font-size: 28px; line-height: 1.15; font-weight: 700; color: var(--text); margin: 0; font-family: var(--display); white-space: nowrap; }
+.stat-change { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 8px 0 0; font-size: 13px; font-weight: 600; }
+.stat-change.up   { color: #34d399; }   /* emerald-400 */
+.stat-change.down { color: var(--red); }
+.stat-note { font-weight: 400; color: var(--muted); margin-left: 4px; font-size: 12px; }
+.stat-icon {
+  flex-shrink: 0; width: 48px; height: 48px; border-radius: 16px;
+  display: grid; place-items: center; color: #fff;
+  background: linear-gradient(135deg, var(--tone), color-mix(in srgb, var(--tone) 45%, #000));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--tone) 40%, transparent);
+}
+/* entrance: initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} with stagger */
+.stats-row.animate .stat-card { animation: statIn .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 80ms); }
+@keyframes statIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+:root.light .glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.55)), rgba(255,255,255,0.6);
+  border-color: rgba(15,23,42,0.08);
+  box-shadow: 0 10px 28px rgba(15,23,42,0.08), inset 0 1px 1px #fff;
+}
+:root.light .stat-title { color: rgba(15,23,42,0.55); }
+:root.light .stat-change.up { color: #059669; }
+
+@media (max-width: 1280px) { .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px)  { .stats-row { grid-template-columns: 1fr; gap: 14px; } .stat-value { font-size: 24px; } }
+@media (prefers-reduced-motion: reduce) {
+  .stats-row.animate .stat-card { animation: none; }
+  .stat-card, .stat-card:hover { transition: none; transform: none; }
+}

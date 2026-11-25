@@ -1,7 +1,9 @@
 ﻿// ─── LIVE TIME ────────────────────────────────────────────────────────────────
+const _timeFmt = new Intl.DateTimeFormat('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 function updateTime() {
+  if (document.hidden) return;
   const el = document.getElementById('liveTime');
-  if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (el) el.textContent = _timeFmt.format(new Date());
 }
 setInterval(updateTime, 1000); updateTime();
 
@@ -14,19 +16,26 @@ function applyTickerStyles() {
 }
 applyTickerStyles();
 
+// ─── MARKET SESSIONS — เวลาไทย (GMT+7, ไม่มี DST) ───────────────────────────────
+const TH_OFFSET_MIN = 7 * 60;
+const MARKET_SESSIONS = [
+  { name: '🇬🇧 LONDON SESSION', start: '14:00', end: '17:00' },
+  { name: '🇺🇸 NY AM SESSION',  start: '20:30', end: '23:00' },
+  { name: '🇺🇸 NY LUNCH HOUR',  start: '23:00', end: '01:00' },
+  { name: '🇺🇸 NY PM SESSION',  start: '01:00', end: '04:00' },
+  { name: '🌏 ASIA SESSION',    start: '08:00', end: '12:00' },
+];
+const toMin = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+function thaiMinutesNow() {
+  const d = new Date();
+  return (d.getUTCHours() * 60 + d.getUTCMinutes() + TH_OFFSET_MIN) % 1440;
+}
 function getMarketSessions() {
-  const utcHour = new Date().getUTCHours();
-  const sessions = [
-    { name: '🇦🇺 SYDNEY',   open: 22, close: 7  },
-    { name: '🇯🇵 TOKYO',    open: 0,  close: 9  },
-    { name: '🇬🇧 LONDON',   open: 8,  close: 16 },
-    { name: '🇺🇸 NEW YORK', open: 13, close: 22 }
-  ];
-  return sessions.map(s => {
-    const isOpen = s.open < s.close
-      ? (utcHour >= s.open && utcHour < s.close)
-      : (utcHour >= s.open || utcHour < s.close);
-    return { name: s.name, status: isOpen ? 'OPEN' : 'CLOSED' };
+  const now = thaiMinutesNow();
+  return MARKET_SESSIONS.map(s => {
+    const a = toMin(s.start), b = toMin(s.end);
+    const isOpen = a < b ? (now >= a && now < b) : (now >= a || now < b);   // handles 23:00–01:00
+    return { name: s.name, range: `${s.start}–${s.end}`, status: isOpen ? 'OPEN' : 'CLOSED' };
   });
 }
 
@@ -71,33 +80,36 @@ function formatEventTime(isoTime) {
 function buildForexTicker() {
   const ticker = document.getElementById('ticker'); if (!ticker) return;
   const sessions = getMarketSessions();
-  const sessionHtml = sessions.map(s =>
-    `<span class="ticker-item"><span class="sym">${s.name}</span><span class="chg" style="${s.status === 'CLOSED' ? 'color:var(--muted)' : 'color:var(--green)'}">${s.status === 'OPEN' ? '🟢 OPEN' : '🔴 CLOSED'}</span></span><span class="ticker-sep">|</span>`
-  ).join('');
+  const sessionHtml = sessions.map(s => {
+    const open = s.status === 'OPEN';
+    return `<span class="ticker-item"><span class="sym">${s.name}</span>` +
+      `<span class="ticker-time" style="color:${open ? 'var(--green)' : 'var(--text)'};opacity:${open ? 1 : 0.85}">${s.range}</span>` +
+      `<span class="chg ticker-status" style="color:${open ? 'var(--green)' : 'var(--muted)'}">${open ? '🟢 OPEN' : '🔴 CLOSED'}</span></span><span class="ticker-sep">|</span>`;
+  }).join('');
   const newsHtml = cachedNews.map(n =>
   `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8;font-size:13px">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? '🔥' : '⚠️'}</span></span><span class="ticker-sep">|</span>`
   ).join('');
   const fullHtml = sessionHtml + `<span class="ticker-item" style="color:var(--ticker-hl);font-family:var(--mono);letter-spacing:2px;font-size:12px;">UPCOMING NEWS ⚡</span><span class="ticker-sep">|</span>` + newsHtml;
   const newHtml = fullHtml + fullHtml;
 
-  // Only update DOM if content changed — prevents animation reset on theme toggle
-  if (ticker.dataset.lastHtml === newHtml) return;
-  ticker.dataset.lastHtml = newHtml;
+  // status chips in the settings modal
+  const dot = document.getElementById('tickerModalStatus'), tm = document.getElementById('tickerModalTime');
+  if (dot) dot.style.background = sessions.some(s => s.status === 'OPEN') ? 'var(--green)' : 'var(--muted)';
+  if (tm) { const m = thaiMinutesNow(); tm.textContent = `${String(m / 60 | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')} (GMT+7)`; }
 
-  // Preserve current animation progress to avoid jump
-  const computed = getComputedStyle(ticker);
-  const currentDelay = computed.animationDelay;
+  // Only touch the DOM when the content actually changed (session flips / news refresh)
+  if (_tickerHtml === newHtml) return;
+  _tickerHtml = newHtml;
   ticker.innerHTML = newHtml;
-  ticker.style.animationDelay = currentDelay;
 }
+let _tickerHtml = '';
 
 async function startTickerRefresh() {
   await fetchEconomicCalendar();
   buildForexTicker();
-  setInterval(async () => {
-    await fetchEconomicCalendar();
-    buildForexTicker();
-  }, 60 * 60 * 1000); // refresh ทุก 1 ชั่วโมง
+  // sessions flip on :00 / :30 — re-check every 30s (cheap: DOM is untouched unless something changed)
+  setInterval(() => { if (!document.hidden) buildForexTicker(); }, 30 * 1000);
+  setInterval(async () => { await fetchEconomicCalendar(); buildForexTicker(); }, 60 * 60 * 1000);
 }
 
 // ─── TICKER SETTINGS MODAL ────────────────────────────────────────────────────

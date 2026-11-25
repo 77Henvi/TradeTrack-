@@ -16,13 +16,17 @@ function initAppListeners() {
     });
   }
 
+  let _searchTimer = 0;   // debounce: re-render once typing pauses, not on every keystroke
   document.getElementById('searchInput')?.addEventListener('input', () => {
-    currentPage = 1;
-    renderTable();
-    renderRecentFeed();
-    if (document.getElementById('cardTrades')?.classList.contains('is-expanded')) {
-      renderExtendedTradesTable();
-    }
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => {
+      currentPage = 1;
+      renderTable();
+      renderRecentFeed();
+      if (document.getElementById('cardTrades')?.classList.contains('is-expanded')) {
+        renderExtendedTradesTable();
+      }
+    }, 120);
   });
 
   ['f-entry','f-exit','f-size','f-mult','f-sl','f-tp'].forEach(id => {
@@ -1105,15 +1109,21 @@ async function deleteFromDetails() {
 function initBentoAnimations() {
   const container = document.getElementById('bentoDashboardView');
   if (!container) return;
-  
-  container.addEventListener('mousemove', e => {
-    const cards = container.querySelectorAll('.bento-card');
-    cards.forEach(card => {
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      card.style.setProperty('--mouse-x', `${x}px`);
-      card.style.setProperty('--mouse-y', `${y}px`);
-    });
-  });
+  // Only the hovered card is updated, at most once per frame (was: every card, every mousemove,
+  // with a forced layout read per card → layout thrashing).
+  let raf = 0, px = 0, py = 0, card = null;
+  const paint = () => {
+    raf = 0;
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mouse-x', (px - r.left) + 'px');
+    card.style.setProperty('--mouse-y', (py - r.top) + 'px');
+  };
+  container.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;           // no spotlight on touch
+    card = e.target.closest ? e.target.closest('.bento-card') : null;
+    if (!card) return;
+    px = e.clientX; py = e.clientY;
+    if (!raf) raf = requestAnimationFrame(paint);
+  }, { passive: true });
 }

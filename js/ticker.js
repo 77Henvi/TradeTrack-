@@ -19,11 +19,11 @@ applyTickerStyles();
 // ─── MARKET SESSIONS — เวลาไทย (GMT+7, ไม่มี DST) ───────────────────────────────
 const TH_OFFSET_MIN = 7 * 60;
 const MARKET_SESSIONS = [
-  { name: '🇬🇧 LONDON SESSION', start: '14:00', end: '17:00' },
-  { name: '🇺🇸 NY AM SESSION',  start: '20:30', end: '23:00' },
-  { name: '🇺🇸 NY LUNCH HOUR',  start: '23:00', end: '01:00' },
-  { name: '🇺🇸 NY PM SESSION',  start: '01:00', end: '04:00' },
-  { name: '🌏 ASIA SESSION',    start: '08:00', end: '12:00' },
+  { name: 'LONDON',        start: '14:00', end: '17:00' },
+  { name: 'NY AM',         start: '20:30', end: '23:00' },
+  { name: 'NY LUNCH HOUR', start: '23:00', end: '01:00' },   // ข้ามเที่ยงคืน
+  { name: 'NY PM',         start: '01:00', end: '04:00' },
+  { name: 'ASIA',          start: '08:00', end: '12:00' },
 ];
 const toMin = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
 function thaiMinutesNow() {

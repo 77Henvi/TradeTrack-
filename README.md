@@ -41,6 +41,13 @@ Track trades, analyze performance, and visualize your equity curve — all in on
 - **CSV export** — import into Excel or Google Sheets
 - **Notion export** — tab-separated copy-paste ready
 
+### 🎬 3D Intro (first visit, replay with `?intro=1`)
+- 16-scene scroll-scrubbed WebGL story ending with the coin docking into the nav logo
+- 6 chapters with a **clickable chapter rail**, final **Enter dashboard** button, `Esc` / **Skip intro** with a curtain transition
+- Branded loader with real progress, CDN mirror fallback, adaptive quality (pixel-ratio ladder from measured frame time)
+- Respects `prefers-reduced-motion` and Save-Data (intro is skipped)
+- Dev flags: `?q=0..3` lock quality, `?debug=1` exposes `window.__TT`
+
 ### 🎨 UI / UX
 - Dark / Light theme toggle (persisted)
 - Keyboard shortcuts: `Ctrl+N` new trade, `Esc` close modal

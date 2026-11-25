@@ -21,9 +21,7 @@ async function initAuth() {
 
 function showAuthScreen() {
   const isIntroReq = new URLSearchParams(location.search).get('intro') === '1';
-  if (!isIntroReq && !document.documentElement.classList.contains('intro-active')) {
-    if (window.ScrollyIntro) window.ScrollyIntro.teardown();     // logged out mid-intro
-  }
+  if (!isIntroReq && window.ScrollyIntro) window.ScrollyIntro.teardown();   // logged out mid-intro (no-op if it isn't running)
   document.getElementById('authScreen').style.display  = 'flex';
   document.getElementById('appWrapper').style.display  = 'none';
   applyTurnstileMode();

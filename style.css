@@ -657,7 +657,7 @@ body {
   .filter-sep { display: none; }
 }
 
-/* ═══ SPRINT 3: 3D SCROLLYTELLING INTRO ═══════════════════════════════════════
+/* ═══ SPRINT 3: 3D SCROLLYTELLING INTRO (v3) ═══════════════════════════════════
    The intro is always dark (neon on light would wash out), so the colour tokens are
    re-declared here instead of inheriting the light theme.                         */
 .scrolly-container {
@@ -671,6 +671,7 @@ body {
 /* while it plays: the dashboard slides up 100vh underneath the last screen so its header is
    visible (and dockable) when the story ends */
 html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
+html.intro-loading, html.intro-loading body { overflow: hidden; }   /* no scrolling until the engine is ready */
 
 /* dark backdrop for the first 700vh only — the final 100vh is transparent so the dashboard shows through */
 .scrolly-bg {
@@ -683,56 +684,121 @@ html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
 /* z-index 50: above the dashboard header (z 10) so the coin is never painted under it, below the ticker (z 100) */
 #webgl-canvas { display: block; position: sticky; top: 0; left: 0; width: 100%; height: 100vh; z-index: 50; pointer-events: none; }
 
-/* text layer: pinned like the canvas and pulled up over it. z 60 (above the 3D) so the glass cards really blur the scene
-   behind them and the terrain wire never cuts through the copy */
-.scrolly-sections { position: sticky; top: 0; height: 100vh; margin-top: -100vh; z-index: 60; pointer-events: none; }
-.scrolly-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 8vw; }
+/* ─ loader: shown while three/gsap/lenis download (real progress, not a blank screen) ─ */
+.scrolly-loader {
+  position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  background: radial-gradient(ellipse 60% 50% at 50% 45%, rgba(255,97,41,0.12), transparent 70%), #050302;
+  transition: opacity .7s ease, visibility .7s ease;
+}
+.scrolly-loader.done { opacity: 0; visibility: hidden; }
+.scrolly-loader-mark { width: 64px; height: 64px; fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; filter: drop-shadow(0 0 10px rgba(255,97,41,0.7)); }
+.scrolly-loader-mark path { stroke-dasharray: 190; stroke-dashoffset: 190; animation: scrolly-trace 1.6s ease-in-out infinite; }
+.scrolly-loader-mark path + path { stroke: var(--vermillion); animation-delay: .25s; }
+@keyframes scrolly-trace { 0% { stroke-dashoffset: 190; } 60%, 100% { stroke-dashoffset: 0; } }
+.scrolly-loader-bar { width: 180px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.scrolly-loader-fill { height: 100%; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, #FF6129, #FC3B00); transition: transform .35s ease; }
+.scrolly-loader-text { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+.scrolly-loader-text span { display: inline-block; min-width: 3ch; font-variant-numeric: tabular-nums; color: var(--text); }
 
-#frame-1 { flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; padding: 0 6vw 13vh; }
+/* text layer: pinned like the canvas and pulled up over it, above the 3D so copy is never cut by the wire grid */
+.scrolly-sections { position: sticky; top: 0; height: 100vh; margin-top: -100vh; z-index: 60; pointer-events: none; }
+.scrolly-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 8vw 0 max(8vw, 150px); }   /* 150px: clear of the chapter rail labels */
+
+/* hero: the coin owns the upper 70% of the screen, the line sits below it — never on top of it */
+#frame-1 { flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; padding: 0 6vw 16vh; }
 .hero-title {
-  font-family: var(--display); font-weight: 800; font-size: clamp(44px, 11vw, 160px);
-  line-height: 0.95; letter-spacing: -0.03em;
-  background: linear-gradient(180deg, #ffffff 25%, rgba(255,255,255,0.28));
+  font-family: var(--display); font-weight: 800; font-size: clamp(34px, 6.4vw, 104px);
+  line-height: 1.02; letter-spacing: -0.035em;
+}
+.hero-title .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .02em .1em; }
+.hero-title .wi {
+  display: inline-block; will-change: transform;
+  background: linear-gradient(180deg, #ffffff 30%, rgba(255,255,255,0.55));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.hero-subtitle { margin-top: 16px; font-size: clamp(10px, 1.3vw, 15px); font-weight: 600; letter-spacing: 0.42em; color: var(--muted); }
+.hero-subtitle { margin-top: 12px; max-width: 70ch; font-size: clamp(13px, 1.3vw, 18px); font-weight: 500; line-height: 1.5; color: var(--muted); }
 .scroll-indicator {
-  position: absolute; bottom: 4.5vh; left: 0; right: 0;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  font-size: 10px; letter-spacing: 0.32em; color: var(--muted);
+  position: absolute; bottom: 2.5vh; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 12px; letter-spacing: 0.04em; color: var(--muted);
 }
-.scroll-chevron { color: var(--accent); font-size: 12px; animation: scrolly-bob 1.6s ease-in-out infinite; }
+.scroll-chevron { color: var(--accent); font-size: 13px; animation: scrolly-bob 1.6s ease-in-out infinite; }
 @keyframes scrolly-bob { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(6px); opacity: 1; } }
 
+/* chapter cards: the index number is real information (these are chapters 1–6, in order) */
 .scrolly-card {
-  max-width: min(440px, 84vw); padding: 24px; border-radius: 8px;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  background: rgba(13, 16, 24, 0.7); border: 1px solid var(--border2);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  position: relative; max-width: min(430px, 84vw); padding: 22px 26px 24px 28px; border-radius: 14px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(14,10,8,0.80), rgba(14,10,8,0.52));
+  border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+}
+.scrolly-card::before {
+  content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 2px; border-radius: 2px;
+  background: linear-gradient(var(--accent), rgba(255,97,41,0));
 }
 .scrolly-card.right { margin-left: auto; }
-.badge-tag {
-  display: inline-block; padding: 4px 10px; border-radius: 999px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
-  color: var(--blue); border: 1px solid rgba(56,189,248,0.4); background: rgba(56,189,248,0.08);
-}
-.badge-tag.green { color: var(--green); border-color: rgba(60,255,160,0.4); background: rgba(60,255,160,0.08); }
-.badge-tag.sunset { color: var(--accent); border-color: rgba(255,97,41,0.45); background: rgba(255,97,41,0.12); }
-.scrolly-card h2 { margin: 14px 0 10px; font-family: var(--display); font-weight: 800; font-size: clamp(22px, 2.6vw, 34px); line-height: 1.1; letter-spacing: -0.01em; }
+.badge-tag { display: inline-flex; align-items: baseline; font-size: 13px; font-weight: 600; color: var(--muted); }
+.badge-tag b { margin-right: .65em; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+.scrolly-card h2 { margin: 10px 0 10px; font-family: var(--display); font-weight: 800; font-size: clamp(22px, 2.6vw, 34px); line-height: 1.1; letter-spacing: -0.01em; }
 .scrolly-card p { font-size: 14px; line-height: 1.6; color: var(--muted); }
 
-.btn-skip { position: fixed; top: 16px; right: 16px; z-index: 999; pointer-events: auto; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+/* chapters whose object sits centre-stage: card goes above it instead of beside it */
+#frame-13 { align-items: flex-start; justify-content: center; padding-top: 9vh; }
+#frame-13 .scrolly-card { margin: 0; text-align: left; }
+#frame-15 { align-items: flex-start; padding-top: 12vh; }
+
+/* final frame: the real way out */
+#frame-16 { justify-content: center; align-items: flex-end; padding: 0 6vw 10vh; }
+.btn-enter {
+  pointer-events: auto; cursor: pointer; border: 0; border-radius: 999px; padding: 15px 34px;
+  font: 700 15px/1 var(--display); letter-spacing: .01em; color: #1a0802;
+  background: linear-gradient(135deg, #ff8a4c, #FF6129 55%, #FC3B00);
+  box-shadow: 0 10px 40px rgba(255,97,41,0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.btn-enter:hover { transform: translateY(-2px); box-shadow: 0 14px 48px rgba(255,97,41,0.6), inset 0 1px 0 rgba(255,255,255,0.4); }
+.btn-enter:focus-visible, .btn-skip:focus-visible, .scrolly-chapters .ch:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.btn-skip { position: fixed; top: 16px; right: 16px; z-index: 999; pointer-events: auto; font-size: 13px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .scrolly-progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 998; pointer-events: none; background: rgba(255,255,255,0.06); }
 .scrolly-progress-fill {
   height: 100%; transform-origin: 0 50%; transform: scaleX(0);
   background: linear-gradient(90deg, #FF6129, #FC3B00); box-shadow: 0 0 12px rgba(255,97,41,0.6);
 }
 
+/* chapter rail (desktop): click a chapter to glide there. Only the active label is spelled out. */
+.scrolly-chapters {
+  position: fixed; left: 22px; top: 50%; z-index: 70; display: flex; flex-direction: column; gap: 6px;
+  transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity .5s ease;
+}
+html.intro-rail-on .scrolly-chapters { opacity: 1; pointer-events: auto; }
+.scrolly-chapters .ch {
+  display: flex; align-items: center; gap: 10px; padding: 5px 8px 5px 0; background: none; border: 0; cursor: pointer;
+  color: rgba(255,255,255,0.32); font: 600 12px/1 var(--display); text-align: left; transition: color .3s ease;
+}
+.scrolly-chapters .ch::before { content: ""; width: 14px; height: 2px; border-radius: 2px; background: currentColor; transition: width .35s ease, background .3s ease; }
+.scrolly-chapters .ch-n { font-variant-numeric: tabular-nums; }
+.scrolly-chapters .ch-t { max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0; transition: max-width .4s ease, opacity .3s ease; }
+.scrolly-chapters .ch.past { color: rgba(255,97,41,0.55); }
+.scrolly-chapters .ch.on { color: var(--accent); }
+.scrolly-chapters .ch.on::before { width: 26px; }
+.scrolly-chapters .ch.on .ch-t { max-width: 100px; opacity: 1; }
+.scrolly-chapters .ch:hover { color: #fff; }
+.scrolly-chapters .ch:hover .ch-t { max-width: 100px; opacity: 1; }
+
+/* skip → curtain (no hard cut from 3D to the dashboard) */
+.scrolly-curtain { position: fixed; inset: 0; z-index: 1000; background: #050302; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+.scrolly-curtain.on { opacity: 1; pointer-events: auto; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
 /* while the intro plays: keep dashboard chrome out of the way (the timeline fades the ticker + logo back in) */
 html.intro-active .nav-logo,
 html.intro-active .logo-mark { opacity: 0; }
 html.intro-active #authScreen { display: none !important; }
 html.intro-active .modal-overlay { visibility: hidden !important; }   /* e.g. the first-run "create portfolio" modal waits */
+/* the loader/intro mark itself must stay visible */
+.scrolly-loader .logo-mark { opacity: 1; }
 
 /* Lenis (smooth scroll) — it must own scrolling, so the global `html { scroll-behavior: smooth }` has to yield.
    Lenis only adds .lenis-smooth after a wheel event, so keying on that class alone is not enough: while the
@@ -741,12 +807,15 @@ html.intro-active { scroll-behavior: auto !important; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-stopped { overflow: hidden; }
 
+@media (max-width: 900px) { .scrolly-chapters { display: none; } }
 @media (max-width: 700px) {
   .scrolly-frame { align-items: flex-end; padding: 0 5vw 9vh; }
-  #frame-1 { padding: 0 5vw 15vh; }
+  #frame-1 { padding: 0 5vw 13vh; }
+  .hero-title { font-size: clamp(34px, 11vw, 60px); }
   .scrolly-card, .scrolly-card.right { max-width: none; width: 100%; margin-left: 0; }
+  #frame-16 { padding: 0 5vw 12vh; }
 }
-@media (prefers-reduced-motion: reduce) { .scroll-chevron { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .scroll-chevron, .scrolly-loader-mark path { animation: none; } }
 
 /* ════════════════════════════════════════════════════════════════════════════
    NEXT-GEN BENTO GRID FINTECH LAYOUT

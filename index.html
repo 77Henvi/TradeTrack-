@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.8">
+  <link rel="stylesheet" href="style.css?v=3.0">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -64,47 +64,76 @@
 </div>
 
 <!-- ===== 3D SCROLLYTELLING INTRO ===== -->
-<!-- Hidden unless js/scrolly3d.js decides to play it (first visit, WebGL ok, motion allowed). -->
+<!-- Hidden unless js/scrolly3d.js decides to play it (first visit, WebGL ok, motion allowed).
+     Chapter rail buttons are generated from CHAPTERS in scrolly3d.js. -->
 <div id="scrolly-container" class="scrolly-container" role="region" aria-label="TrackTrade introduction">
   <div class="scrolly-bg" aria-hidden="true"></div>
   <canvas id="webgl-canvas" aria-hidden="true"></canvas>
-  <button class="btn-ghost btn-skip" id="btn-skip-intro" onclick="skipToDashboard()">SKIP INTRO ✕</button>
-  <div class="scrolly-progress-bar" aria-hidden="true"><div id="scrolly-progress" class="scrolly-progress-fill"></div></div>
 
-  <!-- Floating text overlays for the storyboard frames (frames 2, 5, 7, 8, 9 are purely visual) -->
+  <div class="scrolly-loader" id="scrolly-loader" role="status" aria-live="polite">
+    <svg class="scrolly-loader-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M32 8 L58 54 H6 Z" /><path d="M32 22 L47 48 H17 Z" />
+    </svg>
+    <div class="scrolly-loader-bar" aria-hidden="true"><div id="scrolly-loader-fill" class="scrolly-loader-fill"></div></div>
+    <div class="scrolly-loader-text">Loading the intro <span id="scrolly-loader-pct">0%</span></div>
+  </div>
+
+  <button type="button" class="btn-ghost btn-skip" id="btn-skip-intro" onclick="skipToDashboard()" aria-label="Skip intro and open the dashboard">Skip intro</button>
+  <div class="scrolly-progress-bar" aria-hidden="true"><div id="scrolly-progress" class="scrolly-progress-fill"></div></div>
+  <nav class="scrolly-chapters" id="scrolly-chapters" aria-label="Intro chapters"></nav>
+  <div class="sr-only" id="scrolly-live" aria-live="polite"></div>
+
+  <!-- Story copy. Frames 2, 4, 6, 8, 9, 10, 12, 14 are purely visual beats. -->
   <div class="scrolly-sections">
     <section class="scrolly-frame" id="frame-1">
       <h1 class="hero-title">MASTER THE EDGE.</h1>
-      <p class="hero-subtitle">Where every trade becomes data. Where every decision becomes an edge.</p>
-      <div class="scroll-indicator"><span>SCROLL TO ENTER THE SYSTEM</span><div class="scroll-chevron">↓</div></div>
+      <p class="hero-subtitle">Where every trade becomes data, and every decision becomes an edge.</p>
+      <div class="scroll-indicator"><span>Scroll to enter</span><div class="scroll-chevron" aria-hidden="true">↓</div></div>
+    </section>
+    <section class="scrolly-frame" id="frame-3">
+      <div class="scrolly-card">
+        <span class="badge-tag"><b>01</b>Record</span>
+        <h2>EVERY TRADE, ON THE RECORD.</h2>
+        <p>Log entry, exit, size and your reasoning in seconds. The journal remembers what memory won&rsquo;t.</p>
+      </div>
     </section>
     <section class="scrolly-frame" id="frame-5">
       <div class="scrolly-card">
-        <span class="badge-tag">01 / RISK MANAGEMENT</span>
+        <span class="badge-tag"><b>02</b>Risk</span>
         <h2>NAVIGATE THE VOLATILITY.</h2>
         <p>Define your risk before you enter. Real-time calculated sizing. Never let market noise decide.</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-7">
       <div class="scrolly-card right">
-        <span class="badge-tag sunset">02 / ASYMMETRIC RETURNS</span>
+        <span class="badge-tag"><b>03</b>Returns</span>
         <h2>THINK IN R. NOT MONEY.</h2>
         <p>Stop chasing numbers. Start measuring execution. Understand your edge through Risk-to-Reward.</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-11">
       <div class="scrolly-card">
-        <span class="badge-tag">03 / DEEP EXECUTION AUDIT</span>
+        <span class="badge-tag"><b>04</b>Audit</span>
         <h2>DISSECT EVERY LAYER.</h2>
         <p>Expose hidden patterns. Analyze Win Rate, Profit Factor, and true statistical expectancy.</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-13">
       <div class="scrolly-card right">
-        <span class="badge-tag sunset">04 / MULTI-PORTFOLIO SCALE</span>
+        <span class="badge-tag"><b>05</b>Accounts</span>
         <h2>ONE SYSTEM. EVERY ACCOUNT.</h2>
         <p>Personal, prop firm, and crypto portfolios synced with seamless multi-account intelligence.</p>
       </div>
+    </section>
+    <section class="scrolly-frame" id="frame-15">
+      <div class="scrolly-card">
+        <span class="badge-tag"><b>06</b>Overview</span>
+        <h2>THE WHOLE PICTURE, ONE SCREEN.</h2>
+        <p>Equity curve, heatmap calendar, streaks and symbol ranking, updated as you log.</p>
+      </div>
+    </section>
+    <section class="scrolly-frame" id="frame-16">
+      <button type="button" class="btn-enter" onclick="skipToDashboard()">Enter dashboard</button>
     </section>
   </div>
 </div>
@@ -872,11 +901,11 @@
 <!-- ===== JS MODULES (load in dependency order) ===== -->
 <script src="js/config.js?v=2.8"></script>    <!-- state, helpers, Supabase init -->
 <script src="js/db.js?v=2.8"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=2.8"></script>      <!-- login / register / logout -->
+<script src="js/auth.js?v=3.0"></script>      <!-- login / register / logout -->
 <script src="js/portfolio.js?v=2.8"></script> <!-- portfolio tabs & modals -->
 <script src="js/ticker.js?v=2.8"></script>    <!-- ticker tape & settings -->
 <script src="js/modal.js?v=2.8"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=2.8"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/scrolly3d.js?v=3.0"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
 <script src="js/ui.js?v=2.8"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->

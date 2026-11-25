@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <script>
     const theme = localStorage.getItem("theme");
     if (theme === "light") document.documentElement.classList.add("light");
+    const savedLang = localStorage.getItem("tt_lang");
+    document.documentElement.lang = (savedLang === "en" || savedLang === "th") ? savedLang : "th";
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11,8 +13,8 @@
   <title>TrackTrade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.5">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3.6">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -23,42 +25,45 @@
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
   <div class="logo-mark" style="font-size:48px">▲</div>
-  <div style="font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--muted)">LOADING...</div>
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--muted)" data-i18n="common.loading">กำลังโหลด...</div>
 </div>
 
 <!-- ===== AUTH SCREEN ===== -->
 <div id="authScreen" style="display:none;position:fixed;inset:0;z-index:8000;background:var(--bg);align-items:center;justify-content:center;">
   <div class="noise"></div>
   <div class="bg-grid"></div>
-  <div class="auth-card">
+  <div class="auth-card" style="position:relative">
+    <button type="button" class="btn-ghost lang-pill-btn auth-lang-btn" onclick="toggleLang()" data-i18n-title="common.langToggle" data-i18n-aria="common.langToggle">
+      <span class="lang-short-label">TH</span>
+    </button>
     <div class="auth-logo">
       <span class="logo-mark" style="font-size:36px">▲</span>
       <div>
         <div style="font-family:var(--display);font-weight:700;font-size:32px;letter-spacing:0.5px;color:var(--text)">TrackTrade</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px">TRACK YOUR RETIREMENT</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px" data-i18n="auth.tagline">TRACK YOUR RETIREMENT</div>
       </div>
     </div>
     <div class="auth-body">
-      <div id="authTitle" style="font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:0.5px;color:var(--accent);margin-bottom:24px">LOGIN</div>
+      <div id="authTitle" data-mode="login" style="font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:0.5px;color:var(--accent);margin-bottom:24px" data-i18n="auth.loginTitle">เข้าสู่ระบบ</div>
       <div id="authMsg" class="auth-msg" style="display:none"></div>
       <div class="field" style="margin-bottom:14px">
-        <label for="a-email">EMAIL</label>
-        <input type="email" id="a-email" placeholder="trader@email.com" autocomplete="email">
+        <label for="a-email" data-i18n="auth.email">อีเมล (EMAIL)</label>
+        <input type="email" id="a-email" placeholder="trader@email.com" data-i18n-ph="auth.emailPh" autocomplete="email">
       </div>
       <div class="field" style="margin-bottom:20px">
-        <label for="a-pass">PASSWORD</label>
+        <label for="a-pass" data-i18n="auth.password">รหัสผ่าน (PASSWORD)</label>
         <input type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
 
       <div id="turnstileWrap" style="margin-bottom:16px">
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADAXRSiDPr8tsPB0"></div>
       </div>
-      <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()">LOGIN ▸</button>
-      <button id="btn-register" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px;display:none" onclick="register()">CREATE ACCOUNT ▸</button>
-      <button class="btn-ghost" style="width:100%;padding:10px;margin-top:8px;font-size:10px" onclick="forgotPassword()">FORGOT PASSWORD?</button>
+      <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()" data-i18n="auth.loginBtn">เข้าสู่ระบบ ▸</button>
+      <button id="btn-register" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px;display:none" onclick="register()" data-i18n="auth.registerBtn">สร้างบัญชีใหม่ ▸</button>
+      <button id="btn-forgot" class="btn-ghost" style="width:100%;padding:10px;margin-top:8px;font-size:10px" onclick="forgotPassword()" data-i18n="auth.forgot">ลืมรหัสผ่าน?</button>
       <div style="text-align:center;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--muted)">
-        <span id="authToggleMsg">ยังไม่มีบัญชี?</span>
-        <a href="#" id="authToggleLink" style="color:var(--accent);margin-left:6px;text-decoration:none" onclick="toggleAuthMode();return false">Register</a>
+        <span id="authToggleMsg" data-i18n="auth.noAccount">ยังไม่มีบัญชี?</span>
+        <a href="#" id="authToggleLink" style="color:var(--accent);margin-left:6px;text-decoration:none" onclick="toggleAuthMode();return false" data-i18n="auth.registerLink">สมัครสมาชิก</a>
       </div>
     </div>
   </div>
@@ -76,10 +81,13 @@
       <path d="M32 8 L58 54 H6 Z" /><path d="M32 22 L47 48 H17 Z" />
     </svg>
     <div class="scrolly-loader-bar" aria-hidden="true"><div id="scrolly-loader-fill" class="scrolly-loader-fill"></div></div>
-    <div class="scrolly-loader-text">Loading the intro <span id="scrolly-loader-pct">0%</span></div>
+    <div class="scrolly-loader-text"><span data-i18n="intro.loading">กำลังโหลดอินโทร 3D</span> <span id="scrolly-loader-pct">0%</span></div>
   </div>
 
-  <button type="button" class="btn-ghost btn-skip" id="btn-skip-intro" onclick="skipToDashboard()" aria-label="Skip intro and open the dashboard">Skip intro</button>
+  <div class="intro-top-actions">
+    <button type="button" class="btn-ghost btn-intro-lang" onclick="toggleLang()" data-i18n-title="common.langToggle" data-i18n-aria="common.langToggle"><span class="lang-short-label">TH</span></button>
+    <button type="button" class="btn-ghost btn-skip" id="btn-skip-intro" onclick="skipToDashboard()" data-i18n="intro.skip" data-i18n-aria="intro.skipAria">ข้ามอินโทร</button>
+  </div>
   <div class="scrolly-progress-bar" aria-hidden="true"><div id="scrolly-progress" class="scrolly-progress-fill"></div></div>
   <nav class="scrolly-chapters" id="scrolly-chapters" aria-label="Intro chapters"></nav>
   <div class="sr-only" id="scrolly-live" aria-live="polite"></div>
@@ -87,54 +95,54 @@
   <!-- Story copy. Frames 2, 4, 6, 8, 9, 10, 12, 14 are purely visual beats. -->
   <div class="scrolly-sections">
     <section class="scrolly-frame" id="frame-1">
-      <h1 class="hero-title">MASTER THE EDGE.</h1>
-      <p class="hero-subtitle">Where every trade becomes data, and every decision becomes an edge.</p>
-      <div class="scroll-indicator"><span>Scroll to enter</span><div class="scroll-chevron" aria-hidden="true">↓</div></div>
+      <h1 class="hero-title" data-i18n="intro.heroTitle">กุมความได้เปรียบ เหนือทุกจังหวะ</h1>
+      <p class="hero-subtitle" data-i18n="intro.heroSub">ที่ที่ทุกออเดอร์กลายเป็นข้อมูล และทุกการตัดสินใจกลายเป็นความได้เปรียบของคุณ</p>
+      <div class="scroll-indicator"><span data-i18n="intro.scroll">เลื่อนลงเพื่อเข้าสู่ระบบ</span><div class="scroll-chevron" aria-hidden="true">↓</div></div>
     </section>
     <section class="scrolly-frame" id="frame-3">
       <div class="scrolly-card">
-        <span class="badge-tag"><b>01</b>Record</span>
-        <h2>EVERY TRADE, ON THE RECORD.</h2>
-        <p>Log entry, exit, size and your reasoning in seconds. The journal remembers what memory won&rsquo;t.</p>
+        <span class="badge-tag" data-i18n-html="intro.ch1Tag"><b>01</b>บันทึกเทรด</span>
+        <h2 data-i18n="intro.ch1Title">ทุกออเดอร์ ถูกบันทึกไว้อย่างแม่นยำ</h2>
+        <p data-i18n="intro.ch1Desc">บันทึก Entry, Exit, Size และเหตุผลในการเข้าได้ในไม่กี่วินาที ระบบช่วยจำสิ่งที่อารมณ์อาจทำคุณลืม</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-5">
       <div class="scrolly-card">
-        <span class="badge-tag"><b>02</b>Risk</span>
-        <h2>NAVIGATE THE VOLATILITY.</h2>
-        <p>Define your risk before you enter. Real-time calculated sizing. Never let market noise decide.</p>
+        <span class="badge-tag" data-i18n-html="intro.ch2Tag"><b>02</b>บริหารความเสี่ยง</span>
+        <h2 data-i18n="intro.ch2Title">คุมความเสี่ยง เหนือความผันผวน</h2>
+        <p data-i18n="intro.ch2Desc">กำหนด Risk ก่อนเข้าออเดอร์ คำนวณขนาดพอร์ตแบบเรียลไทม์ ไม่ปล่อยให้เสียงรบกวนของตลาดตัดสินแทนคุณ</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-7">
       <div class="scrolly-card right">
-        <span class="badge-tag"><b>03</b>Returns</span>
-        <h2>THINK IN R. NOT MONEY.</h2>
-        <p>Stop chasing numbers. Start measuring execution. Understand your edge through Risk-to-Reward.</p>
+        <span class="badge-tag" data-i18n-html="intro.ch3Tag"><b>03</b>Asymmetric Returns</span>
+        <h2 data-i18n="intro.ch3Title">คิดเป็นค่า R ไม่ใช่แค่ตัวเงิน</h2>
+        <p data-i18n="intro.ch3Desc">หยุดไล่ตามตัวเลข แล้วหันมาวัดผลจาก Execution เข้าใจความได้เปรียบที่แท้จริงผ่าน Risk-to-Reward</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-11">
       <div class="scrolly-card">
-        <span class="badge-tag"><b>04</b>Audit</span>
-        <h2>DISSECT EVERY LAYER.</h2>
-        <p>Expose hidden patterns. Analyze Win Rate, Profit Factor, and true statistical expectancy.</p>
+        <span class="badge-tag" data-i18n-html="intro.ch4Tag"><b>04</b>Audit การเทรด</span>
+        <h2 data-i18n="intro.ch4Title">เจาะลึกทุกมิติของการเทรด</h2>
+        <p data-i18n="intro.ch4Desc">เปิดเผยแพตเทิร์นที่ซ่อนอยู่ วิเคราะห์ Win Rate, Profit Factor และค่าความคาดหวังทางสถิติที่แท้จริง</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-13">
       <div class="scrolly-card right">
-        <span class="badge-tag"><b>05</b>Accounts</span>
-        <h2>ONE SYSTEM. EVERY ACCOUNT.</h2>
-        <p>Personal, prop firm, and crypto portfolios synced with seamless multi-account intelligence.</p>
+        <span class="badge-tag" data-i18n-html="intro.ch5Tag"><b>05</b>จัดการหลายพอร์ต</span>
+        <h2 data-i18n="intro.ch5Title">ระบบเดียว เชื่อมครบทุกพอร์ต</h2>
+        <p data-i18n="intro.ch5Desc">รวมพอร์ตส่วนตัว, Prop Firm และ Crypto ไว้ในที่เดียว สลับดูและติดตามผลได้อย่างไร้รอยต่อ</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-15">
       <div class="scrolly-card">
-        <span class="badge-tag"><b>06</b>Overview</span>
-        <h2>THE WHOLE PICTURE, ONE SCREEN.</h2>
-        <p>Equity curve, heatmap calendar, streaks and symbol ranking, updated as you log.</p>
+        <span class="badge-tag" data-i18n-html="intro.ch6Tag"><b>06</b>ภาพรวมพอร์ต</span>
+        <h2 data-i18n="intro.ch6Title">เห็นภาพรวมทั้งหมด จบในหน้าเดียว</h2>
+        <p data-i18n="intro.ch6Desc">กราฟ Equity Curve, ปฏิทิน Heatmap, สถิติ Streak และอันดับ Symbol อัปเดตทันทีที่คุณบันทึกออเดอร์</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-16">
-      <button type="button" class="btn-enter" onclick="skipToDashboard()">Enter dashboard</button>
+      <button type="button" class="btn-enter" onclick="skipToDashboard()" data-i18n="intro.enter">เข้าสู่แดชบอร์ด</button>
     </section>
   </div>
 </div>
@@ -165,39 +173,43 @@
     </div>
     
     <nav class="nav-rail-menu">
-      <button class="nav-rail-btn active" id="navBtnDashboard" onclick="switchMainView('dashboard')" title="Dashboard Overview">
+      <button class="nav-rail-btn active" id="navBtnDashboard" onclick="switchMainView('dashboard')" title="ภาพรวม Dashboard" data-i18n-title="nav.dashboardTitle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span class="nav-rail-tooltip">Dashboard</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.dashboard">ภาพรวม</span>
       </button>
-      <button class="nav-rail-btn" id="navBtnJournal" onclick="switchMainView('journal')" title="Full Trade Journal">
+      <button class="nav-rail-btn" id="navBtnJournal" onclick="switchMainView('journal')" title="สมุดบันทึกเทรดทั้งหมด" data-i18n-title="nav.journalTitle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        <span class="nav-rail-tooltip">Journal</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.journal">บันทึกเทรด</span>
       </button>
-      <button class="nav-rail-btn" id="navBtnHeatmap" onclick="scrollToBentoCard('cardHeatmap')" title="Trading Heatmap">
+      <button class="nav-rail-btn" id="navBtnHeatmap" onclick="scrollToBentoCard('cardHeatmap')" title="ปฏิทินกำไร-ขาดทุน (Heatmap)" data-i18n-title="nav.heatmapTitle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span class="nav-rail-tooltip">Heatmap</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.heatmap">Heatmap</span>
       </button>
-      <button class="nav-rail-btn" id="navBtnAnalytics" onclick="scrollToBentoCard('cardAnalytics')" title="Analytics & Breakdown">
+      <button class="nav-rail-btn" id="navBtnAnalytics" onclick="scrollToBentoCard('cardAnalytics')" title="วิเคราะห์ผลและสถิติ" data-i18n-title="nav.analyticsTitle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        <span class="nav-rail-tooltip">Analytics</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.analytics">วิเคราะห์ผล</span>
       </button>
-      <button class="nav-rail-btn" onclick="openPortfolioSettings()" title="Portfolio Settings">
+      <button class="nav-rail-btn" onclick="openPortfolioSettings()" title="ตั้งค่าพอร์ตโฟลิโอ" data-i18n-title="nav.settingsTitle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span class="nav-rail-tooltip">Settings</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.settings">ตั้งค่า</span>
       </button>
     </nav>
     
     <div class="nav-rail-bottom">
-      <a href="?intro=1" class="nav-rail-btn" title="Replay 3D Intro">
+      <a href="?intro=1" class="nav-rail-btn" title="ดูอินโทร 3D อีกครั้ง" data-i18n-title="nav.introTitle">
         <span style="font-size:11px;font-weight:800;letter-spacing:-0.5px">3D</span>
-        <span class="nav-rail-tooltip">3D Intro</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.intro">อินโทร 3D</span>
       </a>
-      <div class="theme-toggle" id="themeToggle" title="Toggle dark / light">
+      <button type="button" class="nav-rail-btn nav-lang-btn" id="navLangBtn" onclick="toggleLang()" title="สลับภาษา TH / EN" data-i18n-title="common.langToggle" data-i18n-aria="common.langToggle">
+        <span class="lang-short-label" style="font-size:11px;font-weight:800;letter-spacing:0.5px">TH</span>
+        <span class="nav-rail-tooltip" data-i18n="common.langToggle">สลับภาษา TH / EN</span>
+      </button>
+      <div class="theme-toggle" id="themeToggle" title="สลับธีม มืด / สว่าง" data-i18n-title="nav.themeTitle">
         <div class="toggle-ball"></div>
       </div>
-      <button class="nav-rail-btn nav-logout-btn" onclick="logout()" title="Logout">
+      <button class="nav-rail-btn nav-logout-btn" onclick="logout()" title="ออกจากระบบ" data-i18n-title="nav.logout">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span class="nav-rail-tooltip">Logout</span>
+        <span class="nav-rail-tooltip" data-i18n="nav.logout">ออกจากระบบ</span>
       </button>
     </div>
   </aside>
@@ -205,30 +217,31 @@
   <!-- MOBILE TAB BAR + "MORE" SHEET (≤768px) — replaces the left nav rail on phones / small tablets -->
   <nav class="mobile-tabbar" id="mobileTabbar" aria-label="Primary">
     <button class="mtab active" id="mtabDash" onclick="switchMainView('dashboard')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Overview</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span data-i18n="nav.dashboard">ภาพรวม</span>
     </button>
     <button class="mtab" id="mtabJournal" onclick="switchMainView('journal')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>Journal</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span data-i18n="nav.journal">บันทึกเทรด</span>
     </button>
-    <button class="mtab-fab" onclick="openModal()" aria-label="New trade">
+    <button class="mtab-fab" onclick="openModal()" aria-label="บันทึกออเดอร์ใหม่" data-i18n-aria="nav.newTradeAria">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
     <button class="mtab" id="mtabAnalytics" onclick="scrollToBentoCard('cardAnalytics')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span data-i18n="nav.analytics">วิเคราะห์ผล</span>
     </button>
     <button class="mtab" id="mtabMore" onclick="toggleMoreSheet()" aria-expanded="false" aria-controls="moreSheet">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg><span>More</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg><span data-i18n="nav.more">เพิ่มเติม</span>
     </button>
   </nav>
   <div class="more-sheet-backdrop" id="moreSheetBackdrop" onclick="toggleMoreSheet(false)"></div>
   <div class="more-sheet" id="moreSheet" role="dialog" aria-label="More options">
     <div class="more-sheet-grip" aria-hidden="true"></div>
-    <button class="more-item" onclick="toggleMoreSheet(false); scrollToBentoCard('cardHeatmap')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Heatmap</span></button>
-    <button class="more-item" onclick="toggleMoreSheet(false); openPortfolioSettings()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8L7 17M17 7l2.8-2.8"/></svg><span>Portfolio settings</span></button>
-    <button class="more-item" onclick="toggleMoreSheet(false); openTickerSettings()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Ticker settings</span></button>
-    <button class="more-item" onclick="document.getElementById('themeToggle').click(); toggleMoreSheet(false)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>Switch dark / light</span></button>
-    <a class="more-item" href="?intro=1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Replay 3D intro</span></a>
-    <button class="more-item danger" onclick="logout()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span></button>
+    <button class="more-item" onclick="toggleMoreSheet(false); scrollToBentoCard('cardHeatmap')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span data-i18n="nav.heatmap">Heatmap</span></button>
+    <button class="more-item" onclick="toggleMoreSheet(false); openPortfolioSettings()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8L7 17M17 7l2.8-2.8"/></svg><span data-i18n="nav.portfolioSettings">ตั้งค่าพอร์ต</span></button>
+    <button class="more-item" onclick="toggleMoreSheet(false); openTickerSettings()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span data-i18n="nav.tickerSettings">ตั้งค่าแถบข่าว FX</span></button>
+    <button class="more-item" onclick="toggleLang()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span data-i18n="common.langLabel">ภาษา: ไทย (TH)</span></button>
+    <button class="more-item" onclick="document.getElementById('themeToggle').click(); toggleMoreSheet(false)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span data-i18n="nav.switchTheme">สลับธีม มืด / สว่าง</span></button>
+    <a class="more-item" href="?intro=1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span data-i18n="nav.replayIntro">ดูอินโทร 3D อีกครั้ง</span></a>
+    <button class="more-item danger" onclick="logout()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span data-i18n="nav.logout">ออกจากระบบ</span></button>
   </div>
 
   <!-- 2. MAIN APP CONTENT AREA -->
@@ -243,14 +256,14 @@
         </div>
         <div class="search-command-pill">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="bento-search-input" id="searchInput" placeholder="Search trades, symbols, setups..." aria-label="Search trades">
+          <input class="bento-search-input" id="searchInput" placeholder="ค้นหา Symbol, Setup, Tag..." data-i18n-ph="header.searchPh" aria-label="ค้นหาออเดอร์" data-i18n-aria="header.searchAria">
           <kbd class="shortcut-badge">⌘ K</kbd>
         </div>
       </div>
       
       <div class="bento-header-right">
         <!-- Compact Live FX Ticker (click to configure) -->
-        <div class="ticker-compact-wrap" onclick="openTickerSettings()" style="cursor:pointer" title="Configure Live FX Ticker">
+        <div class="ticker-compact-wrap" onclick="openTickerSettings()" style="cursor:pointer" title="ตั้งค่าแถบข่าว FX สด" data-i18n-title="header.tickerTitle">
           <div class="ticker" id="ticker"></div>
         </div>
         
@@ -287,7 +300,7 @@
         <section class="bento-card bento-hero-curve" id="cardEquity">
           <div class="bento-card-header">
             <div class="hero-balance-wrap">
-              <span class="bento-label">TOTAL PORTFOLIO BALANCE</span>
+              <span class="bento-label" data-i18n="equity.balanceLabel">ยอดเงินพอร์ตรวม (PORTFOLIO BALANCE)</span>
               <div class="hero-balance-row">
                 <span class="hero-balance-num" id="heroBalanceDisplay">$0.00</span>
                 <span class="hero-return-badge" id="heroReturnBadge">+0.00%</span>
@@ -295,11 +308,11 @@
             </div>
             
             <div class="timeframe-pill-group">
-              <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)">ALL TIME</button>
-              <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
-              <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
-              <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30D</button>
-              <button class="btn-extend-card" onclick="toggleExpandCard('cardEquity')" title="Extend Fullscreen" aria-label="Extend">
+              <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)" data-i18n="equity.allTime">ทั้งหมด</button>
+              <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)" data-i18n="equity.month">เดือนนี้</button>
+              <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)" data-i18n="equity.week">สัปดาห์นี้</button>
+              <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)" data-i18n="equity.last30d">30 วันล่าสุด</button>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardEquity')" title="ขยายเต็มจอ" data-i18n-title="equity.extendTitle" aria-label="Extend">
                 <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                 <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
               </button>
@@ -322,16 +335,16 @@
           <section class="bento-card bento-card-heatmap" id="cardHeatmap">
             <div class="bento-card-header">
               <div class="bento-title-group">
-                <span class="bento-card-tag green">PERFORMANCE MATRIX</span>
-                <h3 class="bento-card-title">Trading P&L Heatmap</h3>
+                <span class="bento-card-tag green" data-i18n="hmap.tag">PERFORMANCE MATRIX</span>
+                <h3 class="bento-card-title" data-i18n="hmap.title">Trading P&L Heatmap</h3>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div class="heatmap-nav-controls" id="heatmapNavControls">
-                  <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(-1)" aria-label="Previous month">◀</button>
+                  <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(-1)" aria-label="เดือนก่อนหน้า" data-i18n-aria="hmap.prevMonth">◀</button>
                   <span id="heatmapMonthTitle" class="heatmap-month-title">NOVEMBER 2026</span>
-                  <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(1)" aria-label="Next month">▶</button>
+                  <button class="btn-ghost btn-icon-sm" onclick="changeHeatmapMonth(1)" aria-label="เดือนถัดไป" data-i18n-aria="hmap.nextMonth">▶</button>
                 </div>
-                <button class="btn-extend-card" onclick="toggleExpandCard('cardHeatmap')" title="Extend Fullscreen" aria-label="Extend">
+                <button class="btn-extend-card" onclick="toggleExpandCard('cardHeatmap')" title="ขยายเต็มจอ" data-i18n-title="equity.extendTitle" aria-label="Extend">
                   <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                   <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
                 </button>
@@ -342,9 +355,9 @@
             <div id="heatmap" class="bento-heatmap-body"></div>
             
             <div class="heatmap-legend-footer">
-              <span class="hmap-legend-item"><span class="hmap-cell-dot loss"></span> Loss Day</span>
-              <span class="hmap-legend-item"><span class="hmap-cell-dot zero"></span> No Trade</span>
-              <span class="hmap-legend-item"><span class="hmap-cell-dot win"></span> Profit Day</span>
+              <span class="hmap-legend-item"><span class="hmap-cell-dot loss"></span> <span data-i18n="hmap.lossDay">วันขาดทุน</span></span>
+              <span class="hmap-legend-item"><span class="hmap-cell-dot zero"></span> <span data-i18n="hmap.noTrade">ไม่มีเทรด</span></span>
+              <span class="hmap-legend-item"><span class="hmap-cell-dot win"></span> <span data-i18n="hmap.profitDay">วันกำไร</span></span>
             </div>
           </section>
 
@@ -352,10 +365,10 @@
           <section class="bento-card bento-card-analytics" id="cardAnalytics">
             <div class="bento-card-header">
               <div class="bento-title-group">
-                <span class="bento-card-tag cyan">EXECUTION INTELLIGENCE</span>
-                <h3 class="bento-card-title">Win / Loss & Symbols</h3>
+                <span class="bento-card-tag cyan" data-i18n="ana.tag">EXECUTION INTELLIGENCE</span>
+                <h3 class="bento-card-title" data-i18n="ana.title">Win / Loss & Symbol</h3>
               </div>
-              <button class="btn-extend-card" onclick="toggleExpandCard('cardAnalytics')" title="Extend Fullscreen" aria-label="Extend">
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardAnalytics')" title="ขยายเต็มจอ" data-i18n-title="equity.extendTitle" aria-label="Extend">
                 <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                 <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
               </button>
@@ -364,7 +377,7 @@
             <div class="bento-analytics-content">
               <div id="breakdown"></div>
               <div class="analytics-divider"></div>
-              <div class="panel-subtitle">SYMBOL PERFORMANCE</div>
+              <div class="panel-subtitle" data-i18n="ana.symPerf">ผลประกอบการราย Symbol</div>
               <div id="symPerf"></div>
               <div class="analytics-divider"></div>
               <div id="streakBlock"></div>
@@ -381,12 +394,12 @@
         <section class="bento-card bento-card-accounts" id="cardAccounts">
           <div class="bento-card-header">
             <div class="bento-title-group">
-              <span class="bento-card-tag orange">MY PORTFOLIOS</span>
-              <h3 class="bento-card-title">Trading Accounts</h3>
+              <span class="bento-card-tag orange" data-i18n="acc.tag">MY PORTFOLIOS</span>
+              <h3 class="bento-card-title" data-i18n="acc.title">บัญชีเทรด (Accounts)</h3>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <button class="btn-ghost btn-sm-pill" onclick="openNewPortfolioModal()" title="Add new portfolio">+ New</button>
-              <button class="btn-extend-card" onclick="toggleExpandCard('cardAccounts')" title="Extend Fullscreen" aria-label="Extend">
+              <button class="btn-ghost btn-sm-pill" onclick="openNewPortfolioModal()" title="เพิ่มพอร์ตโฟลิโอใหม่" data-i18n-title="acc.newBtnTitle" data-i18n="acc.newBtn">+ สร้างพอร์ต</button>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardAccounts')" title="ขยายเต็มจอ" data-i18n-title="equity.extendTitle" aria-label="Extend">
                 <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                 <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
               </button>
@@ -399,10 +412,10 @@
             <div class="virtual-trading-card" id="activeVirtualCard">
               <div class="card-chip-row">
                 <span class="card-logo-badge">▲ TRACKTRADE</span>
-                <span class="card-prop-tag" id="cardAccountType">ACTIVE ACCOUNT</span>
+                <span class="card-prop-tag" id="cardAccountType" data-i18n="acc.activeTag">กำลังใช้งาน</span>
               </div>
               <div class="card-balance-block">
-                <div class="card-balance-label">ACCOUNT BALANCE</div>
+                <div class="card-balance-label" data-i18n="acc.balanceLabel">ยอดเงินในบัญชี (BALANCE)</div>
                 <div class="card-balance-val" id="cardBalanceDisplay">$0.00</div>
               </div>
               <div class="card-footer-row">
@@ -418,11 +431,11 @@
 
             <!-- Quick Action Buttons Row -->
             <div class="bento-account-actions">
-              <button class="btn-primary-cta" onclick="openModal()">+ NEW TRADE</button>
+              <button class="btn-primary-cta" onclick="openModal()" data-i18n="acc.newTrade">+ บันทึกเทรดใหม่</button>
               <div class="action-btn-subgroup">
-                <button class="btn-ghost btn-action-sub" onclick="openImportModal()" title="Import CSV">↑ CSV</button>
-                <button class="btn-ghost btn-action-sub" onclick="exportCSV()" title="Export CSV">↓ CSV</button>
-                <button class="btn-ghost btn-action-sub" onclick="openPortfolioSettings()" title="Settings">⚙</button>
+                <button class="btn-ghost btn-action-sub" onclick="openImportModal()" title="นำเข้าจากไฟล์ CSV" data-i18n-title="acc.importCsvTitle">↑ CSV</button>
+                <button class="btn-ghost btn-action-sub" onclick="exportCSV()" title="ส่งออกเป็นไฟล์ CSV" data-i18n-title="acc.exportCsvTitle">↓ CSV</button>
+                <button class="btn-ghost btn-action-sub" onclick="openPortfolioSettings()" title="ตั้งค่าพอร์ต" data-i18n-title="acc.settingsTitle">⚙</button>
               </div>
             </div>
           </div>
@@ -431,10 +444,10 @@
           <div class="extended-accounts-view">
             <div class="extended-section-intro">
               <div>
-                <h4 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">All Connected Trading Accounts</h4>
-                <p style="font-size:12px;color:var(--muted)">Manage balances, review win rates, and toggle between prop firm, personal, and demo accounts.</p>
+                <h4 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;" data-i18n="acc.extTitle">บัญชีเทรดทั้งหมดที่เชื่อมต่อ</h4>
+                <p style="font-size:12px;color:var(--muted)" data-i18n="acc.extDesc">จัดการยอดเงิน ดู Win Rate และสลับระหว่างพอร์ตส่วนตัว, Prop Firm หรือ Demo ได้ทันที</p>
               </div>
-              <button class="btn-accent" onclick="openNewPortfolioModal()">+ Create New Portfolio</button>
+              <button class="btn-accent" onclick="openNewPortfolioModal()" data-i18n="acc.extCreate">+ สร้างพอร์ตใหม่</button>
             </div>
             <div class="extended-portfolio-grid" id="extendedPortfolioGrid"></div>
           </div>
@@ -444,12 +457,12 @@
         <section class="bento-card bento-card-trades" id="cardTrades">
           <div class="bento-card-header">
             <div class="bento-title-group">
-              <span class="bento-card-tag">LIVE EXECUTION</span>
-              <h3 class="bento-card-title">Recent Trades</h3>
+              <span class="bento-card-tag" data-i18n="trd.tag">LIVE EXECUTION</span>
+              <h3 class="bento-card-title" data-i18n="trd.title">ออเดอร์ล่าสุด</h3>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')">View All →</button>
-              <button class="btn-extend-card" onclick="toggleExpandCard('cardTrades')" title="Extend Fullscreen" aria-label="Extend">
+              <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')" data-i18n="trd.viewAll">ดูทั้งหมด →</button>
+              <button class="btn-extend-card" onclick="toggleExpandCard('cardTrades')" title="ขยายเต็มจอ" data-i18n-title="equity.extendTitle" aria-label="Extend">
                 <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                 <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
               </button>
@@ -460,11 +473,11 @@
           <div class="compact-trades-view">
             <!-- Quick Filter Pills for Feed -->
             <div class="compact-filter-row">
-              <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
-              <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
-              <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
-              <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
-              <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+              <button class="filter-btn active" onclick="setFilter('all',this)" data-i18n="trd.all">ทั้งหมด</button>
+              <button class="filter-btn" onclick="setFilter('Long',this)" data-i18n="trd.long">LONG</button>
+              <button class="filter-btn" onclick="setFilter('Short',this)" data-i18n="trd.short">SHORT</button>
+              <button class="filter-btn" onclick="setFilter('win',this)" data-i18n="trd.wins">WIN</button>
+              <button class="filter-btn" onclick="setFilter('loss',this)" data-i18n="trd.losses">LOSS</button>
             </div>
 
             <!-- Compact Live Feed List -->
@@ -472,7 +485,7 @@
             
             <div class="empty-state" id="emptyStateCompact" style="display:none">
               <div class="empty-icon">◎</div>
-              <div style="font-size:12px;color:var(--muted)">NO TRADES LOGGED YET</div>
+              <div style="font-size:12px;color:var(--muted)" data-i18n="trd.emptyCompact">ยังไม่มีบันทึกการเทรด</div>
             </div>
           </div>
 
@@ -480,15 +493,15 @@
           <div class="extended-trades-view">
             <div class="extended-section-intro">
               <div>
-                <h4 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">Live Execution Ledger & Deep Inspection</h4>
-                <p style="font-size:12px;color:var(--muted)">Full multi-column trade audit trail with one-click order detail inspection.</p>
+                <h4 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;" data-i18n="trd.extTitle">รายการออเดอร์และตรวจสอบเชิงลึก</h4>
+                <p style="font-size:12px;color:var(--muted)" data-i18n="trd.extDesc">ตรวจสอบรายละเอียดออเดอร์ย้อนหลังครบทุกคอลัมน์ในคลิกเดียว</p>
               </div>
               <div class="filter-bar" style="margin:0">
-                <button class="filter-btn active" onclick="setFilter('all',this); renderExtendedTradesTable();">ALL</button>
-                <button class="filter-btn" onclick="setFilter('Long',this); renderExtendedTradesTable();">LONG</button>
-                <button class="filter-btn" onclick="setFilter('Short',this); renderExtendedTradesTable();">SHORT</button>
-                <button class="filter-btn" onclick="setFilter('win',this); renderExtendedTradesTable();">WINS</button>
-                <button class="filter-btn" onclick="setFilter('loss',this); renderExtendedTradesTable();">LOSSES</button>
+                <button class="filter-btn active" onclick="setFilter('all',this); renderExtendedTradesTable();" data-i18n="trd.all">ทั้งหมด</button>
+                <button class="filter-btn" onclick="setFilter('Long',this); renderExtendedTradesTable();" data-i18n="trd.long">LONG</button>
+                <button class="filter-btn" onclick="setFilter('Short',this); renderExtendedTradesTable();" data-i18n="trd.short">SHORT</button>
+                <button class="filter-btn" onclick="setFilter('win',this); renderExtendedTradesTable();" data-i18n="trd.wins">WIN</button>
+                <button class="filter-btn" onclick="setFilter('loss',this); renderExtendedTradesTable();" data-i18n="trd.losses">LOSS</button>
               </div>
             </div>
             <div class="extended-trades-table-wrap" id="extendedTradesTable"></div>
@@ -503,43 +516,43 @@
       <div class="panel panel-log">
         <div class="panel-header">
           <div class="panel-title-with-back">
-            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('dashboard')">← Back to Overview</button>
-            <span class="panel-title" style="margin-left:12px">FULL TRADE JOURNAL</span>
+            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('dashboard')" data-i18n="trd.backOverview">← กลับหน้าภาพรวม</button>
+            <span class="panel-title" style="margin-left:12px" data-i18n="trd.fullJournal">สมุดบันทึกการเทรดทั้งหมด</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn-ghost" onclick="exportNotion()">⊞ Notion</button>
-            <button class="btn-accent" onclick="openModal()">+ NEW TRADE</button>
+            <button class="btn-accent" onclick="openModal()" data-i18n="trd.newTradeBtn">+ บันทึกเทรดใหม่</button>
           </div>
         </div>
 
         <div class="filter-bar">
-          <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
-          <button class="filter-btn" onclick="setFilter('Long',this)">LONG</button>
-          <button class="filter-btn" onclick="setFilter('Short',this)">SHORT</button>
-          <button class="filter-btn" onclick="setFilter('win',this)">WINS</button>
-          <button class="filter-btn" onclick="setFilter('loss',this)">LOSSES</button>
+          <button class="filter-btn active" onclick="setFilter('all',this)" data-i18n="trd.all">ทั้งหมด</button>
+          <button class="filter-btn" onclick="setFilter('Long',this)" data-i18n="trd.long">LONG</button>
+          <button class="filter-btn" onclick="setFilter('Short',this)" data-i18n="trd.short">SHORT</button>
+          <button class="filter-btn" onclick="setFilter('win',this)" data-i18n="trd.wins">WIN</button>
+          <button class="filter-btn" onclick="setFilter('loss',this)" data-i18n="trd.losses">LOSS</button>
           <span class="filter-sep" aria-hidden="true"></span>
-          <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)">ALL TIME</button>
-          <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)">THIS MONTH</button>
-          <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)">THIS WEEK</button>
-          <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)">LAST 30 DAYS</button>
+          <button class="filter-btn active" data-date-filter="all" onclick="setDateFilter('all', this)" data-i18n="equity.allTime">ทั้งหมด</button>
+          <button class="filter-btn" data-date-filter="month" onclick="setDateFilter('month', this)" data-i18n="equity.month">เดือนนี้</button>
+          <button class="filter-btn" data-date-filter="week" onclick="setDateFilter('week', this)" data-i18n="equity.week">สัปดาห์นี้</button>
+          <button class="filter-btn" data-date-filter="30d" onclick="setDateFilter('30d', this)" data-i18n="equity.last30d">30 วันล่าสุด</button>
         </div>
 
         <div class="table-scroll">
           <table class="trade-table">
             <thead>
               <tr>
-                <th onclick="sortBy('date')">DATE <span class="sort-icon">↕</span></th>
-                <th onclick="sortBy('sym')">SYM <span class="sort-icon">↕</span></th>
-                <th>DIR</th>
-                <th onclick="sortBy('entry')">ENTRY <span class="sort-icon">↕</span></th>
-                <th onclick="sortBy('exit')">EXIT <span class="sort-icon">↕</span></th>
-                <th>SIZE</th>
-                <th onclick="sortBy('pnl')">P&L <span class="sort-icon">↕</span></th>
-                <th>%</th>
-                <th onclick="sortBy('actual_r')">R <span class="sort-icon">↕</span></th>
-                <th class="col-setup">SETUP</th>
-                <th class="col-tag">TAG</th>
+                <th onclick="sortBy('date')"><span data-i18n="col.date">วันที่</span> <span class="sort-icon">↕</span></th>
+                <th onclick="sortBy('sym')"><span data-i18n="col.sym">SYMBOL</span> <span class="sort-icon">↕</span></th>
+                <th data-i18n="col.dir">ทิศทาง</th>
+                <th onclick="sortBy('entry')"><span data-i18n="col.entry">ENTRY</span> <span class="sort-icon">↕</span></th>
+                <th onclick="sortBy('exit')"><span data-i18n="col.exit">EXIT</span> <span class="sort-icon">↕</span></th>
+                <th data-i18n="col.size">SIZE</th>
+                <th onclick="sortBy('pnl')"><span data-i18n="col.pnl">P&L</span> <span class="sort-icon">↕</span></th>
+                <th data-i18n="col.pct">%</th>
+                <th onclick="sortBy('actual_r')"><span data-i18n="col.r">R</span> <span class="sort-icon">↕</span></th>
+                <th class="col-setup" data-i18n="col.setup">SETUP</th>
+                <th class="col-tag" data-i18n="col.tag">TAG</th>
                 <th></th>
               </tr>
             </thead>
@@ -547,8 +560,8 @@
           </table>
           <div class="empty-state" id="emptyState" style="display:none">
             <div class="empty-icon">◎</div>
-            <div style="margin-bottom:12px;">NO TRADES FOUND</div>
-            <button class="btn-accent" id="emptyCta" onclick="openModal()">+ LOG FIRST TRADE</button>
+            <div style="margin-bottom:12px;" data-i18n="trd.emptyTable">ไม่พบรายการเทรด</div>
+            <button class="btn-accent" id="emptyCta" onclick="openModal()" data-i18n="trd.emptyCta">+ บันทึกเทรดแรก</button>
           </div>
         </div>
       </div>
@@ -562,67 +575,67 @@
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">NEW TRADE ENTRY</div>
-      <button class="btn-close" onclick="closeModalDirect()" aria-label="Close">✕</button>
+      <div class="modal-title" data-i18n="mdl.newTrade">บันทึกออเดอร์ใหม่</div>
+      <button class="btn-close" onclick="closeModalDirect()" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field full">
-          <label for="f-sym-select">SYMBOL</label>
+          <label for="f-sym-select" data-i18n="mdl.symbol">SYMBOL (คู่เทรด)</label>
           <div style="display:flex; gap:8px;">
             <select id="f-sym-select" onchange="applySymbolPreset()" style="padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px; font-family:var(--sans); flex:1; outline:none; cursor:pointer;">
               <option value="XAUUSD">XAUUSD (Gold)</option>
               <option value="EURUSD">EURUSD</option>
               <option value="GBPUSD">GBPUSD</option>
               <option value="NQ1!">NQ1! (Nasdaq)</option>
-              <option value="OTHER">OTHER (พิมพ์เอง)...</option>
+              <option value="OTHER" data-i18n="mdl.symOther">OTHER (พิมพ์เอง)...</option>
             </select>
-            <input type="text" id="f-sym-custom" aria-label="Custom symbol" placeholder="e.g. BTCUSD" style="display:none; flex:1; padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px;">
+            <input type="text" id="f-sym-custom" aria-label="Custom symbol" placeholder="เช่น BTCUSD" data-i18n-ph="mdl.symCustomPh" style="display:none; flex:1; padding:8px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:4px;">
             <input type="hidden" id="f-mult" value="1">
           </div>
           <div id="sym-hint" style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:5px;letter-spacing:1px;min-height:14px"></div>
         </div>
         <div class="field">
-          <label for="f-date">DATE</label>
+          <label for="f-date" data-i18n="mdl.date">วันที่</label>
           <input type="date" id="f-date">
         </div>
         <div class="field">
-          <label id="f-dir-label">DIRECTION</label>
+          <label id="f-dir-label" data-i18n="mdl.dir">ทิศทาง (DIRECTION)</label>
           <div class="dir-toggle" role="group" aria-labelledby="f-dir-label">
             <button class="dir-btn active" id="btn-long" onclick="setDir('Long')">▲ LONG</button>
             <button class="dir-btn" id="btn-short" onclick="setDir('Short')">▼ SHORT</button>
           </div>
         </div>
         <div class="field">
-          <label for="f-entry">ENTRY PRICE</label>
+          <label for="f-entry" data-i18n="mdl.entry">ENTRY PRICE</label>
           <input type="number" id="f-entry" step="any" placeholder="0.00">
         </div>
         <div class="field">
-          <label for="f-exit">EXIT PRICE</label>
+          <label for="f-exit" data-i18n="mdl.exit">EXIT PRICE</label>
           <input type="number" id="f-exit" step="any" placeholder="0.00">
         </div>
         <div class="field">
-          <label for="f-sl">STOP LOSS</label>
-          <input type="number" id="f-sl" step="any" placeholder="Optional">
+          <label for="f-sl" data-i18n="mdl.sl">STOP LOSS (SL)</label>
+          <input type="number" id="f-sl" step="any" placeholder="ไม่บังคับ" data-i18n-ph="mdl.optional">
         </div>
         <div class="field">
-          <label for="f-tp">TAKE PROFIT</label>
-          <input type="number" id="f-tp" step="any" placeholder="Optional">
+          <label for="f-tp" data-i18n="mdl.tp">TAKE PROFIT (TP)</label>
+          <input type="number" id="f-tp" step="any" placeholder="ไม่บังคับ" data-i18n-ph="mdl.optional">
         </div>
         <div class="field">
-          <label for="f-size">POSITION SIZE</label>
+          <label for="f-size" data-i18n="mdl.size">POSITION SIZE</label>
           <input type="number" id="f-size" step="any" placeholder="1">
         </div>
         <div class="field">
-          <label for="f-account-display">PORTFOLIO BALANCE</label>
+          <label for="f-account-display" data-i18n="mdl.portBalance">เงินทุนพอร์ต (BALANCE)</label>
           <output id="f-account-display" style="display:block;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:1px">—</output>
         </div>
         <div class="field full">
-          <label for="f-note">SETUP / NOTES</label>
-          <input type="text" id="f-note" placeholder="Breakout, Support bounce, Trend follow...">
+          <label for="f-note" data-i18n="mdl.setupNotes">SETUP / บันทึกเพิ่มเติม</label>
+          <input type="text" id="f-note" placeholder="Breakout, Support bounce, Trend follow..." data-i18n-ph="mdl.setupPh">
         </div>
         <div class="field full">
-          <label id="f-tag-label">TAG</label>
+          <label id="f-tag-label" data-i18n="mdl.tag">TAG</label>
           <div class="tag-options" id="tagOptions" role="group" aria-labelledby="f-tag-label">
             <button class="tag-btn" onclick="toggleTag(this,'Scalp')">SCALP</button>
             <button class="tag-btn" onclick="toggleTag(this,'Swing')">SWING</button>
@@ -634,14 +647,14 @@
         </div>
       </div>
       <div class="pnl-preview">
-        <div class="preview-label">ESTIMATED P&L</div>
+        <div class="preview-label" data-i18n="mdl.estPnl">คาดการณ์ P&L</div>
         <div class="preview-val" id="previewVal">—</div>
         <div class="preview-rr" id="previewRR"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeModalDirect()">CANCEL</button>
-      <button class="btn-accent" onclick="saveTrade()">SAVE TRADE ▸</button>
+      <button class="btn-ghost" onclick="closeModalDirect()" data-i18n="common.cancel">ยกเลิก</button>
+      <button class="btn-accent" onclick="saveTrade()" data-i18n="mdl.saveTrade">บันทึกออเดอร์ ▸</button>
     </div>
   </div>
 </div>
@@ -651,18 +664,18 @@
   <div class="modal modal-trade-details" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div class="details-header-title-wrap">
-        <span class="details-badge-label">ORDER INSPECTOR</span>
+        <span class="details-badge-label" data-i18n="dtl.badge">ตรวจสอบออเดอร์ (INSPECTOR)</span>
         <div class="details-title-row">
           <span class="modal-title" id="dtlSym">—</span>
           <span class="feed-dir-pill" id="dtlDir">—</span>
         </div>
       </div>
-      <button class="btn-close" onclick="closeTradeDetailsDirect()" aria-label="Close">✕</button>
+      <button class="btn-close" onclick="closeTradeDetailsDirect()" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
       <!-- Big P&L Hero Card -->
       <div class="details-pnl-hero" id="dtlPnlHero">
-        <div class="dtl-pnl-label">NET REALIZED P&L</div>
+        <div class="dtl-pnl-label" data-i18n="dtl.netPnl">กำไร-ขาดทุนสุทธิ (NET REALIZED P&L)</div>
         <div class="dtl-pnl-num" id="dtlPnlNum">$0.00</div>
         <div class="dtl-pnl-sub" id="dtlPnlSub">+0.00% • 0.00R</div>
       </div>
@@ -670,50 +683,50 @@
       <!-- Key Details Grid -->
       <div class="details-info-grid">
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">TRADE DATE</div>
+          <div class="dtl-item-label" data-i18n="dtl.date">วันที่เทรด</div>
           <div class="dtl-item-val" id="dtlDate">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">POSITION SIZE</div>
+          <div class="dtl-item-label" data-i18n="dtl.size">POSITION SIZE</div>
           <div class="dtl-item-val" id="dtlSize">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">ENTRY PRICE</div>
+          <div class="dtl-item-label" data-i18n="dtl.entry">ENTRY PRICE</div>
           <div class="dtl-item-val" id="dtlEntry">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">EXIT PRICE</div>
+          <div class="dtl-item-label" data-i18n="dtl.exit">EXIT PRICE</div>
           <div class="dtl-item-val" id="dtlExit">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">STOP LOSS</div>
+          <div class="dtl-item-label" data-i18n="dtl.sl">STOP LOSS</div>
           <div class="dtl-item-val" id="dtlSl">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">TAKE PROFIT</div>
+          <div class="dtl-item-label" data-i18n="dtl.tp">TAKE PROFIT</div>
           <div class="dtl-item-val" id="dtlTp">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">ACTUAL R-MULTIPLE</div>
+          <div class="dtl-item-label" data-i18n="dtl.r">ACTUAL R-MULTIPLE</div>
           <div class="dtl-item-val" id="dtlR">—</div>
         </div>
         <div class="dtl-grid-item">
-          <div class="dtl-item-label">STRATEGY / TAG</div>
+          <div class="dtl-item-label" data-i18n="dtl.tag">กลยุทธ์ / TAG</div>
           <div class="dtl-item-val" id="dtlTag">—</div>
         </div>
       </div>
 
       <!-- Setup & Notes Section -->
       <div class="dtl-notes-card">
-        <div class="dtl-notes-label">SETUP / EXECUTION NOTES</div>
+        <div class="dtl-notes-label" data-i18n="dtl.notes">SETUP / บันทึกการเทรด</div>
         <div class="dtl-notes-body" id="dtlNote">—</div>
       </div>
     </div>
     <div class="modal-footer" style="display:flex;justify-content:space-between">
-      <button class="btn-ghost" style="color:var(--red);border-color:rgba(255,69,96,0.3)" id="dtlBtnDelete" onclick="deleteFromDetails()">🗑 Delete Trade</button>
+      <button class="btn-ghost" style="color:var(--red);border-color:rgba(255,69,96,0.3)" id="dtlBtnDelete" onclick="deleteFromDetails()" data-i18n="dtl.delBtn">🗑 ลบออเดอร์</button>
       <div style="display:flex;gap:10px">
-        <button class="btn-ghost" onclick="closeTradeDetailsDirect()">Close</button>
-        <button class="btn-accent" id="dtlBtnEdit" onclick="editFromDetails()">✏ Edit Trade</button>
+        <button class="btn-ghost" onclick="closeTradeDetailsDirect()" data-i18n="common.close">ปิด</button>
+        <button class="btn-accent" id="dtlBtnEdit" onclick="editFromDetails()" data-i18n="dtl.editBtn">✏ แก้ไข</button>
       </div>
     </div>
   </div>
@@ -723,14 +736,14 @@
 <div class="modal-overlay" id="notionOverlay" onclick="closeNotion(event)">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">EXPORT FOR NOTION</div>
-      <button class="btn-close" onclick="document.getElementById('notionOverlay').classList.remove('open')" aria-label="Close">✕</button>
+      <div class="modal-title" data-i18n="notion.title">ส่งออกข้อมูลไป NOTION</div>
+      <button class="btn-close" onclick="document.getElementById('notionOverlay').classList.remove('open')" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--muted);font-size:13px;margin-bottom:12px">คัดลอก → เปิด Notion → สร้าง Table → Ctrl+V วางได้เลย</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px" data-i18n="notion.desc">คัดลอก → เปิด Notion → สร้าง Table → Ctrl+V วางได้เลย</p>
       <textarea id="notionText" readonly aria-label="Trade log in Notion table format"></textarea>
-      <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()">COPY TO CLIPBOARD</button>
-      <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s">✓ COPIED!</div>
+      <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()" data-i18n="notion.copyBtn">คัดลอกลงคลิปบอร์ด</button>
+      <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s" data-i18n="notion.copied">✓ คัดลอกแล้ว!</div>
     </div>
   </div>
 </div>
@@ -739,33 +752,35 @@
 <div class="modal-overlay" id="importModalOverlay" onclick="closeImportModal(event)" ondragover="event.preventDefault()" ondrop="event.preventDefault()">
   <div class="modal modal-import">
     <div class="modal-header">
-      <div class="modal-title">IMPORT FROM CSV</div>
-      <button class="btn-close" onclick="closeImportModalDirect()" aria-label="Close">✕</button>
+      <div class="modal-title" data-i18n="imp.title">นำเข้าจากไฟล์ CSV</div>
+      <button class="btn-close" onclick="closeImportModalDirect()" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
       <label class="import-drop" id="importDrop" for="importFile"
              ondragover="importDragOver(event)" ondragleave="importDragLeave(event)" ondrop="importDrop(event)">
         <span class="import-drop-icon">↑</span>
-        <span class="import-drop-text">DROP CSV FILE HERE <em>or click to browse</em></span>
+        <span class="import-drop-text" data-i18n-html="imp.dropText">ลากไฟล์ CSV มาวางที่นี่ <em>หรือคลิกเพื่อเลือกไฟล์</em></span>
         <span class="import-drop-file" id="importFileName"></span>
         <input type="file" id="importFile" accept=".csv,text/csv" onchange="importFileChosen(this)">
       </label>
-      <div class="import-hint">
-        Works with TrackTrade CSV exports and common broker/platform headers.<br>
-        <b>Required:</b> <code>date</code> (or <code>time</code>, <code>open time</code>), <code>symbol</code>, <code>direction</code> (<code>buy</code>/<code>sell</code> or <code>long</code>/<code>short</code>), <code>entry</code>, <code>exit</code><br>
-        <b>Optional:</b> <code>size</code>/<code>lots</code>, <code>stop_loss</code>/<code>sl</code>, <code>take_profit</code>/<code>tp</code>, <code>multiplier</code>, <code>note</code>/<code>setup</code>, <code>tag</code>
+      <div class="import-hint" data-i18n-html="imp.hintHtml">
+        รองรับไฟล์ CSV จาก TrackTrade และโบรคเกอร์ทั่วไป<br>
+        <b>คอลัมน์ที่จำเป็น:</b> <code>date</code> (หรือ <code>time</code>, <code>open time</code>), <code>symbol</code>, <code>direction</code> (<code>buy</code>/<code>sell</code> หรือ <code>long</code>/<code>short</code>), <code>entry</code>, <code>exit</code><br>
+        <b>คอลัมน์เสริม:</b> <code>size</code>/<code>lots</code>, <code>stop_loss</code>/<code>sl</code>, <code>take_profit</code>/<code>tp</code>, <code>multiplier</code>, <code>note</code>/<code>setup</code>, <code>tag</code>
       </div>
       <div class="import-summary" id="importSummary" aria-live="polite"></div>
       <div class="table-scroll" id="importPreviewWrap" style="display:none">
         <table class="import-preview">
-          <thead><tr><th>DATE</th><th>SYM</th><th>DIR</th><th>ENTRY</th><th>EXIT</th><th>SIZE</th><th>SL</th><th>R</th></tr></thead>
+          <thead><tr>
+            <th data-i18n="col.date">วันที่</th><th data-i18n="col.sym">SYM</th><th data-i18n="col.dir">DIR</th><th data-i18n="col.entry">ENTRY</th><th data-i18n="col.exit">EXIT</th><th data-i18n="col.size">SIZE</th><th>SL</th><th data-i18n="col.r">R</th>
+          </tr></thead>
           <tbody id="importPreviewBody"></tbody>
         </table>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeImportModalDirect()">CANCEL</button>
-      <button class="btn-accent" id="importConfirmBtn" onclick="confirmImport()" disabled>IMPORT 0 TRADES ▸</button>
+      <button class="btn-ghost" onclick="closeImportModalDirect()" data-i18n="common.cancel">ยกเลิก</button>
+      <button class="btn-accent" id="importConfirmBtn" onclick="confirmImport()" disabled>นำเข้า 0 เทรด ▸</button>
     </div>
   </div>
 </div>
@@ -774,35 +789,35 @@
 <div class="modal-overlay" id="tickerSettingsOverlay" onclick="closeTickerSettings(event)">
   <div class="modal" style="width:560px">
     <div class="modal-header">
-      <div class="modal-title">TICKER SETTINGS</div>
-      <button class="btn-close" onclick="closeTickerSettings()" aria-label="Close">✕</button>
+      <div class="modal-title" data-i18n="tkr.title">ตั้งค่าแถบข่าว FX (TICKER)</div>
+      <button class="btn-close" onclick="closeTickerSettings()" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
       <div class="ticker-info-box">
         <div class="tib-row">
           <span class="tib-dot" id="tickerModalStatus"></span>
-          <span class="tib-label">DATA SOURCE</span>
-          <span class="tib-val">Market Sessions + Upcoming News</span>
+          <span class="tib-label" data-i18n="tkr.sourceLbl">แหล่งข้อมูล</span>
+          <span class="tib-val" data-i18n="tkr.sourceVal">ช่วงเวลาตลาด + ข่าวเศรษฐกิจสำคัญ</span>
         </div>
         <div class="tib-row">
-          <span class="tib-label" style="margin-left:18px">REFRESH RATE</span>
-          <span class="tib-val">Every 60 seconds</span>
+          <span class="tib-label" style="margin-left:18px" data-i18n="tkr.rateLbl">ความถี่อัปเดต</span>
+          <span class="tib-val" data-i18n="tkr.rateVal">ทุก 60 วินาที</span>
         </div>
         <div class="tib-row">
-          <span class="tib-label" style="margin-left:18px">LAST UPDATE</span>
+          <span class="tib-label" style="margin-left:18px" data-i18n="tkr.lastLbl">อัปเดตล่าสุด</span>
           <span class="tib-val" id="tickerModalTime">—</span>
         </div>
       </div>
       <div class="form-grid" style="margin-top:20px;margin-bottom:0">
         <div class="field full">
-          <label for="ts-speed">SCROLL SPEED (seconds per loop)</label>
+          <label for="ts-speed" data-i18n="tkr.speedLbl">ความเร็วตัววิ่ง (วินาทีต่อรอบ)</label>
           <div style="display:flex;align-items:center;gap:14px">
             <input type="range" id="ts-speed" min="15" max="90" step="5" style="flex:1;accent-color:var(--accent)">
             <span id="speed-val" style="font-family:var(--mono);font-size:13px;color:var(--accent);min-width:36px">30s</span>
           </div>
         </div>
         <div class="field full">
-          <label id="ts-color-label">HIGHLIGHT COLOR</label>
+          <label id="ts-color-label" data-i18n="tkr.colorLbl">สีไฮไลต์</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap" id="ts-color-btns" role="group" aria-labelledby="ts-color-label">
             <button class="ticker-color-btn" data-color="#c8f03c" aria-label="Highlight color: Lime" style="background:#c8f03c" onclick="selectTickerColor(this,'#c8f03c')"></button>
             <button class="ticker-color-btn" data-color="#3cffa0" aria-label="Highlight color: Green" style="background:#3cffa0" onclick="selectTickerColor(this,'#3cffa0')"></button>
@@ -816,8 +831,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeTickerSettings()">CANCEL</button>
-      <button class="btn-accent" onclick="applyTickerSettings()">APPLY ▸</button>
+      <button class="btn-ghost" onclick="closeTickerSettings()" data-i18n="common.cancel">ยกเลิก</button>
+      <button class="btn-accent" onclick="applyTickerSettings()" data-i18n="common.apply">บันทึกค่า ▸</button>
     </div>
   </div>
 </div>
@@ -827,28 +842,28 @@
   <div class="modal modal-welcome">
     <div class="modal-header">
       <div>
-        <div class="modal-title">WELCOME TO TRACKTRADE</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px">LET'S SET UP YOUR FIRST PORTFOLIO</div>
+        <div class="modal-title" data-i18n="wlc.title">ยินดีต้อนรับสู่ TRACKTRADE</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px" data-i18n="wlc.sub">มาตั้งค่าพอร์ตโฟลิโอแรกของคุณกัน</div>
       </div>
     </div>
     <div class="modal-body">
-      <p style="color:var(--muted);font-family:var(--mono);font-size:11px;line-height:1.9;margin-bottom:24px">
-        ตั้งชื่อพอร์ตและ balance เริ่มต้น<br>
-        ระบบจะคำนวณ return % และ current balance ให้อัตโนมัติ
+      <p style="color:var(--muted);font-family:var(--mono);font-size:11px;line-height:1.9;margin-bottom:24px" data-i18n-html="wlc.descHtml">
+        ตั้งชื่อพอร์ตและเงินทุน (Balance) เริ่มต้น<br>
+        ระบบจะคำนวณ Return % และยอด Balance ปัจจุบันให้อัตโนมัติ
       </p>
       <div class="form-grid">
         <div class="field full">
-          <label for="w-name">PORTFOLIO NAME</label>
-          <input type="text" id="w-name" placeholder="Crypto Main, Stock US, Futures...">
+          <label for="w-name" data-i18n="prt.name">ชื่อพอร์ต (PORTFOLIO NAME)</label>
+          <input type="text" id="w-name" placeholder="Crypto Main, Stock US, Futures..." data-i18n-ph="prt.namePh">
         </div>
         <div class="field full">
-          <label for="w-balance">STARTING BALANCE ($)</label>
+          <label for="w-balance" data-i18n="prt.balance">เงินทุนเริ่มต้น (STARTING BALANCE $)</label>
           <input type="number" id="w-balance" step="any" placeholder="10000">
         </div>
       </div>
     </div>
     <div class="modal-footer" style="justify-content:stretch">
-      <button class="btn-accent" style="width:100%;padding:12px" onclick="saveWelcome()">CREATE MY PORTFOLIO ▸</button>
+      <button class="btn-accent" style="width:100%;padding:12px" onclick="saveWelcome()" data-i18n="wlc.btn">สร้างพอร์ตของฉัน ▸</button>
     </div>
   </div>
 </div>
@@ -857,24 +872,24 @@
 <div class="modal-overlay" id="newPortfolioOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">NEW PORTFOLIO</div>
-      <button class="btn-close" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')" aria-label="Close">✕</button>
+      <div class="modal-title" data-i18n="prt.newTitle">สร้างพอร์ตใหม่</div>
+      <button class="btn-close" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field full">
-          <label for="np-name">PORTFOLIO NAME</label>
-          <input type="text" id="np-name" placeholder="Crypto Main, Stock US...">
+          <label for="np-name" data-i18n="prt.name">ชื่อพอร์ต (PORTFOLIO NAME)</label>
+          <input type="text" id="np-name" placeholder="Crypto Main, Stock US, Futures..." data-i18n-ph="prt.namePh">
         </div>
         <div class="field full">
-          <label for="np-balance">STARTING BALANCE ($)</label>
+          <label for="np-balance" data-i18n="prt.balance">เงินทุนเริ่มต้น (STARTING BALANCE $)</label>
           <input type="number" id="np-balance" step="any" placeholder="10000">
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')">CANCEL</button>
-      <button class="btn-accent" onclick="saveNewPortfolio()">CREATE ▸</button>
+      <button class="btn-ghost" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')" data-i18n="common.cancel">ยกเลิก</button>
+      <button class="btn-accent" onclick="saveNewPortfolio()" data-i18n="common.create">สร้างพอร์ต ▸</button>
     </div>
   </div>
 </div>
@@ -883,29 +898,29 @@
 <div class="modal-overlay" id="portfolioSettingsOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">PORTFOLIO SETTINGS</div>
-      <button class="btn-close" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')" aria-label="Close">✕</button>
+      <div class="modal-title" data-i18n="prt.settingsTitle">ตั้งค่าพอร์ตโฟลิโอ</div>
+      <button class="btn-close" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field full">
-          <label for="ps-name">PORTFOLIO NAME</label>
+          <label for="ps-name" data-i18n="prt.name">ชื่อพอร์ต (PORTFOLIO NAME)</label>
           <input type="text" id="ps-name">
         </div>
         <div class="field full">
-          <label for="ps-balance">STARTING BALANCE ($)</label>
+          <label for="ps-balance" data-i18n="prt.balance">เงินทุนเริ่มต้น (STARTING BALANCE $)</label>
           <input type="number" id="ps-balance" step="any">
         </div>
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <button class="btn-ghost" style="color:var(--red);border-color:var(--red-dim)" onclick="deletePortfolio()">
-          DELETE THIS PORTFOLIO
+        <button class="btn-ghost" style="color:var(--red);border-color:var(--red-dim)" onclick="deletePortfolio()" data-i18n="prt.deleteBtn">
+          ลบพอร์ตนี้
         </button>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')">CANCEL</button>
-      <button class="btn-accent" onclick="savePortfolioSettings()">SAVE ▸</button>
+      <button class="btn-ghost" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')" data-i18n="common.cancel">ยกเลิก</button>
+      <button class="btn-accent" onclick="savePortfolioSettings()" data-i18n="common.save">บันทึก ▸</button>
     </div>
   </div>
 </div>
@@ -916,8 +931,8 @@
     <div class="modal-body" style="padding:32px 24px;text-align:center">
       <div id="confirmMsg" style="font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--text);margin-bottom:24px;line-height:1.6"></div>
       <div style="display:flex;gap:10px;justify-content:center">
-        <button class="btn-ghost" id="confirmNo">CANCEL</button>
-        <button class="btn-accent" id="confirmYes">CONFIRM ▸</button>
+        <button class="btn-ghost" id="confirmNo" data-i18n="common.cancel">ยกเลิก</button>
+        <button class="btn-accent" id="confirmYes" data-i18n="common.confirm">ยืนยัน ▸</button>
       </div>
     </div>
   </div>
@@ -932,16 +947,17 @@
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/config.js?v=2.9"></script>    <!-- state, helpers, Supabase init -->
-<script src="js/db.js?v=2.8"></script>        <!-- CRUD: portfolios + trades -->
-<script src="js/auth.js?v=3.0"></script>      <!-- login / register / logout -->
-<script src="js/portfolio.js?v=2.9"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=3.0"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.8"></script>     <!-- trade modal & export -->
-<script src="js/scrolly3d.js?v=3.0"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=3.2"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/i18n.js?v=1.0"></script>      <!-- TH / EN localization -->
+<script src="js/config.js?v=3.0"></script>    <!-- state, helpers, Supabase init -->
+<script src="js/db.js?v=2.9"></script>        <!-- CRUD: portfolios + trades -->
+<script src="js/auth.js?v=3.1"></script>      <!-- login / register / logout -->
+<script src="js/portfolio.js?v=3.0"></script> <!-- portfolio tabs & modals -->
+<script src="js/ticker.js?v=3.1"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=2.9"></script>     <!-- trade modal & export -->
+<script src="js/scrolly3d.js?v=3.1"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
+<script src="js/ui.js?v=3.3"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
-<script>document.addEventListener('DOMContentLoaded', () => { initAuth(); });</script>
+<script>document.addEventListener('DOMContentLoaded', () => { applyI18n(); initAuth(); });</script>
 </body>
 </html>

@@ -14,7 +14,7 @@ function applySymbolPreset() {
     const preset = SYMBOL_PRESETS[sel.value];
     if (custom) custom.style.display = 'none';
     if (mult)   mult.value = preset ? preset.mult : 1;
-    if (hint)   hint.textContent = preset ? `Contract size: ${preset.label}` : '';
+    if (hint)   hint.textContent = preset ? t('mdl.contractSize', { label: preset.label }) : '';
   }
   updatePreview();
 }
@@ -43,8 +43,8 @@ function resetTradeForm() {
 
 function openModal() {
   editingId = null;
-  document.querySelector('.modal-title').textContent = "NEW TRADE ENTRY";
-  document.querySelector('.modal-footer .btn-accent').textContent = "SAVE TRADE ▸";
+  document.querySelector('#modalOverlay .modal-title').textContent = t('mdl.newTrade');
+  document.querySelector('#modalOverlay .modal-footer .btn-accent').textContent = t('mdl.saveTrade');
   document.getElementById('modalOverlay').classList.add('open');
   resetTradeForm();
 
@@ -60,34 +60,35 @@ function openModal() {
 }
 
 function editTrade(id) {
-  const t = getActiveTrades().find(x => x.id === id); if (!t) return;
+  const t_rec = getActiveTrades().find(x => x.id === id); if (!t_rec) return;
   editingId = id;
-  document.querySelector('.modal-title').textContent = "EDIT TRADE";
+  document.querySelector('#modalOverlay .modal-title').textContent = t('mdl.editTrade');
+  document.querySelector('#modalOverlay .modal-footer .btn-accent').textContent = t('mdl.saveTrade');
   document.getElementById('modalOverlay').classList.add('open');
   resetTradeForm();
 
-  document.getElementById('f-date').value  = t.date;
-  document.getElementById('f-entry').value = t.entry_price || t.entry;
-  document.getElementById('f-exit').value  = t.exit_price  || t.exit;
-  document.getElementById('f-size').value  = t.size;
-  document.getElementById('f-sl').value    = t.stop_loss ?? '';
-  document.getElementById('f-tp').value    = t.take_profit ?? '';
+  document.getElementById('f-date').value  = t_rec.date;
+  document.getElementById('f-entry').value = t_rec.entry_price || t_rec.entry;
+  document.getElementById('f-exit').value  = t_rec.exit_price  || t_rec.exit;
+  document.getElementById('f-size').value  = t_rec.size;
+  document.getElementById('f-sl').value    = t_rec.stop_loss ?? '';
+  document.getElementById('f-tp').value    = t_rec.take_profit ?? '';
 
   const sel = document.getElementById('f-sym-select');
   const custom = document.getElementById('f-sym-custom');
   const hint = document.getElementById('sym-hint');
   if (sel && custom) {
-    if (SYMBOL_PRESETS[t.sym]) {
-      sel.value = t.sym; custom.style.display = 'none';
-      if (hint) hint.textContent = `Contract size: ${SYMBOL_PRESETS[t.sym].label}`;
+    if (SYMBOL_PRESETS[t_rec.sym]) {
+      sel.value = t_rec.sym; custom.style.display = 'none';
+      if (hint) hint.textContent = t('mdl.contractSize', { label: SYMBOL_PRESETS[t_rec.sym].label });
     } else {
-      sel.value = 'OTHER'; custom.style.display = 'block'; custom.value = t.sym;
+      sel.value = 'OTHER'; custom.style.display = 'block'; custom.value = t_rec.sym;
       if (hint) hint.textContent = '';
     }
   }
 
-  if (document.getElementById('f-mult')) document.getElementById('f-mult').value = t.multiplier || 1;
-  if (document.getElementById('f-note')) document.getElementById('f-note').value = t.note || '';
+  if (document.getElementById('f-mult')) document.getElementById('f-mult').value = t_rec.multiplier || 1;
+  if (document.getElementById('f-note')) document.getElementById('f-note').value = t_rec.note || '';
 
   // แสดง balance พอร์ตใน read-only field
   const dispEl = document.getElementById('f-account-display');
@@ -96,7 +97,7 @@ function editTrade(id) {
     dispEl.textContent = bal ? `$${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
   }
 
-  setDir(t.dir); selectedTag = t.tag || '';
+  setDir(t_rec.dir); selectedTag = t_rec.tag || '';
   document.querySelectorAll('.tag-btn').forEach(b => {
     b.textContent.trim().toUpperCase() === selectedTag.toUpperCase()
       ? b.classList.add('selected') : b.classList.remove('selected');
@@ -151,11 +152,11 @@ function updatePreview() {
     if (pv) { pv.textContent = fmtNum(p); pv.className = 'preview-val ' + (p >= 0 ? 'pos' : 'neg'); }
 
     const points = Math.abs(diff);
-    let prText = `ระยะ: ${points % 1 !== 0 ? points.toFixed(3) : points} Points`;
+    let prText = `${t('mdl.dist')}: ${points % 1 !== 0 ? points.toFixed(3) : points} ${t('mdl.points')}`;
     if (mult !== 1) prText += ` · x${mult}`;
     if (!isNaN(acc) && acc > 0) {
       const accPct = (p / acc * 100).toFixed(2);
-      prText += ` <br><span style="color:${p >= 0 ? 'var(--green)' : 'var(--red)'}">บัญชีโต: ${(p >= 0 ? '+' : '')}${accPct}%</span>`;
+      prText += ` <br><span style="color:${p >= 0 ? 'var(--green)' : 'var(--red)'}">${t('mdl.accGrowth')}: ${(p >= 0 ? '+' : '')}${accPct}%</span>`;
     }
     lines.push(prText);
   } else if (pv) {
@@ -166,12 +167,13 @@ function updatePreview() {
   if (!isNaN(sl) && !isNaN(entry)) {
     const rpu = calcRiskPerUnit(selectedDir, entry, sl);
     if (rpu <= 0) {
-      lines.push(`<span style="color:var(--red)">SL must be ${selectedDir === 'Long' ? 'below' : 'above'} entry for a ${selectedDir}</span>`);
+      const side = t(selectedDir === 'Long' ? 'mdl.below' : 'mdl.above');
+      lines.push(`<span style="color:var(--red)">${t('mdl.slRule', { side, dir: selectedDir })}</span>`);
     } else {
       if (!isNaN(size) && size > 0) {
         const dollarRisk = rpu * size * mult;
         let riskText = `Risk: $${fmtAbs(dollarRisk)}`;
-        if (acc > 0) riskText += ` (${(dollarRisk / acc * 100).toFixed(2)}% of Port)`;
+        if (acc > 0) riskText += ` (${(dollarRisk / acc * 100).toFixed(2)}% ${t('mdl.riskPort')})`;
         lines.push(riskText);
       }
       if (!isNaN(exit)) {
@@ -187,7 +189,7 @@ function updatePreview() {
 // ─── SAVE / DELETE TRADE ──────────────────────────────────────────────────────
 async function saveTrade() {
   const portfolio = getActivePortfolio();
-  if (!portfolio) { toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน', 'error'); return; }
+  if (!portfolio) { toast(t('mdl.noPortfolio'), 'error'); return; }
 
   const selVal  = document.getElementById('f-sym-select')?.value;
   const rawSym  = (selVal === 'OTHER') ? document.getElementById('f-sym-custom')?.value : selVal;
@@ -202,7 +204,7 @@ async function saveTrade() {
   // ใช้ balance ของพอร์ตแทน field account ที่ user กรอก
   const account    = portfolio.balance || 0;
 
-  if (!sym || !date || isNaN(entry) || isNaN(exit) || isNaN(size)) { toast('Fill in all required fields', 'error'); return; }
+  if (!sym || !date || isNaN(entry) || isNaN(exit) || isNaN(size)) { toast(t('mdl.fillRequired'), 'error'); return; }
 
   // optional SL / TP → actual R
   const slVal = parseFloat(document.getElementById('f-sl')?.value);
@@ -213,7 +215,8 @@ async function saveTrade() {
   if (stop_loss !== null) {
     const rpu = calcRiskPerUnit(selectedDir, entry, stop_loss);
     if (rpu <= 0) {
-      toast(`Stop loss must be ${selectedDir === 'Long' ? 'below' : 'above'} entry for a ${selectedDir}`, 'error');
+      const side = t(selectedDir === 'Long' ? 'mdl.below' : 'mdl.above');
+      toast(t('mdl.slRuleSave', { side, dir: selectedDir }), 'error');
       return;
     }
     actual_r = calcActualR(selectedDir, entry, exit, rpu);
@@ -223,7 +226,7 @@ async function saveTrade() {
 
   if (editingId !== null) {
     const ok = await dbUpdateTrade(editingId, tradeData); if (!ok) return;
-    const idx = portfolio.trades.findIndex(t => t.id === editingId);
+    const idx = portfolio.trades.findIndex(x => x.id === editingId);
     if (idx > -1) portfolio.trades[idx] = {
       ...portfolio.trades[idx],
       date, sym, dir: selectedDir,
@@ -231,20 +234,20 @@ async function saveTrade() {
       size, multiplier, note, tag: selectedTag, account,
       stop_loss, take_profit, actual_r
     };
-    toast('Trade updated ✓');
+    toast(t('mdl.updated'));
   } else {
     const saved = await dbSaveTrade(portfolio.id, tradeData); if (!saved) return;
-    portfolio.trades.push(saved); toast('Trade saved ✓');
+    portfolio.trades.push(saved); toast(t('mdl.saved'));
   }
 
   render(); closeModalDirect();
 }
 
 async function delTrade(id) {
-  if (!await confirmDialog('ลบ trade นี้?')) return;
+  if (!await confirmDialog(t('mdl.confirmDelTrade'))) return;
   const p = getActivePortfolio(); if (!p) return;
   const ok = await dbDeleteTrade(id); if (!ok) return;
-  p.trades = p.trades.filter(t => t.id !== id); render(); toast('Trade deleted', 'error');
+  p.trades = p.trades.filter(x => x.id !== id); render(); toast(t('mdl.deleted'), 'error');
 }
 
 // ─── CSV IMPORT ───────────────────────────────────────────────────────────────
@@ -348,20 +351,20 @@ function csvDir(raw) {
 function parseCSV(text) {
   const out = { trades: [], errors: [], warnings: [], fatal: null };
   const src = String(text ?? '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
-  if (!src.trim()) { out.fatal = 'The file is empty.'; return out; }
+  if (!src.trim()) { out.fatal = t('imp.emptyFile'); return out; }
 
   const { rows: rawRows, lines: rawLines } = csvSplit(src, csvDetectDelimiter(src));
   const rows = [], lines = [];
   rawRows.forEach((r, i) => { if (r.some(c => String(c).trim() !== '')) { rows.push(r); lines.push(rawLines[i]); } });
-  if (rows.length < 2) { out.fatal = 'No data rows found — the file needs a header row and at least one trade.'; return out; }
-  if (rows.length - 1 > IMPORT_MAX_ROWS) { out.fatal = `Too many rows (${rows.length - 1}). Maximum is ${IMPORT_MAX_ROWS} per import — split the file.`; return out; }
+  if (rows.length < 2) { out.fatal = t('imp.noDataRows'); return out; }
+  if (rows.length - 1 > IMPORT_MAX_ROWS) { out.fatal = t('imp.tooManyRows', { n: rows.length - 1, max: IMPORT_MAX_ROWS }); return out; }
 
   const header = rows[0].map(csvKey), idx = {};
   for (const [field, aliases] of Object.entries(CSV_ALIASES)) {
     for (const a of aliases) { const i = header.indexOf(a); if (i > -1) { idx[field] = i; break; } }
   }
   const missing = Object.keys(CSV_REQUIRED).filter(f => idx[f] === undefined).map(f => CSV_REQUIRED[f]);
-  if (missing.length) { out.fatal = `Missing required column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.`; return out; }
+  if (missing.length) { out.fatal = t('imp.missingCols', { cols: missing.join(', ') }); return out; }
 
   const cell = (r, f) => idx[f] === undefined ? '' : String(r[idx[f]] ?? '').trim();
 
@@ -378,23 +381,23 @@ function parseCSV(text) {
     const line = lines[k + 1], fail = reason => out.errors.push({ line, reason });
 
     const rawDate = cell(r, 'date'), date = parseCsvDate(rawDate, dayFirst);
-    if (!date) return fail(`invalid date "${csvText(rawDate, 20)}"`);
+    if (!date) return fail(t('imp.badDate', { val: csvText(rawDate, 20) }));
     const dm = rawDate.match(CSV_DMY_RE); if (dm && +dm[1] <= 12 && +dm[2] <= 12 && dm[1] !== dm[2]) ambiguous++;
 
     const sym = csvText(cell(r, 'sym'), 20).toUpperCase();
-    if (!sym) return fail('missing symbol');
+    if (!sym) return fail(t('imp.missingSym'));
 
     const dir = csvDir(cell(r, 'dir'));
-    if (!dir) return fail(`unrecognized direction "${csvText(cell(r, 'dir'), 20)}"`);
+    if (!dir) return fail(t('imp.badDir', { val: csvText(cell(r, 'dir'), 20) }));
 
     const entry = parseCsvNum(cell(r, 'entry_price')), exit = parseCsvNum(cell(r, 'exit_price'));
-    if (entry === null || entry === 0) return fail('invalid entry price');
-    if (exit === null) return fail('invalid exit price');
+    if (entry === null || entry === 0) return fail(t('imp.badEntry'));
+    if (exit === null) return fail(t('imp.badExit'));
 
     const sizeRaw = cell(r, 'size'), size = sizeRaw === '' ? 1 : parseCsvNum(sizeRaw);
-    if (size === null || size <= 0) return fail(`invalid size "${csvText(sizeRaw, 20)}"`);
+    if (size === null || size <= 0) return fail(t('imp.badSize', { val: csvText(sizeRaw, 20) }));
     const multRaw = cell(r, 'multiplier'), multiplier = multRaw === '' ? 1 : parseCsvNum(multRaw);
-    if (multiplier === null || multiplier <= 0) return fail(`invalid multiplier "${csvText(multRaw, 20)}"`);
+    if (multiplier === null || multiplier <= 0) return fail(t('imp.badMult', { val: csvText(multRaw, 20) }));
 
     // brokers export 0 for "no SL / no TP"
     let sl = parseCsvNum(cell(r, 'stop_loss')); if (sl !== null && sl <= 0) sl = null;
@@ -407,7 +410,7 @@ function parseCSV(text) {
     }
 
     const tagRaw = csvText(cell(r, 'tag'), 30);
-    const tag = IMPORT_TAGS.find(t => t.toLowerCase() === tagRaw.toLowerCase()) || tagRaw;
+    const tag = IMPORT_TAGS.find(tg => tg.toLowerCase() === tagRaw.toLowerCase()) || tagRaw;
 
     out.trades.push({
       date, sym, dir, entry_price: entry, exit_price: exit, size, multiplier,
@@ -415,8 +418,8 @@ function parseCSV(text) {
     });
   });
 
-  if (ambiguous) out.warnings.push(`${ambiguous} date${ambiguous > 1 ? 's were' : ' was'} ambiguous (e.g. 03/04/2024) and read as ${dayFirst ? 'DD/MM/YYYY' : 'MM/DD/YYYY'}.`);
-  if (wrongSideSL) out.warnings.push(`${wrongSideSL} trade${wrongSideSL > 1 ? 's have' : ' has'} a stop loss on the wrong side of entry — imported without an R value.`);
+  if (ambiguous) out.warnings.push(t('imp.warnAmbiguous', { n: ambiguous, fmt: dayFirst ? 'DD/MM/YYYY' : 'MM/DD/YYYY' }));
+  if (wrongSideSL) out.warnings.push(t('imp.warnWrongSL', { n: wrongSideSL }));
   return out;
 }
 
@@ -427,7 +430,7 @@ let importBusy  = false;
 const $imp = id => document.getElementById(id);
 
 function openImportModal() {
-  if (!getActivePortfolio()) { toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน', 'error'); return; }
+  if (!getActivePortfolio()) { toast(t('mdl.noPortfolio'), 'error'); return; }
   resetImportModal();
   $imp('importModalOverlay').classList.add('open');
 }
@@ -455,21 +458,21 @@ function importFileChosen(input) { const f = input.files?.[0]; if (f) handleImpo
 function handleImportFile(file) {
   if (importBusy) return;
   $imp('importFileName').textContent = file.name;
-  if (!/\.(csv|txt)$/i.test(file.name)) { importState = { trades: [], errors: [], warnings: [], fatal: 'Please choose a .csv file.' }; renderImportPreview(); return; }
-  if (file.size > IMPORT_MAX_BYTES) { importState = { trades: [], errors: [], warnings: [], fatal: 'File is larger than 5 MB.' }; renderImportPreview(); return; }
+  if (!/\.(csv|txt)$/i.test(file.name)) { importState = { trades: [], errors: [], warnings: [], fatal: t('imp.chooseCsv') }; renderImportPreview(); return; }
+  if (file.size > IMPORT_MAX_BYTES) { importState = { trades: [], errors: [], warnings: [], fatal: t('imp.tooLarge') }; renderImportPreview(); return; }
   const reader = new FileReader();
   reader.onload  = () => loadImportText(String(reader.result || ''));
-  reader.onerror = () => { importState = { trades: [], errors: [], warnings: [], fatal: 'Could not read the file.' }; renderImportPreview(); };
+  reader.onerror = () => { importState = { trades: [], errors: [], warnings: [], fatal: t('imp.readErr') }; renderImportPreview(); };
   reader.readAsText(file);
 }
 
 function loadImportText(text) {
   importState = parseCSV(text);
   if (!importState.fatal && importState.trades.length) {      // warn about re-importing the same file
-    const key = t => [t.date, t.sym, t.dir, +(t.entry_price ?? t.entry), +(t.exit_price ?? t.exit), +t.size].join('|');
+    const key = tr => [tr.date, tr.sym, tr.dir, +(tr.entry_price ?? tr.entry), +(tr.exit_price ?? tr.exit), +tr.size].join('|');
     const have = new Set(getActiveTrades().map(key));
-    const dups = importState.trades.filter(t => have.has(key(t))).length;
-    if (dups) importState.warnings.push(`${dups} trade${dups > 1 ? 's look' : ' looks'} identical to trades already in this portfolio — importing will create duplicates.`);
+    const dups = importState.trades.filter(tr => have.has(key(tr))).length;
+    if (dups) importState.warnings.push(t('imp.warnDups', { n: dups }));
   }
   renderImportPreview();
 }
@@ -479,27 +482,27 @@ function renderImportPreview() {
   if (!sum || !btn) return;
   const s = importState, n = s ? s.trades.length : 0;
   btn.disabled = !n || importBusy;
-  btn.textContent = `IMPORT ${n} TRADE${n === 1 ? '' : 'S'} ▸`;
+  btn.textContent = t('imp.btnCount', { n });
 
   if (!s) { sum.innerHTML = ''; wrap.style.display = 'none'; body.innerHTML = ''; return; }
   if (s.fatal) { sum.innerHTML = `<div class="import-msg err">✕ ${escHtml(s.fatal)}</div>`; wrap.style.display = 'none'; body.innerHTML = ''; return; }
 
   let html = n
-    ? `<div class="import-msg ok">✓ ${n} valid trade${n === 1 ? '' : 's'} detected${s.errors.length ? ` · ${s.errors.length} row${s.errors.length === 1 ? '' : 's'} skipped` : ''}</div>`
-    : `<div class="import-msg err">✕ No valid trades found</div>`;
+    ? `<div class="import-msg ok">✓ ${t('imp.validDetected', { n })}${s.errors.length ? t('imp.rowsSkipped', { n: s.errors.length }) : ''}</div>`
+    : `<div class="import-msg err">✕ ${t('imp.noValid')}</div>`;
   s.warnings.forEach(w => { html += `<div class="import-msg warn">⚠ ${escHtml(w)}</div>`; });
-  s.errors.slice(0, 5).forEach(e => { html += `<div class="import-msg dim">line ${e.line}: ${escHtml(e.reason)}</div>`; });
-  if (s.errors.length > 5) html += `<div class="import-msg dim">…and ${s.errors.length - 5} more skipped</div>`;
+  s.errors.slice(0, 5).forEach(e => { html += `<div class="import-msg dim">${t('imp.lineErr', { line: e.line, reason: escHtml(e.reason) })}</div>`; });
+  if (s.errors.length > 5) html += `<div class="import-msg dim">${t('imp.andMoreSkipped', { n: s.errors.length - 5 })}</div>`;
   sum.innerHTML = html;
 
   wrap.style.display = n ? '' : 'none';
-  body.innerHTML = s.trades.slice(0, 5).map(t => {
-    const r = t.actual_r;
-    return `<tr><td>${escHtml(t.date)}</td><td>${escHtml(t.sym)}</td>` +
-      `<td><span class="dir-tag ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span></td>` +
-      `<td>${t.entry_price}</td><td>${t.exit_price}</td><td>${t.size}</td>` +
-      `<td>${t.stop_loss ?? '—'}</td><td>${r == null ? '—' : fmtR(r)}</td></tr>`;
-  }).join('') + (n > 5 ? `<tr><td colspan="8" style="color:var(--muted)">…and ${n - 5} more</td></tr>` : '');
+  body.innerHTML = s.trades.slice(0, 5).map(tr => {
+    const r = tr.actual_r;
+    return `<tr><td>${escHtml(tr.date)}</td><td>${escHtml(tr.sym)}</td>` +
+      `<td><span class="dir-tag ${tr.dir === 'Long' ? 'long' : 'short'}">${tr.dir === 'Long' ? '▲' : '▼'} ${escHtml(tr.dir.toUpperCase())}</span></td>` +
+      `<td>${tr.entry_price}</td><td>${tr.exit_price}</td><td>${tr.size}</td>` +
+      `<td>${tr.stop_loss ?? '—'}</td><td>${r == null ? '—' : fmtR(r)}</td></tr>`;
+  }).join('') + (n > 5 ? `<tr><td colspan="8" style="color:var(--muted)">${t('imp.andMore', { n: n - 5 })}</td></tr>` : '');
 }
 
 async function confirmImport() {
@@ -515,21 +518,21 @@ async function confirmImport() {
  */
 async function executeImport(parsedTrades) {
   const portfolio = getActivePortfolio();
-  if (!portfolio || !currentUser) { toast('ไม่มีพอร์ต — สร้างพอร์ตก่อน', 'error'); return 0; }
+  if (!portfolio || !currentUser) { toast(t('mdl.noPortfolio'), 'error'); return 0; }
   if (importBusy || !parsedTrades.length) return 0;
 
   importBusy = true;
   const btn = $imp('importConfirmBtn'), total = parsedTrades.length;
   if (btn) btn.disabled = true;
 
-  const rows = parsedTrades.map(t => ({
+  const rows = parsedTrades.map(tr => ({
     portfolio_id: portfolio.id, user_id: currentUser.id,
-    ...t, account: portfolio.balance || 0,
+    ...tr, account: portfolio.balance || 0,
   }));
   const saved = [];
   try {
     for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
-      if (btn) btn.textContent = `IMPORTING ${saved.length}/${total}…`;
+      if (btn) btn.textContent = t('imp.importing', { done: saved.length, total });
       const data = await dbInsertTrades(rows.slice(i, i + IMPORT_CHUNK));
       if (!data) break;
       saved.push(...data);
@@ -542,7 +545,7 @@ async function executeImport(parsedTrades) {
 
   if (saved.length === total) {
     closeImportModalDirect();
-    toast(`Imported ${total} trade${total === 1 ? '' : 's'} successfully ✓`);
+    toast(t('imp.okToast', { n: total }));
   } else {
     if (importState) {
       importState.trades = parsedTrades.slice(saved.length);
@@ -550,8 +553,8 @@ async function executeImport(parsedTrades) {
     }
     renderImportPreview();
     toast(saved.length
-      ? `Import stopped: ${saved.length} of ${total} saved. Press import again to add the remaining ${total - saved.length}.`
-      : 'Import failed — nothing was saved', 'error');
+      ? t('imp.partialToast', { saved: saved.length, total, rem: total - saved.length })
+      : t('imp.failToast'), 'error');
   }
   return saved.length;
 }
@@ -559,23 +562,23 @@ async function executeImport(parsedTrades) {
 // ─── EXPORT ───────────────────────────────────────────────────────────────────
 function exportCSV() {
   const header = 'Date,Symbol,Direction,Entry,Exit,Size,Multiplier,PnL,PnL%,Setup,Tag';
-  const rows = getFiltered().map(t => [
-    t.date, t.sym, t.dir, t.entry_price, t.exit_price, t.size, (t.multiplier || 1),
-    pnl(t).toFixed(2), pnlPct(t).toFixed(2) + '%',
-    `"${(t.note || '').replace(/"/g, '""')}"`, t.tag || ''
+  const rows = getFiltered().map(tr => [
+    tr.date, tr.sym, tr.dir, tr.entry_price, tr.exit_price, tr.size, (tr.multiplier || 1),
+    pnl(tr).toFixed(2), pnlPct(tr).toFixed(2) + '%',
+    `"${(tr.note || '').replace(/"/g, '""')}"`, tr.tag || ''
   ].join(','));
   const url = URL.createObjectURL(new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' }));
   const a = document.createElement('a');
   a.href = url; a.download = `${getActivePortfolio()?.name || 'tradelog'}_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); URL.revokeObjectURL(url); toast('CSV exported ↓');
+  a.click(); URL.revokeObjectURL(url); toast(t('csv.exported'));
 }
 function exportNotion() {
   const header = 'Date\tSymbol\tDirection\tEntry\tExit\tSize\tMult\tP&L\tP&L%\tResult\tSetup\tTag';
-  const rows = getFiltered().map(t => [
-    t.date, t.sym, t.dir, t.entry_price, t.exit_price, t.size, (t.multiplier || 1),
-    (pnl(t) >= 0 ? '+' : '') + pnl(t).toFixed(2),
-    (pnlPct(t) >= 0 ? '+' : '') + pnlPct(t).toFixed(2) + '%',
-    pnl(t) > 0 ? 'Win' : 'Loss', t.note || '', t.tag || ''
+  const rows = getFiltered().map(tr => [
+    tr.date, tr.sym, tr.dir, tr.entry_price, tr.exit_price, tr.size, (tr.multiplier || 1),
+    (pnl(tr) >= 0 ? '+' : '') + pnl(tr).toFixed(2),
+    (pnlPct(tr) >= 0 ? '+' : '') + pnlPct(tr).toFixed(2) + '%',
+    pnl(tr) > 0 ? 'Win' : 'Loss', tr.note || '', tr.tag || ''
   ].join('\t'));
   document.getElementById('notionText').value = header + '\n' + rows.join('\n');
   document.getElementById('notionOverlay').classList.add('open');
@@ -588,6 +591,6 @@ function copyNotion() {
   navigator.clipboard.writeText(document.getElementById('notionText').value).then(() => {
     const msg = document.getElementById('copiedMsg');
     if (msg) { msg.style.opacity = 1; setTimeout(() => msg.style.opacity = 0, 2000); }
-    toast('Copied to clipboard ✓');
-  }).catch(() => toast('Copy failed — select all and copy manually', 'error'));
+    toast(t('notion.toastOk'));
+  }).catch(() => toast(t('notion.toastFail'), 'error'));
 }

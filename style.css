@@ -20,9 +20,9 @@
   --red-dim: rgba(239, 68, 68, 0.12);
   --blue: #38bdf8;
   --orange: #FF6129;
-  --mono: 'Helvetica Neue', 'Inter', -apple-system, BlinkMacSystemFont, monospace;
-  --display: 'Helvetica Neue', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --sans: 'Helvetica Neue', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'Helvetica Neue', 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, monospace;
+  --display: 'Helvetica Neue', 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+  --sans: 'Helvetica Neue', 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 :root.light {
@@ -757,9 +757,10 @@ html.intro-loading, html.intro-loading body { overflow: hidden; }   /* no scroll
   transition: transform .2s ease, box-shadow .2s ease;
 }
 .btn-enter:hover { transform: translateY(-2px); box-shadow: 0 14px 48px rgba(255,97,41,0.6), inset 0 1px 0 rgba(255,255,255,0.4); }
-.btn-enter:focus-visible, .btn-skip:focus-visible, .scrolly-chapters .ch:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-
-.btn-skip { position: fixed; top: 16px; right: 16px; z-index: 999; pointer-events: auto; font-size: 13px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.intro-top-actions { position: fixed; top: 16px; right: 16px; z-index: 999; display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+.btn-skip, .btn-intro-lang { font-size: 13px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.btn-intro-lang { font-weight: 700; min-width: 42px; color: var(--text); }
+.btn-enter:focus-visible, .btn-skip:focus-visible, .btn-intro-lang:focus-visible, .scrolly-chapters .ch:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .scrolly-progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 998; pointer-events: none; background: rgba(255,255,255,0.06); }
 .scrolly-progress-fill {
   height: 100%; transform-origin: 0 50%; transform: scaleX(0);
@@ -2735,3 +2736,24 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
 :root.light .more-sheet { background: #fff; }
 :root.light .more-item:active { background: rgba(15,23,42,0.05); }
 :root.light .trade-table tbody tr { background: rgba(15,23,42,0.025); }
+
+/* ─── TH / EN LANGUAGE TOGGLE & THAI TYPOGRAPHY POLISH ───────────────────────── */
+.auth-lang-btn {
+  position: absolute; top: 16px; right: 16px; padding: 5px 10px;
+  font-size: 11px; font-weight: 700; border-radius: 8px;
+}
+.nav-lang-btn { font-family: var(--mono); color: var(--text); }
+
+html[lang="th"] .hero-title { line-height: 1.18; letter-spacing: -0.015em; }
+html[lang="th"] .scrolly-card h2 { line-height: 1.25; }
+html[lang="th"] .bento-label,
+html[lang="th"] .bento-card-tag,
+html[lang="th"] .panel-title,
+html[lang="th"] .panel-subtitle,
+html[lang="th"] .field label,
+html[lang="th"] .card-balance-label,
+html[lang="th"] .scroll-indicator,
+html[lang="th"] .filter-btn,
+html[lang="th"] .btn-ghost,
+html[lang="th"] .btn-accent { letter-spacing: 0.02em; }
+

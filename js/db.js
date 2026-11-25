@@ -2,11 +2,11 @@
 async function loadAllData() {
   const { data: ports, error: pErr } = await sb
     .from('portfolios').select('*').order('created_at', { ascending: true });
-  if (pErr) { toast('Error loading portfolios', 'error'); return; }
+  if (pErr) { toast(t('db.errLoadPorts'), 'error'); return; }
 
   const { data: trades, error: tErr } = await sb
     .from('trades').select('*').order('date', { ascending: true });
-  if (tErr) { toast('Error loading trades', 'error'); return; }
+  if (tErr) { toast(t('db.errLoadTrades'), 'error'); return; }
 
   portfolios = (ports || []).map(p => ({
     ...p,
@@ -28,17 +28,17 @@ async function dbCreatePortfolio(name, balance) {
   const { data, error } = await sb.from('portfolios')
     .insert({ name, balance: parseFloat(balance), user_id: currentUser.id })
     .select().single();
-  if (error) { toast('Error creating portfolio', 'error'); return null; }
+  if (error) { toast(t('db.errCreatePort'), 'error'); return null; }
   return { ...data, trades: [] };
 }
 async function dbUpdatePortfolio(id, name, balance) {
   const { error } = await sb.from('portfolios').update({ name, balance: parseFloat(balance) }).eq('id', id);
-  if (error) { toast('Error updating portfolio', 'error'); return false; }
+  if (error) { toast(t('db.errUpdatePort'), 'error'); return false; }
   return true;
 }
 async function dbDeletePortfolio(id) {
   const { error } = await sb.from('portfolios').delete().eq('id', id);
-  if (error) { toast('Error deleting portfolio', 'error'); return false; }
+  if (error) { toast(t('db.errDelPort'), 'error'); return false; }
   return true;
 }
 
@@ -52,7 +52,7 @@ async function dbSaveTrade(portfolioId, d) {
     note: d.note || '', tag: d.tag || '', account: d.account || 0,
     stop_loss: d.stop_loss ?? null, take_profit: d.take_profit ?? null, actual_r: d.actual_r ?? null,
   }).select().single();
-  if (error) { toast('Error saving trade', 'error'); return null; }
+  if (error) { toast(t('db.errSaveTrade'), 'error'); return null; }
   return data;
 }
 async function dbUpdateTrade(id, d) {
@@ -63,7 +63,7 @@ async function dbUpdateTrade(id, d) {
     note: d.note || '', tag: d.tag || '', account: d.account || 0,
     stop_loss: d.stop_loss ?? null, take_profit: d.take_profit ?? null, actual_r: d.actual_r ?? null,
   }).eq('id', id);
-  if (error) { toast('Error updating trade', 'error'); return false; }
+  if (error) { toast(t('db.errUpdateTrade'), 'error'); return false; }
   return true;
 }
 // Batch insert (CSV import). Returns the saved rows, or null on error.
@@ -75,7 +75,7 @@ async function dbInsertTrades(rows) {
 }
 async function dbDeleteTrade(id) {
   const { error } = await sb.from('trades').delete().eq('id', id);
-  if (error) { toast('Error deleting trade', 'error'); return false; }
+  if (error) { toast(t('db.errDelTrade'), 'error'); return false; }
   return true;
 }
 

@@ -108,10 +108,10 @@ function drawEquity() {
 
   if (sorted.length === 0) {
     document.getElementById('equityStats').innerHTML =
-      `<div class="equity-stat"><div class="el">TOTAL P&L</div><div class="ev">+0.00</div></div>` +
-      `<div class="equity-stat"><div class="el">WIN RATE</div><div class="ev">0%</div></div>` +
-      `<div class="equity-stat"><div class="el">MAX DRAWDOWN</div><div class="ev neg">0.00</div></div>` +
-      `<div class="equity-stat"><div class="el">TRADES</div><div class="ev">0</div></div>`;
+      `<div class="equity-stat"><div class="el">${t('equity.statTotalPnl')}</div><div class="ev">+0.00</div></div>` +
+      `<div class="equity-stat"><div class="el">${t('equity.statWinRate')}</div><div class="ev">0%</div></div>` +
+      `<div class="equity-stat"><div class="el">${t('equity.statMaxDD')}</div><div class="ev neg">0.00</div></div>` +
+      `<div class="equity-stat"><div class="el">${t('equity.statTrades')}</div><div class="ev">0</div></div>`;
     return;
   }
 
@@ -272,7 +272,7 @@ function drawEquity() {
     ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
     ctx.font = '600 8.5px var(--mono)';
     ctx.textAlign = 'left';
-    ctx.fillText('Growth Trend', pillX, topPillY - 5);
+    ctx.fillText(t('equity.growthTrend'), pillX, topPillY - 5);
 
     ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(18, 22, 32, 0.88)';
     ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
@@ -298,7 +298,7 @@ function drawEquity() {
     const btmPillY = Math.min(H - padBottom, lastComp.y + 4);
     ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
     ctx.font = '600 8.5px var(--mono)';
-    ctx.fillText('Benchmark Base', pillX, btmPillY - 5);
+    ctx.fillText(t('equity.benchmarkBase'), pillX, btmPillY - 5);
 
     ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(18, 22, 32, 0.88)';
     ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
@@ -331,12 +331,12 @@ function drawEquity() {
 
   let peak = points[0], maxDD = 0;
   points.forEach(p => { if (p > peak) peak = p; const dd = peak - p; if (dd > maxDD) maxDD = dd; });
-  const wins = trades.filter(t => pnl(t) > 0), wr = trades.length ? (wins.length / trades.length * 100) : 0;
+  const wins = trades.filter(tr => pnl(tr) > 0), wr = trades.length ? (wins.length / trades.length * 100) : 0;
   document.getElementById('equityStats').innerHTML =
-    `<div class="equity-stat"><div class="el">TOTAL P&L</div><div class="ev ${running >= 0 ? 'pos' : 'neg'}">${fmtNum(running)}</div></div>` +
-    `<div class="equity-stat"><div class="el">WIN RATE</div><div class="ev ${wr >= 50 ? 'pos' : 'neg'}">${wr.toFixed(1)}%</div></div>` +
-    `<div class="equity-stat"><div class="el">MAX DRAWDOWN</div><div class="ev neg">${fmtNum(-Math.abs(maxDD))}</div></div>` +
-    `<div class="equity-stat"><div class="el">TRADES</div><div class="ev">${trades.length}</div></div>`;
+    `<div class="equity-stat"><div class="el">${t('equity.statTotalPnl')}</div><div class="ev ${running >= 0 ? 'pos' : 'neg'}">${fmtNum(running)}</div></div>` +
+    `<div class="equity-stat"><div class="el">${t('equity.statWinRate')}</div><div class="ev ${wr >= 50 ? 'pos' : 'neg'}">${wr.toFixed(1)}%</div></div>` +
+    `<div class="equity-stat"><div class="el">${t('equity.statMaxDD')}</div><div class="ev neg">${fmtNum(-Math.abs(maxDD))}</div></div>` +
+    `<div class="equity-stat"><div class="el">${t('equity.statTrades')}</div><div class="ev">${trades.length}</div></div>`;
 }
 // Redraw when the chart's box changes size (window resize, sidebar/layout shift, rotation) or the device
 // pixel ratio changes (browser zoom, dragging the window to another monitor). One observer, created once.
@@ -429,12 +429,12 @@ function equityHitTest(mx, my, rect) {
 
 function showEquityTooltip(idx) {
   const tip = document.getElementById('equityTooltip'), p = equityPoints[idx]; if (!tip || !p) return;
-  const t = p.trade, v = pnl(t), r = t.actual_r == null ? NaN : Number(t.actual_r);
+  const tr = p.trade, v = pnl(tr), r = tr.actual_r == null ? NaN : Number(tr.actual_r);
   const rText = isNaN(r) ? '' : `· ${fmtR(r)}`;
   tip.innerHTML =
-    `<div style="font-weight:700;color:var(--text);">${escHtml(t.date)} · ${escHtml(t.sym)} <span class="dir-tag ${t.dir === 'Long' ? 'long' : 'short'}">${escHtml(t.dir)}</span></div>` +
+    `<div style="font-weight:700;color:var(--text);">${escHtml(tr.date)} · ${escHtml(tr.sym)} <span class="dir-tag ${tr.dir === 'Long' ? 'long' : 'short'}">${escHtml(tr.dir)}</span></div>` +
     `<div style="margin-top:4px;color:${v >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtNum(v)} ${rText}</div>` +
-    `<div style="color:var(--muted);font-size:10px;margin-top:2px;">Equity: ${p.equity < 0 ? '-' : ''}$${fmtAbs(Math.abs(p.equity))}</div>`;
+    `<div style="color:var(--muted);font-size:10px;margin-top:2px;">${t('equity.tooltipEquity')}: ${p.equity < 0 ? '-' : ''}$${fmtAbs(Math.abs(p.equity))}</div>`;
   tip.style.display = 'block';
 }
 function positionEquityTooltip(mx, my, canvas) {
@@ -511,14 +511,14 @@ function renderMetrics() {
   const sgn = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 
   const cards = [
-    { title: 'TOTAL P&L',     value: fmtNum(totalPnl),
-      change: sgn(portRet), note: 'on initial balance', icon: 'dollar', tone: 'accent', up: portRet >= 0 },
-    { title: 'WIN RATE',      value: winRate.toFixed(1) + '%',
-      change: sgn(winRate - 50), note: `vs 50% · ${wins.length}W / ${losses.length}L`, icon: 'target', tone: 'blue', up: winRate >= 50 },
-    { title: 'PROFIT FACTOR', value: pf === Infinity ? '∞' : (pf ? pf.toFixed(2) : '—'),
-      change: 'R:R ' + (rr ? rr.toFixed(2) : '—'), note: 'avg win / avg loss', icon: 'bars', tone: 'violet', up: pf >= 1 },
-    { title: 'BEST TRADE',    value: fmtNum(best),
-      change: fmtNum(worst), note: 'worst trade', icon: 'trend', tone: 'green', up: false },
+    { title: t('stats.totalPnl'),     value: fmtNum(totalPnl),
+      change: sgn(portRet), note: t('stats.onInitial'), icon: 'dollar', tone: 'accent', up: portRet >= 0 },
+    { title: t('stats.winRate'),      value: winRate.toFixed(1) + '%',
+      change: sgn(winRate - 50), note: t('stats.vs50', { w: wins.length, l: losses.length }), icon: 'target', tone: 'blue', up: winRate >= 50 },
+    { title: t('stats.profitFactor'), value: pf === Infinity ? '∞' : (pf ? pf.toFixed(2) : '—'),
+      change: 'R:R ' + (rr ? rr.toFixed(2) : '—'), note: t('stats.avgWinLoss'), icon: 'bars', tone: 'violet', up: pf >= 1 },
+    { title: t('stats.bestTrade'),    value: fmtNum(best),
+      change: fmtNum(worst), note: t('stats.worstTrade'), icon: 'trend', tone: 'green', up: false },
   ];
   el.innerHTML = cards.map(statCard).join('');
   if (!_statsAnimated && trades.length) { el.classList.add('animate'); _statsAnimated = true; }
@@ -597,34 +597,34 @@ function renderTable() {
   // สร้าง map: tradeId → balance หลัง trade นั้น (sort by date ascending)
   const runningBalMap = buildBalanceMap();
 
-  tbody.innerHTML = rowsToRender.map((t, idx) => {
-    const p = pnl(t), pp = pnlPct(t), win = p > 0;
-    const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
+  tbody.innerHTML = rowsToRender.map((tr, idx) => {
+    const p = pnl(tr), pp = pnlPct(tr), win = p > 0;
+    const rVal = tr.actual_r == null ? NaN : Number(tr.actual_r);
     const rCell = isNaN(rVal) ? '—'
       : rVal > 0 ? `<span class="tag-pill" style="color:var(--green);border-color:var(--green)">+${rVal.toFixed(2)}R</span>`
       : rVal < 0 ? `<span class="tag-pill" style="color:var(--red);border-color:var(--red)">${rVal.toFixed(2)}R</span>`
       :            `<span class="tag-pill">0.00R</span>`;
-    const curBal    = runningBalMap[t.id] ?? 0;
+    const curBal    = runningBalMap[tr.id] ?? 0;
     const balColor  = curBal >= startBal ? 'var(--green)' : 'var(--red)';
-    const multStr   = (t.multiplier && t.multiplier !== 1) ? `<br><span style="font-size:9px;color:var(--muted)">x${t.multiplier}</span>` : '';
+    const multStr   = (tr.multiplier && tr.multiplier !== 1) ? `<br><span style="font-size:9px;color:var(--muted)">x${tr.multiplier}</span>` : '';
     const balStr    = startBal > 0
-      ? `<br><span style="font-size:10px;color:${balColor}" title="Balance after trade">$${fmtAbs(curBal, 0)}</span>`
+      ? `<br><span style="font-size:10px;color:${balColor}" title="${escHtml(t('trd.balAfterTitle'))}">$${fmtAbs(curBal, 0)}</span>`
       : '';
     return `<tr class="row-enter ${win ? 'row-win' : 'row-loss'}" style="animation-delay:${idx * 0.02}s">
-      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(t.date)}</td>
-      <td style="font-weight:700;letter-spacing:1px;font-family:var(--mono)">${escHtml(t.sym)}</td>
-      <td><span class="dir-tag ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(String(t.dir).toUpperCase())}</span></td>
-      <td style="font-family:var(--mono);font-size:12px">${t.entry_price.toLocaleString()}</td>
-      <td style="font-family:var(--mono);font-size:12px">${t.exit_price.toLocaleString()}</td>
-      <td style="font-family:var(--mono);font-size:12px">${t.size}${multStr}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(tr.date)}</td>
+      <td style="font-weight:700;letter-spacing:1px;font-family:var(--mono)">${escHtml(tr.sym)}</td>
+      <td><span class="dir-tag ${tr.dir === 'Long' ? 'long' : 'short'}">${tr.dir === 'Long' ? '▲' : '▼'} ${escHtml(String(tr.dir).toUpperCase())}</span></td>
+      <td style="font-family:var(--mono);font-size:12px">${tr.entry_price.toLocaleString()}</td>
+      <td style="font-family:var(--mono);font-size:12px">${tr.exit_price.toLocaleString()}</td>
+      <td style="font-family:var(--mono);font-size:12px">${tr.size}${multStr}</td>
       <td><span class="pnl-cell ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span></td>
       <td style="font-family:var(--mono);font-size:11px;color:${win ? 'var(--green)' : 'var(--red)'}">${(pp >= 0 ? '+' : '') + pp.toFixed(2)}%${balStr}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${rCell}</td>
-      <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis" class="col-setup">${escHtml(t.note) || '—'}</td>
-      <td class="col-tag">${t.tag ? `<span class="tag-pill">${escHtml(t.tag)}</span>` : ''}</td>
+      <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis" class="col-setup">${escHtml(tr.note) || '—'}</td>
+      <td class="col-tag">${tr.tag ? `<span class="tag-pill">${escHtml(tr.tag)}</span>` : ''}</td>
       <td style="display:flex;gap:8px;">
-        <button class="del-btn" style="color:var(--blue)" onclick="editTrade('${t.id}')" title="Edit" aria-label="Edit trade">✏️</button>
-        <button class="del-btn" onclick="delTrade('${t.id}')" title="Delete" aria-label="Delete trade">✕</button>
+        <button class="del-btn" style="color:var(--blue)" onclick="editTrade('${tr.id}')" title="${escHtml(t('trd.editTitle'))}" aria-label="${escHtml(t('trd.editTitle'))}">✏️</button>
+        <button class="del-btn" onclick="delTrade('${tr.id}')" title="${escHtml(t('trd.deleteTitle'))}" aria-label="${escHtml(t('trd.deleteTitle'))}">✕</button>
       </td></tr>`;
   }).join('');
 
@@ -635,9 +635,9 @@ function renderTable() {
     pgContainer = document.getElementById('pagination-container');
   }
   if (pgContainer) pgContainer.innerHTML = totalPages > 1
-    ? `<button class="btn-ghost" style="padding:4px 12px;font-size:11px;" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>◀ PREV</button>` +
-      `<span style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">PAGE ${currentPage} OF ${totalPages}</span>` +
-      `<button class="btn-ghost" style="padding:4px 12px;font-size:11px;" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>NEXT ▶</button>`
+    ? `<button class="btn-ghost" style="padding:4px 12px;font-size:11px;" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>${t('trd.prevPage')}</button>` +
+      `<span style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">${t('trd.pageOf', { cur: currentPage, total: totalPages })}</span>` +
+      `<button class="btn-ghost" style="padding:4px 12px;font-size:11px;" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>${t('trd.nextPage')}</button>`
     : '';
 }
 
@@ -654,46 +654,48 @@ function sortBy(key) {
 
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 function renderBreakdown() {
-  const trades = getActiveTrades(), wins = trades.filter(t => pnl(t) > 0), losses = trades.filter(t => pnl(t) <= 0);
+  const trades = getActiveTrades(), wins = trades.filter(tr => pnl(tr) > 0), losses = trades.filter(tr => pnl(tr) <= 0);
   const total = trades.length || 1, wPct = (wins.length / total * 100).toFixed(0), lPct = (losses.length / total * 100).toFixed(0);
-  const totalWin = wins.reduce((s, t) => s + pnl(t), 0), totalLoss = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
+  const totalWin = wins.reduce((s, tr) => s + pnl(tr), 0), totalLoss = Math.abs(losses.reduce((s, tr) => s + pnl(tr), 0));
   document.getElementById('breakdown').innerHTML =
     `<div class="breakdown-bar">` +
-    `<div class="bar-row"><span class="bar-label">WIN</span><span style="color:var(--green)">${wins.length} (${wPct}%)</span></div>` +
+    `<div class="bar-row"><span class="bar-label">${t('ana.win')}</span><span style="color:var(--green)">${wins.length} (${wPct}%)</span></div>` +
     `<div class="bar-track"><div class="bar-fill green" style="width:${wPct}%"></div></div>` +
-    `<div class="bar-row"><span class="bar-label">LOSS</span><span style="color:var(--red)">${losses.length} (${lPct}%)</span></div>` +
+    `<div class="bar-row"><span class="bar-label">${t('ana.loss')}</span><span style="color:var(--red)">${losses.length} (${lPct}%)</span></div>` +
     `<div class="bar-track"><div class="bar-fill red" style="width:${lPct}%"></div></div>` +
-    `<div class="bar-row" style="margin-top:4px"><span class="bar-label">GROSS PROFIT</span><span style="color:var(--green)">${fmtNum(totalWin)}</span></div>` +
-    `<div class="bar-row"><span class="bar-label">GROSS LOSS</span><span style="color:var(--red)">-${fmtAbs(totalLoss)}</span></div>` +
+    `<div class="bar-row" style="margin-top:4px"><span class="bar-label">${t('ana.grossProfit')}</span><span style="color:var(--green)">${fmtNum(totalWin)}</span></div>` +
+    `<div class="bar-row"><span class="bar-label">${t('ana.grossLoss')}</span><span style="color:var(--red)">-${fmtAbs(totalLoss)}</span></div>` +
     `</div>`;
 }
 
 function renderSymPerf() {
-  const map = {}; getActiveTrades().forEach(t => { map[t.sym] = (map[t.sym] || 0) + pnl(t); });
+  const map = {}; getActiveTrades().forEach(tr => { map[tr.sym] = (map[tr.sym] || 0) + pnl(tr); });
   const sorted = Object.entries(map).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6);
   document.getElementById('symPerf').innerHTML = sorted.length
     ? sorted.map(([sym, p]) => `<div class="sym-row"><span class="sym-name">${escHtml(sym)}</span><span class="sym-pnl ${p >= 0 ? 'pos' : 'neg'}">${fmtNum(p)}</span></div>`).join('')
-    : '<div style="padding:16px 20px;color:var(--muted);font-family:var(--mono);font-size:11px">No data yet</div>';
+    : `<div style="padding:16px 20px;color:var(--muted);font-family:var(--mono);font-size:11px">${t('ana.noData')}</div>`;
 }
 
 function renderStreak() {
   const sorted = [...getActiveTrades()].sort((a, b) => a.date.localeCompare(b.date));
   let streak = 0, streakType = null, best = 0, bestType = null, cur = 0, curType = null;
-  sorted.forEach(t => {
-    const type = pnl(t) > 0 ? 'win' : 'loss';
+  sorted.forEach(tr => {
+    const type = pnl(tr) > 0 ? 'win' : 'loss';
     if (type === curType) { cur++; } else { curType = type; cur = 1; }
     if (cur > best) { best = cur; bestType = type; }
     streak = cur; streakType = type;
   });
-  const dots = sorted.slice(-20).map(t =>
-    `<div class="streak-dot ${pnl(t) > 0 ? 'w' : 'l'}" title="${escHtml(t.sym)} ${pnl(t) > 0 ? '+' : ''}${pnl(t).toFixed(0)}"></div>`
+  const dots = sorted.slice(-20).map(tr =>
+    `<div class="streak-dot ${pnl(tr) > 0 ? 'w' : 'l'}" title="${escHtml(tr.sym)} ${pnl(tr) > 0 ? '+' : ''}${pnl(tr).toFixed(0)}"></div>`
   ).join('');
+  const curLabel = streakType === 'win' ? t('ana.curWinStreak') : streakType === 'loss' ? t('ana.curLossStreak') : t('ana.curStreak');
+  const bestStr  = bestType ? t('ana.bestStreak', { n: best, type: t(bestType === 'win' ? 'ana.winsPlural' : 'ana.lossesPlural') }) : t('ana.bestStreak', { n: 0, type: '—' });
   document.getElementById('streakBlock').innerHTML =
     `<div class="streak-block">` +
     `<div class="streak-num ${streakType || ''}">${streak || 0}</div>` +
-    `<div class="streak-label">CURRENT ${streakType ? streakType.toUpperCase() + ' STREAK' : 'STREAK'}</div>` +
+    `<div class="streak-label">${curLabel}</div>` +
     `<div class="streak-dots">${dots}</div>` +
-    `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:12px">BEST: ${best} ${bestType ? bestType.toUpperCase() + 'S' : '—'}</div>` +
+    `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:12px">${bestStr}</div>` +
     `</div>`;
 }
 
@@ -731,15 +733,17 @@ function renderHeatmap() {
   const vals = Object.values(dataByDate).map(d => Math.abs(d.pnl)).filter(v => v > 0);
   const maxAbs = vals.length ? Math.max(...vals) : 1;
 
-  // Month title in header
+  // Month title in header (Gregorian year so 2026 stays consistent with trade dates)
   const titleEl = document.getElementById('heatmapMonthTitle');
   if (titleEl) {
-    titleEl.textContent = heatmapDate.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+    titleEl.textContent = getLang() === 'th'
+      ? heatmapDate.toLocaleString('th-TH', { month: 'long', year: 'numeric', calendar: 'gregory' })
+      : heatmapDate.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
   }
 
   let html = `<div class="hmap-calendar-grid">`;
   // Day headers (Mon - Sun)
-  const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const dayNames = t('hmap.days');
   dayNames.forEach(d => {
     html += `<div class="hmap-col-header">${d}</div>`;
   });
@@ -776,12 +780,12 @@ function renderHeatmap() {
         pnlStr = `<span class="hmap-day-pnl zero">0<span class="hmap-usd"> USD</span></span>`;
       }
       dotsHtml = `<div class="hmap-day-dots">` + 
-        info.trades.slice(0, 4).map(t => `<div class="hmap-dot ${pnl(t) > 0 ? 'win' : 'loss'}"></div>`).join('') +
+        info.trades.slice(0, 4).map(tr => `<div class="hmap-dot ${pnl(tr) > 0 ? 'win' : 'loss'}"></div>`).join('') +
         `</div>`;
     }
 
     const titleAttr = info 
-      ? `${dateStr}: ${fmtNum(val)} (${count} trades: ${info.wins}W / ${info.losses}L)`
+      ? `${dateStr}: ${fmtNum(val)} (${count} ${t('hmap.tradesWord')}: ${info.wins}W / ${info.losses}L)`
       : dateStr;
 
     const isSelected = selectedHeatmapDate === dateStr;
@@ -804,10 +808,10 @@ function renderHeatmap() {
 function filterByDate(dateStr) {
   if (selectedHeatmapDate === dateStr) {
     selectedHeatmapDate = null;
-    toast(`Cleared date filter`);
+    toast(t('hmap.cleared'));
   } else {
     selectedHeatmapDate = dateStr;
-    toast(`Filtered for ${dateStr}`);
+    toast(t('hmap.filtered', { date: dateStr }));
   }
   renderHeatmap();
   renderRecentFeed();
@@ -816,7 +820,7 @@ function filterByDate(dateStr) {
 
 function clearHeatmapDateFilter() {
   selectedHeatmapDate = null;
-  toast(`Showing all recent trades`);
+  toast(t('hmap.showingAll'));
   renderHeatmap();
   renderRecentFeed();
   renderTable();
@@ -832,8 +836,8 @@ function renderRecentFeed() {
   let bannerHtml = '';
 
   if (selectedHeatmapDate) {
-    const dayTrades = list.filter(t => t.date === selectedHeatmapDate);
-    const dayPnl = dayTrades.reduce((acc, t) => acc + pnl(t), 0);
+    const dayTrades = list.filter(tr => tr.date === selectedHeatmapDate);
+    const dayPnl = dayTrades.reduce((acc, tr) => acc + pnl(tr), 0);
     const isPos = dayPnl >= 0;
     
     bannerHtml = `
@@ -841,18 +845,19 @@ function renderRecentFeed() {
         <div class="feed-date-info">
           <div class="feed-date-title">📅 ${selectedHeatmapDate}</div>
           <div class="feed-date-meta">
-            <span>${dayTrades.length} Trade${dayTrades.length !== 1 ? 's' : ''}</span>
+            <span>${dayTrades.length} ${t('hmap.tradesWord')}</span>
             <span class="feed-date-sep">•</span>
             <span class="feed-date-pnl ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : ''}${fmtAbs(dayPnl)} USD</span>
           </div>
         </div>
-        <button class="btn-clear-date-filter" onclick="clearHeatmapDateFilter()" title="Show all trades">✕ Reset</button>
+        <button class="btn-clear-date-filter" onclick="clearHeatmapDateFilter()" title="${escHtml(t('trd.resetTitle'))}">${t('trd.resetBtn')}</button>
       </div>`;
     list = dayTrades;
   }
 
   if (!list.length) {
-    container.innerHTML = bannerHtml + `<div class="feed-empty-sub">No trades found ${selectedHeatmapDate ? `on ${selectedHeatmapDate}` : 'with current filters'}</div>`;
+    const suffix = selectedHeatmapDate ? t('trd.emptyFeedDate', { date: selectedHeatmapDate }) : t('trd.emptyFeedFilter');
+    container.innerHTML = bannerHtml + `<div class="feed-empty-sub">${t('trd.emptyFeed', { suffix })}</div>`;
     if (emptyEl) emptyEl.style.display = selectedHeatmapDate ? 'none' : 'block';
     return;
   }
@@ -860,25 +865,25 @@ function renderRecentFeed() {
 
   // Take the most recent 15 trades (or all trades if filtered by date)
   const recent = selectedHeatmapDate ? list : list.slice(0, 15);
-  container.innerHTML = bannerHtml + recent.map(t => {
-    const p = pnl(t);
+  container.innerHTML = bannerHtml + recent.map(tr => {
+    const p = pnl(tr);
     const win = p > 0;
-    const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
+    const rVal = tr.actual_r == null ? NaN : Number(tr.actual_r);
     const rBadge = isNaN(rVal) ? ''
       : rVal > 0 ? `<span class="feed-r-badge pos">+${rVal.toFixed(2)}R</span>`
       : rVal < 0 ? `<span class="feed-r-badge neg">${rVal.toFixed(2)}R</span>`
       : `<span class="feed-r-badge">0.00R</span>`;
 
-    return `<div class="feed-trade-item" onclick="openTradeDetails('${t.id}')" title="Click to view details of ${escHtml(t.sym)}">
+    return `<div class="feed-trade-item" onclick="openTradeDetails('${tr.id}')" title="${escHtml(t('trd.clickDetails', { sym: tr.sym }))}">
       <div class="feed-item-left">
-        <span class="feed-sym-badge">${escHtml(t.sym)}</span>
-        <span class="feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span>
-        <span class="feed-date-text">${escHtml(t.date)}</span>
+        <span class="feed-sym-badge">${escHtml(tr.sym)}</span>
+        <span class="feed-dir-pill ${tr.dir === 'Long' ? 'long' : 'short'}">${tr.dir === 'Long' ? '▲' : '▼'} ${escHtml(tr.dir.toUpperCase())}</span>
+        <span class="feed-date-text">${escHtml(tr.date)}</span>
       </div>
       <div class="feed-item-right">
         <span class="feed-pnl-val ${win ? 'pos' : 'neg'}">${fmtNum(p)}</span>
         ${rBadge}
-        <button class="btn-trade-dots" onclick="event.stopPropagation(); openTradeDetails('${t.id}')" title="Order details">•••</button>
+        <button class="btn-trade-dots" onclick="event.stopPropagation(); openTradeDetails('${tr.id}')" title="${escHtml(t('trd.orderDetailsTitle'))}">•••</button>
       </div>
     </div>`;
   }).join('');
@@ -967,7 +972,7 @@ function toggleExpandCard(cardId) {
     } else if (cardId === 'cardTrades') {
       renderExtendedTradesTable();
     }
-    toast(`Extended view mode`);
+    toast(t('trd.extModeToast'));
   }
 }
 
@@ -991,32 +996,32 @@ function renderExtendedTradesTable() {
   const list = getFiltered();
   
   if (!list.length) {
-    container.innerHTML = `<div class="feed-empty-sub" style="padding:48px;text-align:center">No trades found matching current filter criteria.</div>`;
+    container.innerHTML = `<div class="feed-empty-sub" style="padding:48px;text-align:center">${t('trd.emptyExt')}</div>`;
     return;
   }
 
-  const rows = list.map(t => {
-    const p = pnl(t);
+  const rows = list.map(tr => {
+    const p = pnl(tr);
     const win = p > 0;
-    const rVal = t.actual_r == null ? NaN : Number(t.actual_r);
+    const rVal = tr.actual_r == null ? NaN : Number(tr.actual_r);
     const rText = isNaN(rVal) ? '—' : `${rVal >= 0 ? '+' : ''}${rVal.toFixed(2)}R`;
     const rClass = isNaN(rVal) ? '' : (rVal >= 0 ? 'pos' : 'neg');
 
     return `
       <tr>
-        <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(t.date)}</td>
-        <td style="font-weight:800;font-size:13px">${escHtml(t.sym)}</td>
-        <td><span class="feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}">${t.dir === 'Long' ? '▲' : '▼'} ${escHtml(t.dir.toUpperCase())}</span></td>
-        <td style="font-family:var(--mono);">${fmtNum(t.entry_price ?? t.entry)}</td>
-        <td style="font-family:var(--mono);">${fmtNum(t.exit_price ?? t.exit)}</td>
-        <td style="font-family:var(--mono);">${t.size}</td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escHtml(tr.date)}</td>
+        <td style="font-weight:800;font-size:13px">${escHtml(tr.sym)}</td>
+        <td><span class="feed-dir-pill ${tr.dir === 'Long' ? 'long' : 'short'}">${tr.dir === 'Long' ? '▲' : '▼'} ${escHtml(tr.dir.toUpperCase())}</span></td>
+        <td style="font-family:var(--mono);">${fmtNum(tr.entry_price ?? tr.entry)}</td>
+        <td style="font-family:var(--mono);">${fmtNum(tr.exit_price ?? tr.exit)}</td>
+        <td style="font-family:var(--mono);">${tr.size}</td>
         <td style="font-family:var(--mono);font-weight:800;" class="${win ? 'pos' : 'neg'}">${p >= 0 ? '+' : ''}${fmtAbs(p)} USD</td>
-        <td style="font-family:var(--mono);" class="${p >= 0 ? 'pos' : 'neg'}">${pnlPct(t).toFixed(2)}%</td>
+        <td style="font-family:var(--mono);" class="${p >= 0 ? 'pos' : 'neg'}">${pnlPct(tr).toFixed(2)}%</td>
         <td style="font-family:var(--mono);" class="${rClass}">${rText}</td>
-        <td><span style="font-size:11px;color:var(--muted)">${escHtml(t.note || t.setup || '—')}</span></td>
-        <td><span class="tag-pill">${escHtml(t.tag || 'None')}</span></td>
+        <td><span style="font-size:11px;color:var(--muted)">${escHtml(tr.note || tr.setup || '—')}</span></td>
+        <td><span class="tag-pill">${escHtml(tr.tag || t('trd.noTag'))}</span></td>
         <td style="text-align:right">
-          <button class="btn-trade-dots" onclick="openTradeDetails('${t.id}')" title="Inspect order details">••• Inspect</button>
+          <button class="btn-trade-dots" onclick="openTradeDetails('${tr.id}')" title="${escHtml(t('trd.inspectTitle'))}">${t('trd.inspectBtn')}</button>
         </td>
       </tr>
     `;
@@ -1026,18 +1031,18 @@ function renderExtendedTradesTable() {
     <table class="trade-table" style="width:100%">
       <thead>
         <tr>
-          <th>DATE</th>
-          <th>SYMBOL</th>
-          <th>DIR</th>
-          <th>ENTRY</th>
-          <th>EXIT</th>
-          <th>SIZE</th>
-          <th>P&L (USD)</th>
-          <th>RETURN %</th>
-          <th>R</th>
-          <th>SETUP</th>
-          <th>TAG</th>
-          <th style="text-align:right">ACTION</th>
+          <th>${t('col.date')}</th>
+          <th>${t('col.sym')}</th>
+          <th>${t('col.dir')}</th>
+          <th>${t('col.entry')}</th>
+          <th>${t('col.exit')}</th>
+          <th>${t('col.size')}</th>
+          <th>${t('col.pnlUsd')}</th>
+          <th>${t('col.returnPct')}</th>
+          <th>${t('col.r')}</th>
+          <th>${t('col.setup')}</th>
+          <th>${t('col.tag')}</th>
+          <th style="text-align:right">${t('col.action')}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1050,22 +1055,22 @@ let activeDetailTradeId = null;
 
 function openTradeDetails(tradeId) {
   const trades = getActiveTrades();
-  const t = trades.find(x => x.id === tradeId);
-  if (!t) return;
+  const tr = trades.find(x => x.id === tradeId);
+  if (!tr) return;
   activeDetailTradeId = tradeId;
 
-  const p = pnl(t);
-  const pct = pnlPct(t);
+  const p = pnl(tr);
+  const pct = pnlPct(tr);
   const win = p > 0;
   const isZero = p === 0;
 
   // Header
   const dtlSym = document.getElementById('dtlSym');
-  if (dtlSym) dtlSym.textContent = t.sym;
+  if (dtlSym) dtlSym.textContent = tr.sym;
   const dtlDir = document.getElementById('dtlDir');
   if (dtlDir) {
-    dtlDir.className = `feed-dir-pill ${t.dir === 'Long' ? 'long' : 'short'}`;
-    dtlDir.textContent = (t.dir === 'Long' ? '▲ LONG' : '▼ SHORT');
+    dtlDir.className = `feed-dir-pill ${tr.dir === 'Long' ? 'long' : 'short'}`;
+    dtlDir.textContent = (tr.dir === 'Long' ? '▲ LONG' : '▼ SHORT');
   }
 
   // P&L Hero
@@ -1076,8 +1081,8 @@ function openTradeDetails(tradeId) {
   }
   const dtlPnlSub = document.getElementById('dtlPnlSub');
   if (dtlPnlSub) {
-    const rText = t.actual_r != null && !isNaN(t.actual_r) ? `${Number(t.actual_r).toFixed(2)}R` : '— R';
-    dtlPnlSub.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% Return • ${rText}`;
+    const rText = tr.actual_r != null && !isNaN(tr.actual_r) ? `${Number(tr.actual_r).toFixed(2)}R` : '— R';
+    dtlPnlSub.textContent = t('dtl.returnR', { pct: `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`, r: rText });
   }
 
   // Grid items
@@ -1085,15 +1090,15 @@ function openTradeDetails(tradeId) {
     const el = document.getElementById(id);
     if (el) el.textContent = text || '—';
   };
-  setEl('dtlDate', t.date);
-  setEl('dtlSize', `${t.size} units`);
-  setEl('dtlEntry', fmtNum(t.entry_price ?? t.entry));
-  setEl('dtlExit', fmtNum(t.exit_price ?? t.exit));
-  setEl('dtlSl', (t.stop_loss ?? t.sl) ? fmtNum(t.stop_loss ?? t.sl) : 'None');
-  setEl('dtlTp', (t.take_profit ?? t.tp) ? fmtNum(t.take_profit ?? t.tp) : 'None');
-  setEl('dtlR', t.actual_r != null ? `${Number(t.actual_r).toFixed(2)}R` : '—');
-  setEl('dtlTag', t.tag || 'No tag');
-  setEl('dtlNote', t.note ? t.note : 'No notes entered for this trade execution.');
+  setEl('dtlDate', tr.date);
+  setEl('dtlSize', `${tr.size} ${t('trd.units')}`);
+  setEl('dtlEntry', fmtNum(tr.entry_price ?? tr.entry));
+  setEl('dtlExit', fmtNum(tr.exit_price ?? tr.exit));
+  setEl('dtlSl', (tr.stop_loss ?? tr.sl) ? fmtNum(tr.stop_loss ?? tr.sl) : t('common.none'));
+  setEl('dtlTp', (tr.take_profit ?? tr.tp) ? fmtNum(tr.take_profit ?? tr.tp) : t('common.none'));
+  setEl('dtlR', tr.actual_r != null ? `${Number(tr.actual_r).toFixed(2)}R` : '—');
+  setEl('dtlTag', tr.tag || t('trd.noTag'));
+  setEl('dtlNote', tr.note ? tr.note : t('trd.noNote'));
 
   const overlay = document.getElementById('tradeDetailsOverlay');
   if (overlay) overlay.classList.add('open');

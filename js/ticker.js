@@ -89,7 +89,8 @@ function buildForexTicker() {
   const newsHtml = cachedNews.map(n =>
   `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8;font-size:13px">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? '🔥' : '⚠️'}</span></span><span class="ticker-sep">|</span>`
   ).join('');
-  const fullHtml = sessionHtml + `<span class="ticker-item" style="color:var(--ticker-hl);font-family:var(--mono);letter-spacing:2px;font-size:12px;">UPCOMING NEWS ⚡</span><span class="ticker-sep">|</span>` + newsHtml;
+  const newsLabel = typeof t === 'function' ? t('tkr.upcomingNews') : 'UPCOMING NEWS ⚡';
+  const fullHtml = sessionHtml + `<span class="ticker-item" style="color:var(--ticker-hl);font-family:var(--mono);letter-spacing:2px;font-size:12px;">${newsLabel}</span><span class="ticker-sep">|</span>` + newsHtml;
   const newHtml = fullHtml + fullHtml;
 
   // status chips in the settings modal
@@ -139,7 +140,7 @@ function applyTickerSettings() {
   localStorage.setItem('ticker_prefs', JSON.stringify(tickerPrefs));
   applyTickerStyles(); buildForexTicker();
   document.getElementById('tickerSettingsOverlay').classList.remove('open');
-  toast('Ticker settings applied ✓');
+  toast(t('tkr.applied'));
 }
 function closeTickerSettings(e) {
   if (!e || e.target === document.getElementById('tickerSettingsOverlay'))

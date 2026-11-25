@@ -31,16 +31,19 @@
     white: 0xffffff, ink: 0x050302,
   };
 
+  const tr = (k, v) => (typeof window.t === 'function' ? window.t(k, v) : k);
+
   // Story chapters. `t` is the timeline position (0–100) where the chapter text lands.
   // One source of truth for the chapter rail, the live-region announcer and click-to-jump.
   const CHAPTERS = [
-    { t: 11,   name: 'Record'   },
-    { t: 20.5, name: 'Risk'     },
-    { t: 33,   name: 'Returns'  },
-    { t: 59,   name: 'Audit'    },
-    { t: 72,   name: 'Accounts' },
-    { t: 85,   name: 'Overview' },
+    { t: 11,   key: 'intro.ch1Name', fallback: 'Record'   },
+    { t: 20.5, key: 'intro.ch2Name', fallback: 'Risk'     },
+    { t: 33,   key: 'intro.ch3Name', fallback: 'Returns'  },
+    { t: 59,   key: 'intro.ch4Name', fallback: 'Audit'    },
+    { t: 72,   key: 'intro.ch5Name', fallback: 'Accounts' },
+    { t: 85,   key: 'intro.ch6Name', fallback: 'Overview' },
   ];
+  const chName = c => (typeof window.t === 'function' ? window.t(c.key) : c.fallback);
 
   const $ = id => document.getElementById(id);
   const S = { phase: 'idle', finishing: false, skipping: false, run: null };
@@ -600,8 +603,8 @@
     const l = $('scrolly-loader'); if (l) { l.classList.add('done'); setTimeout(() => l.remove(), 700); }
   }
 
-  function splitWords(el) {
-    if (!el || el.dataset.split) return [];
+  function splitWords(el, force = false) {
+    if (!el || (!force && el.dataset.split)) return [];
     const words = el.textContent.trim().split(/\s+/);
     el.setAttribute('aria-label', el.textContent.trim());
     el.innerHTML = words.map(w => `<span class="w" aria-hidden="true"><span class="wi">${w}</span></span>`).join(' ');
@@ -613,14 +616,18 @@
     const nav = $('scrolly-chapters'); if (!nav) return;
     nav.innerHTML = '';
     CHAPTERS.forEach((c, i) => {
+      const name = chName(c);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'ch'; b.dataset.i = i;
-      b.setAttribute('aria-label', `Jump to chapter ${i + 1}: ${c.name}`);
-      b.innerHTML = `<span class="ch-n">${String(i + 1).padStart(2, '0')}</span><span class="ch-t">${c.name}</span>`;
+      b.setAttribute('aria-label', tr('intro.jumpChapter', { i: i + 1, name }));
+      b.innerHTML = `<span class="ch-n">${String(i + 1).padStart(2, '0')}</span><span class="ch-t">${name}</span>`;
       b.addEventListener('click', () => jumpTo(run, c.t - 0.5));
       nav.appendChild(b);
     });
     run.chBtns = Array.from(nav.children);
+    if (run.chIdx >= 0) {
+      run.chBtns.forEach((b, i) => { b.classList.toggle('on', i === run.chIdx); b.classList.toggle('past', i < run.chIdx); if (i === run.chIdx) b.setAttribute('aria-current', 'step'); });
+    }
   }
 
   function updateChapter(run, p) {
@@ -631,7 +638,13 @@
     if (idx === run.chIdx) return;
     run.chIdx = idx;
     run.chBtns.forEach((b, i) => { b.classList.toggle('on', i === idx); b.classList.toggle('past', i < idx); if (i === idx) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
-    const live = $('scrolly-live'); if (live && idx >= 0) live.textContent = `Chapter ${idx + 1} of ${CHAPTERS.length}: ${CHAPTERS[idx].name}`;
+    const live = $('scrolly-live'); if (live && idx >= 0) live.textContent = tr('intro.liveChapter', { i: idx + 1, n: CHAPTERS.length, name: chName(CHAPTERS[idx]) });
+  }
+
+  function refreshLang() {
+    const heroEl = document.querySelector('#frame-1 .hero-title');
+    if (heroEl) splitWords(heroEl, true);
+    if (S.run) buildChapterRail(S.run);
   }
 
   function jumpTo(run, t) {
@@ -1044,5 +1057,5 @@
   // Exposed for auth.js
   // teardown = "user logged out mid-intro". While idle it must do nothing, so a first-time user who
   // registers in this very session still gets the intro after login (v2 removed the container instead).
-  window.ScrollyIntro = { prepare, skip, teardown: () => { if (S.phase === 'loading' || S.phase === 'playing') finish({ seen: false }); } };
+  window.ScrollyIntro = { prepare, skip, refreshLang, teardown: () => { if (S.phase === 'loading' || S.phase === 'playing') finish({ seen: false }); } };
 })();

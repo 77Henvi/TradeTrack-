@@ -49,7 +49,7 @@ function getTurnstileToken() {
 function checkTurnstile() {
   if (ENABLE_TURNSTILE !== true) return { ok: true, token: null };
   const token = getTurnstileToken();
-  if (!token) { authError('กรุณายืนยัน CAPTCHA (Turnstile) ก่อน'); return { ok: false, token: null }; }
+  if (!token) { authError(t('auth.errCaptcha')); return { ok: false, token: null }; }
   return { ok: true, token };
 }
 // tokens are single-use: reset the widget after every attempt so the user can retry
@@ -77,11 +77,11 @@ async function register() {
   // Validate before calling API
   const email = document.getElementById('a-email').value.trim();
   const pass  = document.getElementById('a-pass').value;
-  if (!email || !pass)       { authError('กรุณาใส่ email และ password'); return; }
-  if (!email.includes('@'))  { authError('Email ไม่ถูกต้อง'); return; }
+  if (!email || !pass)       { authError(t('auth.errRequired')); return; }
+  if (!email.includes('@'))  { authError(t('auth.errInvalidEmail')); return; }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) { authError('รูปแบบ email ไม่ถูกต้อง'); return; }
-  if (pass.length < 6)       { authError('Password ต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
+  if (!emailRegex.test(email)) { authError(t('auth.errEmailFormat')); return; }
+  if (pass.length < 6)       { authError(t('auth.errPassLen')); return; }
   const ts = checkTurnstile(); if (!ts.ok) return;   // before the cooldown, so a missing CAPTCHA doesn't burn it
   if (!canSendEmail())       return;
 
@@ -89,18 +89,18 @@ async function register() {
   const { error } = await sb.auth.signUp({ email, password: pass, ...(ts.token && { options: { captchaToken: ts.token } }) });
   setAuthLoading(false); resetTurnstile();
   if (error) { authError(error.message); return; }
-  authSuccess('สมัครสมาชิกสำเร็จ! ✓ กรุณาเช็ค email เพื่อยืนยัน');
+  authSuccess(t('auth.okSignup'));
 }
 
 async function login() {
   const email = document.getElementById('a-email').value.trim();
   const pass  = document.getElementById('a-pass').value;
-  if (!email || !pass) { authError('กรุณาใส่ email และ password'); return; }
+  if (!email || !pass) { authError(t('auth.errRequired')); return; }
   const ts = checkTurnstile(); if (!ts.ok) return;
   setAuthLoading(true);
   const { error } = await sb.auth.signInWithPassword({ email, password: pass, ...(ts.token && { options: { captchaToken: ts.token } }) });
   setAuthLoading(false); resetTurnstile();
-  if (error) { authError('Email หรือ Password ไม่ถูกต้อง'); return; }
+  if (error) { authError(t('auth.errLogin')); return; }
 }
 
 async function logout() {
@@ -110,14 +110,14 @@ async function logout() {
 
 async function forgotPassword() {
   const email = document.getElementById('a-email').value.trim();
-  if (!email) { authError('ใส่ email ก่อนแล้วกด Forgot Password'); return; }
+  if (!email) { authError(t('auth.errForgotEmail')); return; }
   const ts = checkTurnstile(); if (!ts.ok) return;
   if (!canSendEmail()) return;
   setAuthLoading(true);
   const { error } = await sb.auth.resetPasswordForEmail(email, ts.token ? { captchaToken: ts.token } : undefined);
   setAuthLoading(false); resetTurnstile();
   if (error) { authError(error.message); return; }
-  authSuccess('ส่ง reset link ไปที่ email แล้ว ✓');
+  authSuccess(t('auth.okReset'));
 }
 
 // ─── AUTH UI HELPERS ──────────────────────────────────────────────────────────
@@ -130,25 +130,26 @@ function authSuccess(msg) {
   el.textContent = msg; el.className = 'auth-msg success'; el.style.display = 'block';
 }
 function setAuthLoading(on) {
-  const isRegister = document.getElementById('authTitle').textContent === 'REGISTER';
+  const isRegister = document.getElementById('authTitle')?.dataset.mode === 'register';
   document.getElementById('btn-login').disabled    = on;
   document.getElementById('btn-register').disabled = on;
-  const forgotBtn = document.querySelector('.btn-ghost');
+  const forgotBtn = document.getElementById('btn-forgot');
   if (forgotBtn) forgotBtn.disabled = on;
   if (isRegister) {
-    document.getElementById('btn-register').textContent = on ? 'LOADING...' : 'CREATE ACCOUNT ▸';
+    document.getElementById('btn-register').textContent = on ? t('auth.loadingBtn') : t('auth.registerBtn');
   } else {
-    document.getElementById('btn-login').textContent = on ? 'LOADING...' : 'LOGIN ▸';
+    document.getElementById('btn-login').textContent = on ? t('auth.loadingBtn') : t('auth.loginBtn');
   }
 }
 function toggleAuthMode() {
   const title   = document.getElementById('authTitle');
-  const isLogin = title.textContent === 'LOGIN';
-  title.textContent = isLogin ? 'REGISTER' : 'LOGIN';
+  const isLogin = title.dataset.mode !== 'register';
+  title.dataset.mode = isLogin ? 'register' : 'login';
+  title.textContent  = t(isLogin ? 'auth.registerTitle' : 'auth.loginTitle');
   document.getElementById('btn-login').style.display    = isLogin ? 'none'  : 'block';
   document.getElementById('btn-register').style.display = isLogin ? 'block' : 'none';
-  document.getElementById('authToggleMsg').textContent  = isLogin ? 'มีบัญชีแล้ว?' : 'ยังไม่มีบัญชี?';
-  document.getElementById('authToggleLink').textContent = isLogin ? 'Login' : 'Register';
+  document.getElementById('authToggleMsg').textContent  = t(isLogin ? 'auth.hasAccount' : 'auth.noAccount');
+  document.getElementById('authToggleLink').textContent = t(isLogin ? 'auth.loginLink' : 'auth.registerLink');
   document.getElementById('authMsg').style.display = 'none';
 }
 
@@ -157,7 +158,7 @@ function canSendEmail() {
   const now = Date.now();
   if (now - lastEmailSent < EMAIL_COOLDOWN) {
     const remain = Math.ceil((EMAIL_COOLDOWN - (now - lastEmailSent)) / 1000);
-    authError(`รออีก ${remain} วินาที`);
+    authError(t('auth.waitCooldown', { s: remain }));
     return false;
   }
   lastEmailSent = now;
@@ -169,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
   ['a-email', 'a-pass'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        const isRegister = document.getElementById('authTitle').textContent === 'REGISTER';
+        const isRegister = document.getElementById('authTitle')?.dataset.mode === 'register';
         isRegister ? register() : login();
       }
     });

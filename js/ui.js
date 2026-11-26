@@ -58,6 +58,46 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── RENDER ALL ───────────────────────────────────────────────────────────────
+// ─── MOTION ───────────────────────────────────────────────────────────────────
+// Two curves, both also available as CSS variables: --ease (fast start, soft landing) and --ease-io (slow, fast, slow).
+// Everything here uses the Web Animations API, so nothing re-renders or forces layout, and it is skipped
+// when the visitor asks for reduced motion.
+const EASE = 'cubic-bezier(.22, 1, .36, 1)';
+const EASE_IO = 'cubic-bezier(.65, 0, .35, 1)';
+const motionOK = () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// a changed number flashes the accent color and settles back to its own color
+function flashEl(el) {
+  if (!el || !motionOK()) return;
+  el.animate([{ color: 'var(--accent)' }, { color: getComputedStyle(el).color }], { duration: 900, easing: EASE });
+}
+// set text, and flash only when an already-shown value changes (not on first paint)
+function setTextFlash(el, text) {
+  if (!el) return;
+  const changed = el.dataset.seen === '1' && el.textContent !== text;
+  el.textContent = text; el.dataset.seen = '1';
+  if (changed) flashEl(el);
+}
+// a view fades in and rises 8px when you switch to it
+function enterView(el) {
+  if (!el || !motionOK()) return;
+  el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: EASE });
+}
+// a bar grows or shrinks from its previous width, using transform so the layout stays still
+let _barPrev = {};
+function growBars(container, key) {
+  if (!container) return;
+  const fills = [...container.querySelectorAll('.bar-fill')];
+  const now = fills.map(f => parseFloat(f.style.width) || 0);
+  const prev = _barPrev[key];
+  _barPrev[key] = now;
+  if (!prev || !motionOK()) return;
+  fills.forEach((f, i) => {
+    if (!now[i] || prev[i] === now[i]) return;
+    f.animate([{ transform: `scaleX(${prev[i] / now[i]})` }, { transform: 'scaleX(1)' }], { duration: 450, easing: EASE_IO });
+  });
+}
+
 // Hero "TOTAL PORTFOLIO BALANCE" + the "Trading Accounts" card: same data, updated together,
 // independent of drawEquity()'s early returns (empty range / hidden canvas) that used to leave them stale.
 function syncBalanceDisplays() {
@@ -66,14 +106,14 @@ function syncBalanceDisplays() {
   const money = `$${fmtAbs(s.bal, 2)}`, pct = `${sign}${s.ret.toFixed(2)}%`;
 
   const hero = document.getElementById('heroBalanceDisplay');
-  if (hero) hero.textContent = money;
+  setTextFlash(hero, money);
   const heroRet = document.getElementById('heroReturnBadge');
   if (heroRet) { heroRet.textContent = pct; heroRet.className = `hero-return-badge ${s.ret >= 0 ? 'pos' : 'neg'}`; }
 
   const nameEl = document.getElementById('cardAccountName');
   if (nameEl) nameEl.textContent = port.name;
   const bal = document.getElementById('cardBalanceDisplay');
-  if (bal) bal.textContent = money;
+  setTextFlash(bal, money);
   const pill = document.getElementById('cardReturnPill');
   if (pill) { pill.textContent = pct; pill.style.color = s.ret >= 0 ? 'var(--green)' : 'var(--red)'; }
 }
@@ -460,6 +500,7 @@ function initEquityHover() {
 }
 
 // ─── STAT CARDS ───────────────────────────────────────────────────────────────
+let _prevStatValues = null;
 function statCard({ title, value, change, note, up }) {
   return `<div class="stat-card">
     <p class="stat-title">${title}</p>
@@ -497,6 +538,9 @@ function renderMetrics() {
       change: fmtNum(worst), note: t('stats.worstTrade'), up: false },
   ];
   el.innerHTML = cards.map(statCard).join('');
+  const vals = cards.map(c => c.value);
+  if (_prevStatValues) el.querySelectorAll('.stat-value').forEach((n, i) => { if (_prevStatValues[i] !== vals[i]) flashEl(n); });
+  _prevStatValues = vals;
 }
 
 // ─── TABLE + PAGINATION ───────────────────────────────────────────────────────
@@ -641,6 +685,7 @@ function renderBreakdown() {
     `<div class="bar-row" style="margin-top:4px"><span class="bar-label">${t('ana.grossProfit')}</span><span style="color:var(--green)">${fmtNum(totalWin)}</span></div>` +
     `<div class="bar-row"><span class="bar-label">${t('ana.grossLoss')}</span><span style="color:var(--red)">-${fmtAbs(totalLoss)}</span></div>` +
     `</div>`;
+  growBars(document.getElementById('breakdown'), 'breakdown');
 }
 
 function renderSymPerf() {
@@ -879,6 +924,7 @@ function switchMainView(view) {
     if (btnDash) btnDash.classList.remove('active');
     if (btnJournal) btnJournal.classList.add('active');
     renderTable();
+    enterView(journalView);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     if (dashView) dashView.style.display = 'grid';
@@ -886,6 +932,7 @@ function switchMainView(view) {
     if (btnDash) btnDash.classList.add('active');
     if (btnJournal) btnJournal.classList.remove('active');
     render();
+    enterView(dashView);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }

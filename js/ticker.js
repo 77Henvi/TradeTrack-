@@ -84,7 +84,7 @@ function buildForexTicker() {
     const open = s.status === 'OPEN';
     return `<span class="ticker-item"><span class="sym">${s.name}</span>` +
       `<span class="ticker-time" style="color:${open ? 'var(--green)' : 'var(--text)'};opacity:${open ? 1 : 0.85}">${s.range}</span>` +
-      `<span class="chg ticker-status" style="color:${open ? 'var(--green)' : 'var(--muted)'}"><i class="ticker-dot"></i>${open ? 'OPEN' : 'CLOSED'}</span></span><span class="ticker-sep">|</span>`;
+      `<span class="chg ticker-status" style="color:${open ? 'var(--green)' : 'var(--muted)'}"><i class="ticker-dot${open ? ' on' : ''}"></i>${open ? 'OPEN' : 'CLOSED'}</span></span><span class="ticker-sep">|</span>`;
   }).join('');
   const newsHtml = cachedNews.map(n =>
   `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8;font-size:13px">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? 'HIGH' : 'MEDIUM'}</span></span><span class="ticker-sep">|</span>`

@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,400&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.6">
+  <link rel="stylesheet" href="style.css?v=3.7">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/dist/umd/supabase.min.js"></script>
   <!-- Cloudflare Turnstile api.js is injected by js/auth.js only when ENABLE_TURNSTILE = true (js/config.js) -->
@@ -40,7 +40,7 @@
       <span class="logo-mark" style="font-size:36px">▲</span>
       <div>
         <div style="font-family:var(--display);font-weight:700;font-size:32px;letter-spacing:0.5px;color:var(--text)">TrackTrade</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px" data-i18n="auth.tagline">TRACK YOUR RETIREMENT</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px" data-i18n="auth.tagline">TRADING JOURNAL</div>
       </div>
     </div>
     <div class="auth-body">
@@ -58,8 +58,8 @@
       <div id="turnstileWrap" style="margin-bottom:16px">
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADAXRSiDPr8tsPB0"></div>
       </div>
-      <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()" data-i18n="auth.loginBtn">เข้าสู่ระบบ ▸</button>
-      <button id="btn-register" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px;display:none" onclick="register()" data-i18n="auth.registerBtn">สร้างบัญชีใหม่ ▸</button>
+      <button id="btn-login" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px" onclick="login()" data-i18n="auth.loginBtn">เข้าสู่ระบบ</button>
+      <button id="btn-register" class="btn-accent" style="width:100%;padding:12px;font-size:12px;letter-spacing:3px;display:none" onclick="register()" data-i18n="auth.registerBtn">สร้างบัญชีใหม่</button>
       <button id="btn-forgot" class="btn-ghost" style="width:100%;padding:10px;margin-top:8px;font-size:10px" onclick="forgotPassword()" data-i18n="auth.forgot">ลืมรหัสผ่าน?</button>
       <div style="text-align:center;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--muted)">
         <span id="authToggleMsg" data-i18n="auth.noAccount">ยังไม่มีบัญชี?</span>
@@ -95,49 +95,49 @@
   <!-- Story copy. Frames 2, 4, 6, 8, 9, 10, 12, 14 are purely visual beats. -->
   <div class="scrolly-sections">
     <section class="scrolly-frame" id="frame-1">
-      <h1 class="hero-title" data-i18n="intro.heroTitle">กุมความได้เปรียบ เหนือทุกจังหวะ</h1>
-      <p class="hero-subtitle" data-i18n="intro.heroSub">ที่ที่ทุกออเดอร์กลายเป็นข้อมูล และทุกการตัดสินใจกลายเป็นความได้เปรียบของคุณ</p>
+      <h1 class="hero-title" data-i18n="intro.heroTitle">บันทึกเทรดของคุณ</h1>
+      <p class="hero-subtitle" data-i18n="intro.heroSub">บันทึกทุกออเดอร์ แล้วดู Win Rate, Profit Factor และ Drawdown</p>
       <div class="scroll-indicator"><span data-i18n="intro.scroll">เลื่อนลงเพื่อเข้าสู่ระบบ</span><div class="scroll-chevron" aria-hidden="true">↓</div></div>
     </section>
     <section class="scrolly-frame" id="frame-3">
       <div class="scrolly-card">
         <span class="badge-tag" data-i18n-html="intro.ch1Tag"><b>01</b>บันทึกเทรด</span>
-        <h2 data-i18n="intro.ch1Title">ทุกออเดอร์ ถูกบันทึกไว้อย่างแม่นยำ</h2>
-        <p data-i18n="intro.ch1Desc">บันทึก Entry, Exit, Size และเหตุผลในการเข้าได้ในไม่กี่วินาที ระบบช่วยจำสิ่งที่อารมณ์อาจทำคุณลืม</p>
+        <h2 data-i18n="intro.ch1Title">บันทึกทุกออเดอร์</h2>
+        <p data-i18n="intro.ch1Desc">บันทึก Entry, Exit, Size และเหตุผลที่เข้าเทรด</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-5">
       <div class="scrolly-card">
         <span class="badge-tag" data-i18n-html="intro.ch2Tag"><b>02</b>บริหารความเสี่ยง</span>
-        <h2 data-i18n="intro.ch2Title">คุมความเสี่ยง เหนือความผันผวน</h2>
-        <p data-i18n="intro.ch2Desc">กำหนด Risk ก่อนเข้าออเดอร์ คำนวณขนาดพอร์ตแบบเรียลไทม์ ไม่ปล่อยให้เสียงรบกวนของตลาดตัดสินแทนคุณ</p>
+        <h2 data-i18n="intro.ch2Title">กำหนดความเสี่ยงก่อนเข้าออเดอร์</h2>
+        <p data-i18n="intro.ch2Desc">ใส่ SL และ TP ในทุกออเดอร์ ฟอร์มแสดงตัวอย่าง P&L ขณะกรอก และเก็บค่า R ให้</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-7">
       <div class="scrolly-card right">
         <span class="badge-tag" data-i18n-html="intro.ch3Tag"><b>03</b>Asymmetric Returns</span>
-        <h2 data-i18n="intro.ch3Title">คิดเป็นค่า R ไม่ใช่แค่ตัวเงิน</h2>
-        <p data-i18n="intro.ch3Desc">หยุดไล่ตามตัวเลข แล้วหันมาวัดผลจาก Execution เข้าใจความได้เปรียบที่แท้จริงผ่าน Risk-to-Reward</p>
+        <h2 data-i18n="intro.ch3Title">วัดผลแต่ละเทรดเป็นค่า R</h2>
+        <p data-i18n="intro.ch3Desc">R คือกำไรหรือขาดทุนหารด้วยจำนวนเงินที่เสี่ยง ทุกเทรดในสมุดบันทึกแสดงค่า R</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-11">
       <div class="scrolly-card">
         <span class="badge-tag" data-i18n-html="intro.ch4Tag"><b>04</b>Audit การเทรด</span>
-        <h2 data-i18n="intro.ch4Title">เจาะลึกทุกมิติของการเทรด</h2>
-        <p data-i18n="intro.ch4Desc">เปิดเผยแพตเทิร์นที่ซ่อนอยู่ วิเคราะห์ Win Rate, Profit Factor และค่าความคาดหวังทางสถิติที่แท้จริง</p>
+        <h2 data-i18n="intro.ch4Title">อ่านสถิติการเทรดของคุณ</h2>
+        <p data-i18n="intro.ch4Desc">Win Rate, Profit Factor, R:R และ Max Drawdown อัปเดตทุกครั้งที่บันทึก</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-13">
       <div class="scrolly-card right">
         <span class="badge-tag" data-i18n-html="intro.ch5Tag"><b>05</b>จัดการหลายพอร์ต</span>
-        <h2 data-i18n="intro.ch5Title">ระบบเดียว เชื่อมครบทุกพอร์ต</h2>
-        <p data-i18n="intro.ch5Desc">รวมพอร์ตส่วนตัว, Prop Firm และ Crypto ไว้ในที่เดียว สลับดูและติดตามผลได้อย่างไร้รอยต่อ</p>
+        <h2 data-i18n="intro.ch5Title">หนึ่งพอร์ตต่อหนึ่งบัญชี</h2>
+        <p data-i18n="intro.ch5Desc">แยกแต่ละบัญชีเป็นพอร์ตของตัวเอง เช่น บัญชีส่วนตัวหรือ Prop Firm แต่ละพอร์ตมียอดเงินและเทรดของตัวเอง</p>
       </div>
     </section>
     <section class="scrolly-frame" id="frame-15">
       <div class="scrolly-card">
         <span class="badge-tag" data-i18n-html="intro.ch6Tag"><b>06</b>ภาพรวมพอร์ต</span>
-        <h2 data-i18n="intro.ch6Title">เห็นภาพรวมทั้งหมด จบในหน้าเดียว</h2>
+        <h2 data-i18n="intro.ch6Title">ทุกอย่างอยู่ในแดชบอร์ดเดียว</h2>
         <p data-i18n="intro.ch6Desc">กราฟ Equity Curve, ปฏิทิน Heatmap, สถิติ Streak และอันดับ Symbol อัปเดตทันทีที่คุณบันทึกออเดอร์</p>
       </div>
     </section>
@@ -214,7 +214,7 @@
     </div>
   </aside>
 
-  <!-- MOBILE TAB BAR + "MORE" SHEET (≤768px) — replaces the left nav rail on phones / small tablets -->
+  <!-- MOBILE TAB BAR + "MORE" SHEET (≤768px). Replaces the left nav rail on phones / small tablets -->
   <nav class="mobile-tabbar" id="mobileTabbar" aria-label="Primary">
     <button class="mtab active" id="mtabDash" onclick="switchMainView('dashboard')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span data-i18n="nav.dashboard">ภาพรวม</span>
@@ -461,7 +461,7 @@
               <h3 class="bento-card-title" data-i18n="trd.title">ออเดอร์ล่าสุด</h3>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')" data-i18n="trd.viewAll">ดูทั้งหมด →</button>
+              <button class="btn-ghost btn-sm-pill" onclick="switchMainView('journal')" data-i18n="trd.viewAll">ดูทั้งหมด</button>
               <button class="btn-extend-card" onclick="toggleExpandCard('cardTrades')" title="ขยายเต็มจอ" data-i18n-title="equity.extendTitle" aria-label="Extend">
                 <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                 <svg class="icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
@@ -516,7 +516,7 @@
       <div class="panel panel-log">
         <div class="panel-header">
           <div class="panel-title-with-back">
-            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('dashboard')" data-i18n="trd.backOverview">← กลับหน้าภาพรวม</button>
+            <button class="btn-ghost btn-sm-pill" onclick="switchMainView('dashboard')" data-i18n="trd.backOverview">กลับหน้าภาพรวม</button>
             <span class="panel-title" style="margin-left:12px" data-i18n="trd.fullJournal">สมุดบันทึกการเทรดทั้งหมด</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -654,7 +654,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeModalDirect()" data-i18n="common.cancel">ยกเลิก</button>
-      <button class="btn-accent" onclick="saveTrade()" data-i18n="mdl.saveTrade">บันทึกออเดอร์ ▸</button>
+      <button class="btn-accent" onclick="saveTrade()" data-i18n="mdl.saveTrade">บันทึกออเดอร์</button>
     </div>
   </div>
 </div>
@@ -740,10 +740,10 @@
       <button class="btn-close" onclick="document.getElementById('notionOverlay').classList.remove('open')" aria-label="ปิด" data-i18n-aria="common.close">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--muted);font-size:13px;margin-bottom:12px" data-i18n="notion.desc">คัดลอก → เปิด Notion → สร้าง Table → Ctrl+V วางได้เลย</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px" data-i18n="notion.desc">คัดลอกข้อมูล เปิด Notion สร้าง Table แล้วกด Ctrl+V เพื่อวาง</p>
       <textarea id="notionText" readonly aria-label="Trade log in Notion table format"></textarea>
       <button class="btn-accent" style="margin-top:10px;width:100%" onclick="copyNotion()" data-i18n="notion.copyBtn">คัดลอกลงคลิปบอร์ด</button>
-      <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s" data-i18n="notion.copied">✓ คัดลอกแล้ว!</div>
+      <div id="copiedMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:6px;opacity:0;transition:opacity 0.3s" data-i18n="notion.copied">คัดลอกแล้ว</div>
     </div>
   </div>
 </div>
@@ -780,7 +780,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeImportModalDirect()" data-i18n="common.cancel">ยกเลิก</button>
-      <button class="btn-accent" id="importConfirmBtn" onclick="confirmImport()" disabled>นำเข้า 0 เทรด ▸</button>
+      <button class="btn-accent" id="importConfirmBtn" onclick="confirmImport()" disabled>นำเข้า 0 เทรด</button>
     </div>
   </div>
 </div>
@@ -832,7 +832,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeTickerSettings()" data-i18n="common.cancel">ยกเลิก</button>
-      <button class="btn-accent" onclick="applyTickerSettings()" data-i18n="common.apply">บันทึกค่า ▸</button>
+      <button class="btn-accent" onclick="applyTickerSettings()" data-i18n="common.apply">บันทึกค่า</button>
     </div>
   </div>
 </div>
@@ -863,7 +863,7 @@
       </div>
     </div>
     <div class="modal-footer" style="justify-content:stretch">
-      <button class="btn-accent" style="width:100%;padding:12px" onclick="saveWelcome()" data-i18n="wlc.btn">สร้างพอร์ตของฉัน ▸</button>
+      <button class="btn-accent" style="width:100%;padding:12px" onclick="saveWelcome()" data-i18n="wlc.btn">สร้างพอร์ตของฉัน</button>
     </div>
   </div>
 </div>
@@ -889,7 +889,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="document.getElementById('newPortfolioOverlay').classList.remove('open')" data-i18n="common.cancel">ยกเลิก</button>
-      <button class="btn-accent" onclick="saveNewPortfolio()" data-i18n="common.create">สร้างพอร์ต ▸</button>
+      <button class="btn-accent" onclick="saveNewPortfolio()" data-i18n="common.create">สร้างพอร์ต</button>
     </div>
   </div>
 </div>
@@ -920,7 +920,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="document.getElementById('portfolioSettingsOverlay').classList.remove('open')" data-i18n="common.cancel">ยกเลิก</button>
-      <button class="btn-accent" onclick="savePortfolioSettings()" data-i18n="common.save">บันทึก ▸</button>
+      <button class="btn-accent" onclick="savePortfolioSettings()" data-i18n="common.save">บันทึก</button>
     </div>
   </div>
 </div>
@@ -932,7 +932,7 @@
       <div id="confirmMsg" style="font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--text);margin-bottom:24px;line-height:1.6"></div>
       <div style="display:flex;gap:10px;justify-content:center">
         <button class="btn-ghost" id="confirmNo" data-i18n="common.cancel">ยกเลิก</button>
-        <button class="btn-accent" id="confirmYes" data-i18n="common.confirm">ยืนยัน ▸</button>
+        <button class="btn-accent" id="confirmYes" data-i18n="common.confirm">ยืนยัน</button>
       </div>
     </div>
   </div>
@@ -947,15 +947,15 @@
 </div><!-- end #appWrapper -->
 
 <!-- ===== JS MODULES (load in dependency order) ===== -->
-<script src="js/i18n.js?v=1.0"></script>      <!-- TH / EN localization -->
+<script src="js/i18n.js?v=1.1"></script>      <!-- TH / EN localization -->
 <script src="js/config.js?v=3.0"></script>    <!-- state, helpers, Supabase init -->
 <script src="js/db.js?v=2.9"></script>        <!-- CRUD: portfolios + trades -->
 <script src="js/auth.js?v=3.1"></script>      <!-- login / register / logout -->
 <script src="js/portfolio.js?v=3.0"></script> <!-- portfolio tabs & modals -->
-<script src="js/ticker.js?v=3.1"></script>    <!-- ticker tape & settings -->
-<script src="js/modal.js?v=2.9"></script>     <!-- trade modal & export -->
+<script src="js/ticker.js?v=3.2"></script>    <!-- ticker tape & settings -->
+<script src="js/modal.js?v=3.0"></script>     <!-- trade modal & export -->
 <script src="js/scrolly3d.js?v=3.1"></script> <!-- 3D intro (lazy-loads three/gsap/lenis only when it plays) -->
-<script src="js/ui.js?v=3.3"></script>        <!-- render: equity, table, sidebar, heatmap -->
+<script src="js/ui.js?v=3.4"></script>        <!-- render: equity, table, sidebar, heatmap -->
 
 <!-- BOOT -->
 <script>document.addEventListener('DOMContentLoaded', () => { applyI18n(); initAuth(); });</script>

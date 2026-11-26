@@ -67,7 +67,7 @@ async function dbUpdateTrade(id, d) {
   return true;
 }
 // Batch insert (CSV import). Returns the saved rows, or null on error.
-// No toast here — the caller reports progress/partial failure itself.
+// No toast here. The caller reports progress/partial failure itself.
 async function dbInsertTrades(rows) {
   const { data, error } = await sb.from('trades').insert(rows).select();
   if (error) { console.error('Batch insert failed:', error); return null; }

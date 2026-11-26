@@ -78,10 +78,10 @@ function showLoading(show) {
   if (el) el.style.display = show ? 'flex' : 'none';
 }
 
-// FINNHUB — free tier key, replace if rate-limited
+// FINNHUB. Free tier key, replace if rate-limited
 const FINNHUB_KEY = 'd83j3spr01qkm5c8b8fgd83j3spr01qkm5c8b8g0';
 
-// HTML ESCAPE — prevent XSS in innerHTML
+// HTML ESCAPE. Prevent XSS in innerHTML
 function escHtml(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')

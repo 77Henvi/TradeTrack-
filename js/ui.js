@@ -224,7 +224,7 @@ function drawEquity() {
   ctx.fillStyle = isLight ? '#94a3b8' : '#64748b';
   ctx.fill();
 
-  // 7. Primary Gradient Bezier Stroke (Emerald -> Cyan/Blue)
+  // 7. Primary Gradient Bezier Stroke (Emerald to Cyan/Blue)
   const strokeGrad = ctx.createLinearGradient(padLeft, 0, lastPt.x, 0);
   strokeGrad.addColorStop(0, '#22c55e'); // emerald green
   strokeGrad.addColorStop(0.5, '#38bdf8'); // electric cyan
@@ -372,7 +372,7 @@ function equityReducedMotion() {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
-// state + tooltip reset only (no repaint) — used when the chart itself is being redrawn
+// state + tooltip reset only (no repaint). Used when the chart itself is being redrawn
 function resetEquityHover() {
   if (equityRaf) { cancelAnimationFrame(equityRaf); equityRaf = 0; }
   equityHover = -1;
@@ -418,7 +418,7 @@ function equityPulseTick(ts) {
 
 function equityHitTest(mx, my, rect) {
   const g = equityGeom; if (!g || !equityPoints.length) return -1;
-  const kx = rect.width / g.W, ky = rect.height / g.H;   // logical → CSS px
+  const kx = rect.width / g.W, ky = rect.height / g.H;   // logical to CSS px
   let best = -1, bestD = EQUITY_HIT_RADIUS * EQUITY_HIT_RADIUS;
   equityPoints.forEach((p, i) => {
     const dx = p.x * kx - mx, dy = p.y * ky - my, d = dx * dx + dy * dy;
@@ -462,11 +462,11 @@ function initEquityHover() {
   const canvas = document.getElementById('equityCanvas'); if (!canvas) return;
   canvas.addEventListener('mousemove', onEquityMove);
   canvas.addEventListener('mouseleave', clearEquityHover);
-  // touch: a tap fires a synthetic mousemove but never mouseleave — dismiss on any tap elsewhere
+  // touch: a tap fires a synthetic mousemove but never mouseleave. Dismiss on any tap elsewhere
   document.addEventListener('touchstart', e => { if (e.target !== canvas) clearEquityHover(); }, { passive: true });
 }
 
-// ─── METRICS (StatsCard — glass card, lift on hover, icon badge, ▲▼ change) ───
+// ─── METRICS (StatsCard, glass card, lift on hover, icon badge, ▲▼ change) ───
 const STAT_ICONS = {
   dollar: '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
@@ -585,7 +585,7 @@ function getFiltered() {
 function renderTable() {
   const allRows = getFiltered(), tbody = document.getElementById('tradeBody');
   document.getElementById('emptyState').style.display = allRows.length ? 'none' : 'block';
-  // "log first trade" only makes sense for an empty portfolio — not when filters merely hide the trades
+  // "log first trade" only makes sense for an empty portfolio. Not when filters merely hide the trades
   const cta = document.getElementById('emptyCta'); if (cta) cta.style.display = getActiveTrades().length ? 'none' : '';
   const totalPages = Math.ceil(allRows.length / rowsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
@@ -594,7 +594,7 @@ function renderTable() {
   // คำนวณ running balance ณ แต่ละ trade (เรียง date ก่อน)
   const portfolio = getActivePortfolio();
   const startBal  = portfolio?.balance || 0;
-  // สร้าง map: tradeId → balance หลัง trade นั้น (sort by date ascending)
+  // สร้าง map: tradeId to balance หลัง trade นั้น (sort by date ascending)
   const runningBalMap = buildBalanceMap();
 
   tbody.innerHTML = rowsToRender.map((tr, idx) => {
@@ -843,7 +843,7 @@ function renderRecentFeed() {
     bannerHtml = `
       <div class="feed-active-date-banner">
         <div class="feed-date-info">
-          <div class="feed-date-title">📅 ${selectedHeatmapDate}</div>
+          <div class="feed-date-title">${selectedHeatmapDate}</div>
           <div class="feed-date-meta">
             <span>${dayTrades.length} ${t('hmap.tradesWord')}</span>
             <span class="feed-date-sep">•</span>
@@ -1133,7 +1133,7 @@ function initBentoAnimations() {
   const container = document.getElementById('bentoDashboardView');
   if (!container) return;
   // Only the hovered card is updated, at most once per frame (was: every card, every mousemove,
-  // with a forced layout read per card → layout thrashing).
+  // with a forced layout read per card to layout thrashing).
   let raf = 0, px = 0, py = 0, card = null;
   const paint = () => {
     raf = 0;

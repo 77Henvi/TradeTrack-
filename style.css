@@ -673,7 +673,7 @@ body {
 html.intro-active .scrolly-container { display: block; margin-bottom: -100vh; }
 html.intro-loading, html.intro-loading body { overflow: hidden; }   /* no scrolling until the engine is ready */
 
-/* dark backdrop for the first 700vh only — the final 100vh is transparent so the dashboard shows through */
+/* dark backdrop for the first 700vh only. The final 100vh is transparent so the dashboard shows through */
 .scrolly-bg {
   position: absolute; top: 0; left: 0; right: 0; height: calc(100% - 100vh);
   background:
@@ -704,7 +704,7 @@ html.intro-loading, html.intro-loading body { overflow: hidden; }   /* no scroll
 .scrolly-sections { position: sticky; top: 0; height: 100vh; margin-top: -100vh; z-index: 60; pointer-events: none; }
 .scrolly-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 8vw 0 max(8vw, 150px); }   /* 150px: clear of the chapter rail labels */
 
-/* hero: the coin owns the upper 70% of the screen, the line sits below it — never on top of it */
+/* hero: the coin owns the upper 70% of the screen, the line sits below it. Never on top of it */
 #frame-1 { flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; padding: 0 6vw 16vh; }
 .hero-title {
   font-family: var(--display); font-weight: 800; font-size: clamp(34px, 6.4vw, 104px);
@@ -725,7 +725,7 @@ html.intro-loading, html.intro-loading body { overflow: hidden; }   /* no scroll
 .scroll-chevron { color: var(--accent); font-size: 13px; animation: scrolly-bob 1.6s ease-in-out infinite; }
 @keyframes scrolly-bob { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(6px); opacity: 1; } }
 
-/* chapter cards: the index number is real information (these are chapters 1–6, in order) */
+/* chapter cards: the index number is real information (these are chapters 1 to 6, in order) */
 .scrolly-card {
   position: relative; max-width: min(430px, 84vw); padding: 22px 26px 24px 28px; border-radius: 14px;
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -787,7 +787,7 @@ html.intro-rail-on .scrolly-chapters { opacity: 1; pointer-events: auto; }
 .scrolly-chapters .ch:hover { color: #fff; }
 .scrolly-chapters .ch:hover .ch-t { max-width: 100px; opacity: 1; }
 
-/* skip → curtain (no hard cut from 3D to the dashboard) */
+/* skip to curtain (no hard cut from 3D to the dashboard) */
 .scrolly-curtain { position: fixed; inset: 0; z-index: 1000; background: #050302; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
 .scrolly-curtain.on { opacity: 1; pointer-events: auto; }
 
@@ -801,7 +801,7 @@ html.intro-active .modal-overlay { visibility: hidden !important; }   /* e.g. th
 /* the loader/intro mark itself must stay visible */
 .scrolly-loader .logo-mark { opacity: 1; }
 
-/* Lenis (smooth scroll) — it must own scrolling, so the global `html { scroll-behavior: smooth }` has to yield.
+/* Lenis (smooth scroll). It must own scrolling, so the global `html { scroll-behavior: smooth }` has to yield.
    Lenis only adds .lenis-smooth after a wheel event, so keying on that class alone is not enough: while the
    intro plays, every programmatic scrollTo() (Lenis, ScrollTrigger's refresh) must be instant. */
 html.intro-active { scroll-behavior: auto !important; }
@@ -2509,9 +2509,9 @@ body:has(.card-expand-backdrop.active) .ambient-orb { animation-play-state: paus
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    MOBILE & TABLET
-   ≤768  : phone / small tablet → bottom tab bar, compact header, 2×2 stats, card-style journal, bottom-sheet modals
-   769–1100 : tablet → trimmed header
-   701–1280 : tablet → two-column lower cards
+   ≤768  : phone / small tablet to bottom tab bar, compact header, 2×2 stats, card-style journal, bottom-sheet modals
+   769 to 1100 : tablet to trimmed header
+   701 to 1280 : tablet to two-column lower cards
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* safety net: a stray wide child must never make the whole page scroll sideways (clip ≠ scroll container, sticky still works) */
@@ -2532,7 +2532,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
   .ticker-compact-wrap { max-width: 260px; }
 }
 
-/* ── tablets (769–1100): header was squeezed — drop the least useful bits ─────── */
+/* ── tablets (769 to 1100): header was squeezed, drop the least useful bits ─────── */
 @media (min-width: 769px) and (max-width: 1100px) {
   .shortcut-badge, .user-profile-info { display: none; }
   .user-profile-pill { padding: 3px; }
@@ -2562,7 +2562,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
   input, select, textarea, .bento-search-input { font-size: 16px !important; }
   .shortcut-badge { display: none; }
 
-  /* header: [logo + search] [avatar] / ticker strip — scrolls away so it doesn't eat the screen */
+  /* header: [logo + search] [avatar] / ticker strip. Scrolls away so it doesn't eat the screen */
   .bento-header {
     position: relative; height: auto; flex-wrap: wrap; justify-content: flex-start; gap: 8px 10px;
     padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
@@ -2675,7 +2675,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
   .stat-change { font-size: 11px; margin-top: 6px; }
   .stat-note { display: none; }
 
-  /* journal table → one card per trade (no markup change; cells are placed by position) */
+  /* journal table to one card per trade (no markup change; cells are placed by position) */
   .table-scroll { overflow: visible; }
   .trade-table, .trade-table tbody { display: block; width: 100%; }
   .trade-table thead { display: none; }
@@ -2757,3 +2757,5 @@ html[lang="th"] .filter-btn,
 html[lang="th"] .btn-ghost,
 html[lang="th"] .btn-accent { letter-spacing: 0.02em; }
 
+
+.ticker-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }

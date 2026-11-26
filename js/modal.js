@@ -26,7 +26,7 @@ function resetTradeForm() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   ['f-entry', 'f-exit', 'f-sl', 'f-tp', 'f-note'].forEach(id => set(id, ''));
   set('f-size', '1');
-  set('f-date', localDateStr(new Date()));          // local "today" — toISOString() is UTC, wrong 00:00–07:00 in UTC+7
+  set('f-date', localDateStr(new Date()));          // local "today", toISOString() is UTC, wrong 00:00 to 07:00 in UTC+7
 
   const sel = document.getElementById('f-sym-select'), custom = document.getElementById('f-sym-custom');
   if (custom) { custom.value = ''; custom.style.display = 'none'; }
@@ -206,7 +206,7 @@ async function saveTrade() {
 
   if (!sym || !date || isNaN(entry) || isNaN(exit) || isNaN(size)) { toast(t('mdl.fillRequired'), 'error'); return; }
 
-  // optional SL / TP → actual R
+  // optional SL / TP to actual R
   const slVal = parseFloat(document.getElementById('f-sl')?.value);
   const tpVal = parseFloat(document.getElementById('f-tp')?.value);
   const stop_loss   = Number.isFinite(slVal) ? slVal : null;
@@ -302,7 +302,7 @@ function csvDetectDelimiter(text) {
   return best;
 }
 
-// "1,234.50" · "1.234,50" · "1234,5" · "$ 12" → number, anything else → null
+// "1,234.50" · "1.234,50" · "1234,5" · "$ 12" to number, anything else to null
 function parseCsvNum(raw) {
   let s = String(raw ?? '').replace(/[\s\u00A0$€£฿]/g, '');
   if (s === '') return null;
@@ -317,7 +317,7 @@ function parseCsvNum(raw) {
 const CSV_DMY_RE = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})(?!\d)/;
 const CSV_ISO_RE = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?!\d)/;
 
-// → "YYYY-MM-DD" or null. Handles 2024-03-15, 2024.03.15 10:30 (MT4), 15/03/2024, 03/15/2024, "Mar 15, 2024".
+// to "YYYY-MM-DD" or null. Handles 2024-03-15, 2024.03.15 10:30 (MT4), 15/03/2024, 03/15/2024, "Mar 15, 2024".
 function parseCsvDate(raw, dayFirst = true) {
   const s = String(raw ?? '').trim(); if (!s) return null;
   let y, m, d, mt;
@@ -488,9 +488,9 @@ function renderImportPreview() {
   if (s.fatal) { sum.innerHTML = `<div class="import-msg err">✕ ${escHtml(s.fatal)}</div>`; wrap.style.display = 'none'; body.innerHTML = ''; return; }
 
   let html = n
-    ? `<div class="import-msg ok">✓ ${t('imp.validDetected', { n })}${s.errors.length ? t('imp.rowsSkipped', { n: s.errors.length }) : ''}</div>`
+    ? `<div class="import-msg ok">${t('imp.validDetected', { n })}${s.errors.length ? t('imp.rowsSkipped', { n: s.errors.length }) : ''}</div>`
     : `<div class="import-msg err">✕ ${t('imp.noValid')}</div>`;
-  s.warnings.forEach(w => { html += `<div class="import-msg warn">⚠ ${escHtml(w)}</div>`; });
+  s.warnings.forEach(w => { html += `<div class="import-msg warn">${escHtml(w)}</div>`; });
   s.errors.slice(0, 5).forEach(e => { html += `<div class="import-msg dim">${t('imp.lineErr', { line: e.line, reason: escHtml(e.reason) })}</div>`; });
   if (s.errors.length > 5) html += `<div class="import-msg dim">${t('imp.andMoreSkipped', { n: s.errors.length - 5 })}</div>`;
   sum.innerHTML = html;

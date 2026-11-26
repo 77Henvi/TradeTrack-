@@ -1,17 +1,17 @@
 /* ════════════════════════════════════════════════════════════════════════════
-   TrackTrade — 16-Scene 3D Scrollytelling Intro  (engine v3)
-   Scroll-scrubbed WebGL story: glass coin → crystal → risk HUD → R-multiples →
-   burst → warp → shockwave → exploded audit → multi-account → blueprint → dashboard dock.
+   TrackTrade: 16-scene 3D scrollytelling intro (engine v3)
+   A scroll-driven WebGL story. Scene order: glass coin, crystal, risk HUD, R multiples,
+   burst, warp, shockwave, exploded audit, multi-account, blueprint, dashboard dock.
 
-   What changed vs v2 (see README "3D intro" for the full list):
-   • prepare() is truly idempotent (auth events used to start the intro twice)
-   • glass built without `transmission` → MSAA edges, ~2x cheaper, works on mobile
-   • thick neon triangle (tube geometry + layered glow) instead of 1px GL lines
-   • warp streaks, burst sparks, grid terrain actually render
-   • adaptive quality (DPR ladder) driven by real frame time
-   • branded loader with real progress, CDN fallbacks, Lenis optional
-   • chapter rail (click to jump), final CTA, curtain transition on skip,
-     scroll position preserved when the intro hands over to the dashboard
+   Changes from v2:
+   - prepare() is idempotent. Auth events used to start the intro twice.
+   - The glass is built without `transmission`. That gives MSAA edges, costs about half as much and works on mobile.
+   - The triangle uses tube geometry with layered glow instead of 1px GL lines.
+   - Warp streaks, burst sparks and the grid terrain render.
+   - Adaptive quality (a DPR ladder) uses the measured frame time.
+   - The loader shows real progress and falls back to a second CDN. Lenis is optional.
+   - A chapter rail jumps between chapters. A final button and a curtain transition handle skipping.
+     Scroll position is kept when the intro hands over to the dashboard.
    ════════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -33,7 +33,7 @@
 
   const tr = (k, v) => (typeof window.t === 'function' ? window.t(k, v) : k);
 
-  // Story chapters. `t` is the timeline position (0–100) where the chapter text lands.
+  // Story chapters. `t` is the timeline position (0 to 100) where the chapter text lands.
   // One source of truth for the chapter rail, the live-region announcer and click-to-jump.
   const CHAPTERS = [
     { t: 11,   key: 'intro.ch1Name', fallback: 'Record'   },
@@ -93,7 +93,7 @@
     await Promise.all([
       need('THREE', CDN.three),
       need('gsap', CDN.gsap).then(() => need('ScrollTrigger', CDN.st)),
-      need('Lenis', CDN.lenis).catch(() => { tick(); console.warn('Lenis unavailable – using native scroll'); }),
+      need('Lenis', CDN.lenis).catch(() => { tick(); console.warn('Lenis unavailable, using native scroll'); }),
       fonts,
     ]);
   }
@@ -276,7 +276,7 @@
     return { group: g, mats: [core, h1, h2], hot };
   }
 
-  // Candlestick cluster (Scene 01–03)
+  // Candlestick cluster (Scene 01 to 03)
   function createCandlestickGroup() {
     const g = new THREE.Group();
     const pr = mulberry32(101), n = 14, span = 1.6, step = span / (n - 1);
@@ -300,7 +300,7 @@
   // Coin cross-section lathed around Z: crisp bevel instead of a flat extrude
   function coinGeometry(radius, thick, bevel) {
     const h = thick / 2, b = bevel;
-    // bottom → top: LatheGeometry only yields outward-facing normals in this order
+    // bottom to top: LatheGeometry only yields outward-facing normals in this order
     const prof = [[0, -h], [radius - b, -h], [radius - b * 0.35, -h + b * 0.35], [radius, -h + b], [radius, h - b], [radius - b * 0.35, h - b * 0.35], [radius - b, h], [0, h]]
       .map(p => new THREE.Vector2(p[0], p[1]));
     const geo = new THREE.LatheGeometry(prof, 96); geo.rotateX(Math.PI / 2); return geo;
@@ -343,13 +343,13 @@
     const lVerm = new THREE.PointLight(COL.vermillion, 1.7, 30); lVerm.position.set(-4, -2, 4); scene.add(lVerm);
     const lCyan = new THREE.PointLight(COL.cyan, 1.0, 24); lCyan.position.set(0, 5, 2); scene.add(lCyan);
 
-    // Hierarchy: rig (dock/scene moves) → parallax (mouse) → coinGroup (tilt, crystal swap) → coinBody (boot spin)
+    // Hierarchy: rig (dock/scene moves) to parallax (mouse) to coinGroup (tilt, crystal swap) to coinBody (boot spin)
     const rig = new THREE.Group(), parallax = new THREE.Group(), coinGroup = new THREE.Group(), coinBody = new THREE.Group();
     scene.add(rig); rig.add(parallax); parallax.add(coinGroup); coinGroup.add(coinBody);
 
     const COIN_R = 1.55, LENS_Z = 0.09;
 
-    // 1. FRONT GLASS — dark tint + additive gloss layer (no transmission pass)
+    // 1. FRONT GLASS. Dark tint + additive gloss layer (no transmission pass)
     const lensGeo = coinGeometry(COIN_R, 0.12, 0.05);
     const tintMat = new THREE.MeshBasicMaterial({ color: 0x0d0604, transparent: true, opacity: 0.34, depthWrite: false, toneMapped: false });
     const sheen = new THREE.Mesh(new THREE.CircleGeometry(COIN_R - 0.03, 96), new THREE.MeshBasicMaterial({
@@ -456,7 +456,7 @@
     });
     ringsGroup.scale.setScalar(0.4);
 
-    // 9. GRID TERRAIN (Scene 05): clean line grid displaced in the vertex shader, ember → cyan by height
+    // 9. GRID TERRAIN (Scene 05): clean line grid displaced in the vertex shader, ember to cyan by height
     const GN = 56, GS = 64, GSIZE = 44, tPos = [];
     for (let i = 0; i <= GN; i++) {
       const a = (i / GN - 0.5) * GSIZE;
@@ -547,7 +547,7 @@
     }));
     particles.frustumCulled = false; scene.add(particles);
 
-    // 16. WARP STREAKS (Scene 09) — v2 never initialised x/y so every streak collapsed into one line
+    // 16. WARP STREAKS (Scene 09), v2 never initialised x/y so every streak collapsed into one line
     const SN = 260, sPos = new Float32Array(SN * 6), sBase = new Float32Array(SN * 3), sr = mulberry32(2025);
     for (let i = 0; i < SN; i++) {
       const a = sr() * Math.PI * 2, r = 0.9 + Math.pow(sr(), 0.7) * 8, z = -22 + sr() * 30;
@@ -692,7 +692,7 @@
     const BURST = run.BURST = { v: 0, a: 0 };
     const WARP = run.WARP = { v: 0 };
 
-    // Dock target (nav logo) → world position/scale, so the coin lands exactly on the real logo
+    // Dock target (nav logo) to world position/scale, so the coin lands exactly on the real logo
     function dockInfo() {
       const target = document.querySelector('.app-nav-rail .nav-logo.logo-mark') || document.querySelector('.nav-logo') || document.querySelector('.logo-mark');
       if (!target) return { x: -2.2, y: 1.8, s: 0.18 };
@@ -710,7 +710,7 @@
     buildChapterRail(run);
     const heroWords = splitWords(document.querySelector('#frame-1 .hero-title'));
 
-    // ─── MASTER SCRUB TIMELINE (positions are 0–100 = % of scroll) ──────────
+    // ─── MASTER SCRUB TIMELINE (positions are 0 to 100 = % of scroll) ──────────
     const tl = run.tl = gsap.timeline({
       defaults: { ease: 'power2.inOut' },
       scrollTrigger: {
@@ -731,48 +731,48 @@
       tl.to(sel, { autoAlpha: 0, y: -28, duration: dur, ease: 'power2.in' }, out);
     };
 
-    // 01 → 02 (0–6.5): awaken + 3D tilt. Hero copy leaves early so it never fights the coin.
+    // 01 to 02 (0 to 6.5): awaken + 3D tilt. Hero copy leaves early so it never fights the coin.
     tl.to('#frame-1', { autoAlpha: 0, y: -40, duration: 4 }, 2);
     tl.to(rot, { x: 0.16, y: -0.5, z: 0.08, duration: 6.5 }, 0);
     tl.to(rp, { y: 0.15, duration: 6.5 }, 0);
 
-    // 02 → 03 (6.5–13): coin dissolves into a crystal monolith; macro push-in
+    // 02 to 03 (6.5 to 13): coin dissolves into a crystal monolith; macro push-in
     tl.to(cam, { z: () => baseZ() * 0.84, duration: 6.5 }, 6.5);
     tl.to(rot, { x: 0.06, y: -0.2, z: 0.02, duration: 6.5 }, 6.5);
     tl.to(sc.coinGroup.scale, { x: 0.0001, y: 0.0001, z: 0.0001, duration: 3.6, ease: 'power3.in' }, 7);
     tl.to(sc.crystalGroup.scale, { x: 1, y: 1, z: 1, duration: 4, ease: 'power3.out' }, 8);
     tl.to(sc.crystalGroup.rotation, { y: Math.PI * 1.5, duration: 12, ease: 'none' }, 7.5);
     fade('#frame-3', 10.5, 2.5, 17.5);
-    tl.to(rp, { x: () => sideX(), duration: 5 }, 8);            // Record (card left) → object right
+    tl.to(rp, { x: () => sideX(), duration: 5 }, 8);            // Record (card left) to object right
 
-    // 03 → 04 (13–19.5): crystal resolves back into the coin, isometric tilt, low horizon
+    // 03 to 04 (13 to 19.5): crystal resolves back into the coin, isometric tilt, low horizon
     tl.to(sc.crystalGroup.scale, { x: 0.0001, y: 0.0001, z: 0.0001, duration: 3.4, ease: 'power3.in' }, 13.4);
     tl.to(sc.coinGroup.scale, { x: 1, y: 1, z: 1, duration: 4.2, ease: 'back.out(1.5)' }, 14.4);
     tl.to(cam, { z: () => baseZ() * 0.98, duration: 6.5 }, 13);
     tl.to(rot, { x: 0.38, y: -0.92, z: 0.18, duration: 6.5 }, 13);
 
-    // 04 → 05 (19.5–26): lift-off over the topographic grid
+    // 04 to 05 (19.5 to 26): lift-off over the topographic grid
     tl.to(rp, { y: 0.3, duration: 6.5 }, 19.5);
     tl.to(sc.terrain.position, { y: -2.6, duration: 6.5 }, 19.5);
     tl.to(sc.terrainMat.uniforms.uAmp, { value: 1.0, duration: 6.5 }, 19.5);
     tl.to(sc.terrainMat.uniforms.uOpacity, { value: 1.0, duration: 5 }, 19.5);
     fade('#frame-5', 20, 2.5, 27);
 
-    // 05 → 06 (26–32.5): risk HUD, then it clears before the next chapter's text
+    // 05 to 06 (26 to 32.5): risk HUD, then it clears before the next chapter's text
     tl.to(rot, { x: 0.05, y: -0.1, z: 0, duration: 6.5 }, 26);
     tl.to([sc.hudRing1.material, sc.hudRing2.material, sc.hudTicks.material, sc.riskLabel.material], { opacity: 1, duration: 4 }, 26);
     tl.to([sc.hudRing1.material, sc.hudRing2.material, sc.hudTicks.material, sc.riskLabel.material], { opacity: 0, duration: 3 }, 33);
 
-    // 06 → 07 (32.5–39): +2.5R / +3.8R orbital rings
+    // 06 to 07 (32.5 to 39): +2.5R / +3.8R orbital rings
     tl.to(RF, { v: 1, duration: 4 }, 32.5);
     tl.to(sc.ringsGroup.scale, { x: 1, y: 1, z: 1, duration: 6.5 }, 32.5);
     tl.to(RS, { speed: 2.2, duration: 6.5 }, 32.5);
     tl.to(rot, { x: 0.22, y: 0.5, z: 0.05, duration: 6.5 }, 32.5);
     fade('#frame-7', 33, 2.5, 40);
-    tl.to(rp, { x: () => -sideX(), duration: 5 }, 30.5);        // Returns (card right) → object left
+    tl.to(rp, { x: () => -sideX(), duration: 5 }, 30.5);        // Returns (card right) to object left
     tl.to(rp, { x: 0, duration: 4 }, 40.5);           // burst + warp stay centred
 
-    // 07 → 08 (39–45.5): centrifugal burst
+    // 07 to 08 (39 to 45.5): centrifugal burst
     tl.to(RF, { v: 0, duration: 3 }, 41.5);
     tl.to(sc.centerFlare.material, { opacity: 1, duration: 2.5 }, 39);
     tl.to(sc.centerFlare.scale, { x: 5.2, y: 5.2, duration: 4 }, 39);
@@ -781,14 +781,14 @@
     tl.to(BURST, { a: 0, duration: 4, ease: 'none' }, 42.5);
     tl.to(P, { speed: 6.0, duration: 6.5 }, 39);
 
-    // 08 → 09 (45.5–52): hyperspace warp
+    // 08 to 09 (45.5 to 52): hyperspace warp
     tl.to(sc.centerFlare.material, { opacity: 0, duration: 2 }, 45.5);
     tl.to(WARP, { v: 1, duration: 3, ease: 'power2.out' }, 45.5);
     tl.to(sc.streaks.material, { opacity: 0.95, duration: 2 }, 45.5);
     tl.to(P, { speed: 14.0, duration: 6.5 }, 45.5);
     tl.to(cam, { z: () => baseZ() * 0.78, duration: 6.5 }, 45.5);
 
-    // 09 → 10 (52–58.5): deceleration + shockwave
+    // 09 to 10 (52 to 58.5): deceleration + shockwave
     tl.to(P, { speed: 0.5, duration: 4 }, 52);
     tl.to(WARP, { v: 0, duration: 4 }, 52);
     tl.to(sc.streaks.material, { opacity: 0, duration: 3 }, 52);
@@ -797,7 +797,7 @@
     tl.to(sc.shockwaveRing.scale, { x: 30, y: 30, z: 30, duration: 6 }, 52);
     tl.to(sc.shockwaveRing.material, { opacity: 0, duration: 4 }, 54);
 
-    // 10 → 11 (58.5–65): exploded 3-layer audit; neon turns green
+    // 10 to 11 (58.5 to 65): exploded 3-layer audit; neon turns green
     tl.to(sc.frontLens.position, { z: () => sc.LENS_Z + 1.25, duration: 6.5 }, 58.5);
     tl.to(sc.backPlate.position, { z: () => -sc.LENS_Z - 1.25, duration: 6.5 }, 58.5);
     tl.to(sc.centerCore.scale, { z: 2.8, duration: 6.5 }, 58.5);
@@ -807,10 +807,10 @@
     tl.to(run.grade, { g: 1, duration: 4 }, 59);
     tl.to(rot, { x: 0.34, y: -1.0, z: 0.12, duration: 6.5 }, 58.5);
     fade('#frame-11', 59, 2.5, 66);
-    tl.to(rp, { x: () => sideX(), duration: 4 }, 57.5);         // Audit (card left) → object right
+    tl.to(rp, { x: () => sideX(), duration: 4 }, 57.5);         // Audit (card left) to object right
     tl.to(rp, { x: 0, duration: 4 }, 66.5);
 
-    // 11 → 12 (65–71.5): win-rate & profit-factor badges; layers re-assemble
+    // 11 to 12 (65 to 71.5): win-rate & profit-factor badges; layers re-assemble
     tl.to([sc.winRateBadge.material, sc.pfBadge.material], { opacity: 1, duration: 3 }, 66);
     tl.to(sc.greenRing.material, { opacity: 0.85, duration: 3 }, 66);
     tl.to(sc.frontLens.position, { z: sc.LENS_Z, duration: 4, ease: 'power3.in' }, 67.5);
@@ -818,7 +818,7 @@
     tl.to(sc.centerCore.scale, { z: 1.0, duration: 4, ease: 'power3.in' }, 67.5);
     tl.to(run.grade, { g: 0, duration: 4 }, 68);
 
-    // 12 → 13 (71.5–78): triplicate on pedestals
+    // 12 to 13 (71.5 to 78): triplicate on pedestals
     tl.to([sc.winRateBadge.material, sc.pfBadge.material, sc.greenRing.material], { opacity: 0, duration: 2 }, 71.5);
     tl.to(rot, { x: 0.04, y: 0, z: 0, duration: 5 }, 71.5);
     tl.to(sc.pedestalGroup.position, { y: 0, duration: 6.5 }, 71.5);
@@ -828,7 +828,7 @@
     tl.to(cam, { z: () => baseZ() * 1.22, duration: 5 }, 71.5);   // pull back: three coins + headline above
     tl.to(rp, { y: -0.45, duration: 5 }, 71.5);
 
-    // 13 → 14 (78–84.5): blueprint circuit floor
+    // 13 to 14 (78 to 84.5): blueprint circuit floor
     tl.to([sc.cloneLeft.scale, sc.cloneRight.scale], { x: 0.0001, y: 0.0001, z: 0.0001, duration: 4 }, 78);
     tl.to(sc.pedestalGroup.position, { y: -6, duration: 5 }, 78);
     tl.to(sc.blueprintFloor.material, { opacity: 0.85, duration: 6.5 }, 78);
@@ -837,12 +837,12 @@
     tl.to(rp, { y: 0.25, duration: 6 }, 78);
     tl.to(rot, { x: -1.2, y: 0, z: 0, duration: 6.5 }, 78);
 
-    // 14 → 15 (84.5–91): approach the dashboard plane
+    // 14 to 15 (84.5 to 91): approach the dashboard plane
     tl.to(sc.dashboardTablet.material, { opacity: 0.92, duration: 5 }, 84.5);
     tl.to(rp, { y: 0.25, duration: 6.5 }, 84.5);
     fade('#frame-15', 85, 2.5, 90.5);
 
-    // 15 → 16 (91–100): dock into the real nav logo
+    // 15 to 16 (91 to 100): dock into the real nav logo
     tl.to(cam, { x: 0, y: 0, z: () => baseZ(), lookY: 0, duration: 8 }, 91);
     tl.to(rot, { x: 0, y: 0, z: 0, duration: 7 }, 91);
     tl.to(rp, { x: () => dockInfo().x, y: () => dockInfo().y, z: 0, duration: 9, ease: 'power3.inOut' }, 91);
@@ -1024,7 +1024,7 @@
     window.scrollTo(0, carry);
   }
 
-  // Skip: cover with a curtain, swap, reveal — no hard cut from 3D to the dashboard
+  // Skip: cover with a curtain, swap, reveal. No hard cut from 3D to the dashboard
   function skip() {
     if (S.phase === 'done' || S.finishing || S.skipping) return;
     S.skipping = true;

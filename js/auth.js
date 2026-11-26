@@ -27,7 +27,7 @@ function showAuthScreen() {
   applyTurnstileMode();
 }
 
-// ─── TURNSTILE (Cloudflare CAPTCHA) — switched by ENABLE_TURNSTILE in config.js ─
+// ─── TURNSTILE (Cloudflare CAPTCHA), switched by ENABLE_TURNSTILE in config.js ─
 const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 
 // Off: hide the widget and never load Cloudflare's script. On: show it and load the script (once).
@@ -44,8 +44,8 @@ function applyTurnstileMode() {
 function getTurnstileToken() {
   return document.querySelector('[name="cf-turnstile-response"]')?.value || '';
 }
-// Off → returns at once, the widget is never read. On → needs a solved challenge; the token is
-// handed to Supabase as captchaToken (Auth → Attack Protection must be configured to match).
+// Off to returns at once, the widget is never read. On to needs a solved challenge; the token is
+// handed to Supabase as captchaToken (Auth to Attack Protection must be configured to match).
 function checkTurnstile() {
   if (ENABLE_TURNSTILE !== true) return { ok: true, token: null };
   const token = getTurnstileToken();

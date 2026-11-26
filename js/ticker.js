@@ -16,7 +16,7 @@ function applyTickerStyles() {
 }
 applyTickerStyles();
 
-// ─── MARKET SESSIONS — เวลาไทย (GMT+7, ไม่มี DST) ───────────────────────────────
+// ─── MARKET SESSIONS, เวลาไทย (GMT+7, ไม่มี DST) ───────────────────────────────
 const TH_OFFSET_MIN = 7 * 60;
 const MARKET_SESSIONS = [
   { name: 'LONDON',        start: '14:00', end: '17:00' },
@@ -34,8 +34,8 @@ function getMarketSessions() {
   const now = thaiMinutesNow();
   return MARKET_SESSIONS.map(s => {
     const a = toMin(s.start), b = toMin(s.end);
-    const isOpen = a < b ? (now >= a && now < b) : (now >= a || now < b);   // handles 23:00–01:00
-    return { name: s.name, range: `${s.start}–${s.end}`, status: isOpen ? 'OPEN' : 'CLOSED' };
+    const isOpen = a < b ? (now >= a && now < b) : (now >= a || now < b);   // handles 23:00 to 01:00
+    return { name: s.name, range: `${s.start} to ${s.end}`, status: isOpen ? 'OPEN' : 'CLOSED' };
   });
 }
 
@@ -68,7 +68,7 @@ function countryToFlag(country) {
     'CA': '🇨🇦', 'AU': '🇦🇺', 'CH': '🇨🇭', 'CN': '🇨🇳',
     'NZ': '🇳🇿', 'DE': '🇩🇪', 'FR': '🇫🇷'
   };
-  return map[country?.toUpperCase()] || '🌐';
+  return map[country?.toUpperCase()] || (country || '').toUpperCase();
 }
 
 function formatEventTime(isoTime) {
@@ -84,12 +84,12 @@ function buildForexTicker() {
     const open = s.status === 'OPEN';
     return `<span class="ticker-item"><span class="sym">${s.name}</span>` +
       `<span class="ticker-time" style="color:${open ? 'var(--green)' : 'var(--text)'};opacity:${open ? 1 : 0.85}">${s.range}</span>` +
-      `<span class="chg ticker-status" style="color:${open ? 'var(--green)' : 'var(--muted)'}">${open ? '🟢 OPEN' : '🔴 CLOSED'}</span></span><span class="ticker-sep">|</span>`;
+      `<span class="chg ticker-status" style="color:${open ? 'var(--green)' : 'var(--muted)'}"><i class="ticker-dot"></i>${open ? 'OPEN' : 'CLOSED'}</span></span><span class="ticker-sep">|</span>`;
   }).join('');
   const newsHtml = cachedNews.map(n =>
-  `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8;font-size:13px">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? '🔥' : '⚠️'}</span></span><span class="ticker-sep">|</span>`
+  `<span class="ticker-item"><span class="sym">${n.flag} ${n.event}</span><span style="color:var(--text);opacity:0.8;font-size:13px">${n.time}</span><span class="chg ${n.impact === 'HIGH' ? 'neg' : 'orange'}">${n.impact === 'HIGH' ? 'HIGH' : 'MEDIUM'}</span></span><span class="ticker-sep">|</span>`
   ).join('');
-  const newsLabel = typeof t === 'function' ? t('tkr.upcomingNews') : 'UPCOMING NEWS ⚡';
+  const newsLabel = typeof t === 'function' ? t('tkr.upcomingNews') : 'UPCOMING NEWS';
   const fullHtml = sessionHtml + `<span class="ticker-item" style="color:var(--ticker-hl);font-family:var(--mono);letter-spacing:2px;font-size:12px;">${newsLabel}</span><span class="ticker-sep">|</span>` + newsHtml;
   const newHtml = fullHtml + fullHtml;
 
@@ -108,7 +108,7 @@ let _tickerHtml = '';
 async function startTickerRefresh() {
   await fetchEconomicCalendar();
   buildForexTicker();
-  // sessions flip on :00 / :30 — re-check every 30s (cheap: DOM is untouched unless something changed)
+  // sessions flip on :00 / :30, re-check every 30s (cheap: DOM is untouched unless something changed)
   setInterval(() => { if (!document.hidden) buildForexTicker(); }, 30 * 1000);
   setInterval(async () => { await fetchEconomicCalendar(); buildForexTicker(); }, 60 * 60 * 1000);
 }

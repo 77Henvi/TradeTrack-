@@ -1,115 +1,112 @@
-# 📈 TradeLog — Personal Trading Journal
+# TrackTrade
 
-A cinematic, dark-themed trading journal web app built with vanilla JavaScript and Supabase.  
-Track trades, analyze performance, and visualize your equity curve — all in one place.
+A trading journal that runs in the browser. It uses plain HTML, CSS and JavaScript, with Supabase for login and storage. The interface is Thai by default and switches to English.
 
-<!-- Replace with your actual screenshot -->
-<!-- ![TradeLog Screenshot](./docs/screenshot.png) -->
-
----
+<!-- ![TrackTrade dashboard](./docs/dashboard.png) -->
 
 ## Features
 
-### 📊 Dashboard
-- **Live equity curve** — canvas-drawn P&L chart with win/loss dot markers
-- **9 performance metrics** — Win rate, R:R ratio, Profit Factor, Max Drawdown, and more
-- **Heatmap calendar** — daily P&L intensity view, navigatable by month
-- **Win/Loss breakdown** — visual bar with gross profit vs gross loss
-- **Symbol performance** — top 6 symbols ranked by absolute P&L
-- **Streak tracker** — current and best win/loss streak with dot history
+### Dashboard
 
-### 📝 Trade Log
-- Add, edit, delete trades with a modal form
-- Live **P&L preview** while filling in entry/exit (auto-pulls portfolio balance)
-- Auto-calculated **% return** and **running balance** per trade row
-- Filter by direction (Long/Short) or result (Win/Loss)
-- Search by symbol, tag, or setup notes
-- Sort by any column
-- Pagination (50 rows/page)
+- Four stat cards: total P&L, win rate, profit factor and best trade.
+- Equity curve drawn on a canvas, with ranges for all time, this month, this week and the last 30 days.
+- Calendar heatmap of daily P&L, one month at a time.
+- Win and loss breakdown with gross profit and gross loss.
+- Symbol performance, current streak and best streak.
 
-### 💼 Portfolio Management
-- Create multiple portfolios with custom names and starting balance
-- Switch between portfolios with tab navigation
-- Edit or delete portfolios anytime
+### Trade log
 
-### 📡 Forex Ticker
-- Live market session status (Sydney, Tokyo, London, New York)
-- Upcoming high-impact news events
-- Customizable scroll speed and highlight color
+- Add, edit and delete trades in a modal form.
+- P&L preview while you type the entry and exit prices.
+- Percent return and running balance on every row.
+- Filter by direction or result, search by symbol, tag or note, and sort by any column.
+- 50 rows per page. On phones each trade shows as a card.
+- Import and export CSV. Copy the table for Notion.
 
-### 📤 Export
-- **CSV export** — import into Excel or Google Sheets
-- **Notion export** — tab-separated copy-paste ready
+### Portfolios
 
-### 🎬 3D Intro (first visit, replay with `?intro=1`)
-- 16-scene scroll-scrubbed WebGL story ending with the coin docking into the nav logo
-- 6 chapters with a **clickable chapter rail**, final **Enter dashboard** button, `Esc` / **Skip intro** with a curtain transition
-- Branded loader with real progress, CDN mirror fallback, adaptive quality (pixel-ratio ladder from measured frame time)
-- Respects `prefers-reduced-motion` and Save-Data (intro is skipped)
-- Dev flags: `?q=0..3` lock quality, `?debug=1` exposes `window.__TT`
+- Create several portfolios. Each has its own name, starting balance and trades.
+- Switch portfolios from the tabs in the Trading accounts card.
 
-### 🎨 UI / UX
-- Dark / Light theme toggle (persisted)
-- Keyboard shortcuts: `Ctrl+N` new trade, `Esc` close modal
-- Toast notifications
-- Responsive layout
+### Ticker
 
----
+- Market sessions in Thailand time (GMT+7). A session is green while it is open.
+- Upcoming high and medium impact news from Finnhub.
+- Scroll speed and highlight color are adjustable.
 
-## 🛠 Tech Stack
+| Session | Time |
+|---------|------|
+| London | 14:00 to 17:00 |
+| NY AM | 20:30 to 23:00 |
+| NY Lunch Hour | 23:00 to 01:00 |
+| NY PM | 01:00 to 04:00 |
+| Asia | 08:00 to 12:00 |
+
+Edit the times in `MARKET_SESSIONS` at the top of `js/ticker.js`.
+
+### 3D intro
+
+- Plays on the first visit. Replay it with `?intro=1`.
+- 16 scroll-driven WebGL scenes in six chapters, with a skip button and an `Esc` shortcut.
+- Skipped when the browser asks for reduced motion or data saving.
+- `?q=0` to `?q=3` fixes the render quality. `?debug=1` exposes `window.__TT`.
+
+### Interface
+
+- Dark and light themes, remembered between visits.
+- Thai and English, remembered between visits.
+- Shortcuts: `Ctrl+N` for a new trade, `Ctrl+K` for search, `Esc` to close a dialog.
+- Below 768px wide, the left rail becomes a bottom tab bar with a + button for new trades, and dialogs open as bottom sheets.
+
+## Tech stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Vanilla HTML, CSS, JavaScript (ES6+) |
-| Database | [Supabase](https://supabase.com) (PostgreSQL + Auth) |
-| Auth | Supabase Auth (email/password) |
-| Charts | Canvas API (custom drawn) |
+| Frontend | HTML, CSS and JavaScript (ES6+), no framework or bundler |
+| Database and auth | [Supabase](https://supabase.com) (PostgreSQL, email and password login) |
+| Charts | Canvas API |
+| Intro | three.js (WebGL) |
+| News | Finnhub economic calendar |
 | Hosting | GitHub Pages |
-| Fonts | Space Mono, DM Sans (Google Fonts) |
 
-> No frameworks, no bundler — pure vanilla JS split into modular files.
+## Setup
 
----
+1. Create a Supabase project with `portfolios` and `trades` tables. The columns are in `js/db.js`.
+2. Turn on row level security for both tables, so each user reads only the rows with their own `user_id`.
+3. Put your Supabase URL and public key in `js/config.js`.
+4. Put your Finnhub key in `js/config.js`. Every visitor can read it, so use a key you can rotate.
+5. Serve the folder with any static server, for example `python3 -m http.server`.
 
-## 🗂 Project Structure
+## Project structure
 
 ```
-tradelog/
-├── index.html          # Main app shell + modal markup
-├── style.css           # All styles (CSS variables, dark/light theme)
-├── js/
-│   ├── config.js       # Supabase init, global state, helper functions
-│   ├── db.js           # CRUD operations (portfolios + trades)
-│   ├── auth.js         # Login, register, logout, email cooldown
-│   ├── portfolio.js    # Portfolio tabs, settings, welcome flow
-│   ├── ticker.js       # Forex ticker tape, market sessions, news
-│   ├── modal.js        # Trade modal, form logic, export (CSV/Notion)
-│   └── ui.js           # All render functions: equity, metrics, table, heatmap
-└── README.md
+index.html          App shell and modal markup
+style.css           All styles, including the dark and light themes
+js/config.js        Supabase setup, global state and P&L helpers
+js/db.js            Create, read, update and delete for portfolios and trades
+js/auth.js          Login, registration, logout and email cooldown
+js/portfolio.js     Portfolio tabs, settings and the welcome dialog
+js/ticker.js        Market sessions and news ticker
+js/modal.js         Trade form, CSV import and export, Notion copy
+js/ui.js            Rendering for the equity curve, stats, table, heatmap and mobile tab bar
+js/i18n.js          Thai and English strings
+js/scrolly3d.js     3D intro
+docs/               Screenshots
 ```
 
-## 📸 Screenshots
+## Screenshots
 
-> _Add your screenshots here_
-
-| Dashboard | Trade Log | Add Trade |
+| Dashboard | Trade log | Add trade |
 |-----------|-----------|-----------|
-| ![](docs/dashboard.png) | ![](docs/tradelog.png) | ![](docs/modal.png) |
+| ![Dashboard](docs/dashboard.png) | ![Trade log](docs/tradelog.png) | ![Add trade](docs/modal.png) |
 
----
+## Roadmap
 
-## 🗺 Roadmap
+- [ ] Day view when you click a date in the heatmap
+- [ ] Equity curve for each symbol
+- [ ] Tag management
+- [ ] Live forex prices over WebSocket
 
-- [ ] Import trades from broker CSV
-- [ ] Calendar day view (click date → see trades)
-- [ ] Per-symbol equity curve breakdown
-- [ ] Custom tag management
-- [ ] Live forex prices via WebSocket
+## Author
 
----
-
-## 👤 Author
-
-**Rapeepat Nitakorn (Fifa)**  
-Student @ KMITL · [GitHub](https://github.com/77Henvi)
-
+Rapeepat Nitakorn (Fifa), student at KMITL. [GitHub](https://github.com/77Henvi)

@@ -25,8 +25,8 @@
       'auth.tagline': 'TRADING JOURNAL',
       'auth.loginTitle': 'เข้าสู่ระบบ',
       'auth.registerTitle': 'สมัครสมาชิก',
-      'auth.email': 'อีเมล (EMAIL)',
-      'auth.password': 'รหัสผ่าน (PASSWORD)',
+      'auth.email': 'อีเมล',
+      'auth.password': 'รหัสผ่าน',
       'auth.emailPh': 'trader@email.com',
       'auth.loginBtn': 'เข้าสู่ระบบ',
       'auth.registerBtn': 'สร้างบัญชีใหม่',
@@ -88,7 +88,7 @@
       'nav.journal': 'บันทึกเทรด',
       'nav.journalTitle': 'สมุดบันทึกเทรดทั้งหมด',
       'nav.heatmap': 'Heatmap',
-      'nav.heatmapTitle': 'ปฏิทินกำไร-ขาดทุน (Heatmap)',
+      'nav.heatmapTitle': 'ปฏิทินกำไร-ขาดทุน',
       'nav.analytics': 'วิเคราะห์ผล',
       'nav.analyticsTitle': 'วิเคราะห์ผลและสถิติ',
       'nav.settings': 'ตั้งค่า',
@@ -119,7 +119,7 @@
       'stats.avgWinLoss': 'เฉลี่ยกำไร / เฉลี่ยขาดทุน',
       'stats.worstTrade': 'ออเดอร์ที่แย่สุด',
 
-      'equity.balanceLabel': 'ยอดเงินพอร์ตรวม (PORTFOLIO BALANCE)',
+      'equity.balanceLabel': 'ยอดเงินพอร์ตรวม',
       'equity.allTime': 'ทั้งหมด',
       'equity.month': 'เดือนนี้',
       'equity.week': 'สัปดาห์นี้',
@@ -134,7 +134,6 @@
       'equity.tooltipEquity': 'Equity',
 
       // Heatmap
-      'hmap.tag': 'PERFORMANCE MATRIX',
       'hmap.title': 'Trading P&L Heatmap',
       'hmap.prevMonth': 'เดือนก่อนหน้า',
       'hmap.nextMonth': 'เดือนถัดไป',
@@ -148,13 +147,12 @@
       'hmap.showingAll': 'แสดงรายการเทรดทั้งหมด',
 
       // Analytics
-      'ana.tag': 'EXECUTION INTELLIGENCE',
       'ana.title': 'Win / Loss & Symbol',
       'ana.symPerf': 'ผลประกอบการราย Symbol',
       'ana.win': 'WIN',
       'ana.loss': 'LOSS',
-      'ana.grossProfit': 'กำไรรวม (GROSS PROFIT)',
-      'ana.grossLoss': 'ขาดทุนรวม (GROSS LOSS)',
+      'ana.grossProfit': 'กำไรรวม',
+      'ana.grossLoss': 'ขาดทุนรวม',
       'ana.noData': 'ยังไม่มีข้อมูล',
       'ana.curWinStreak': 'WIN STREAK ปัจจุบัน',
       'ana.curLossStreak': 'LOSS STREAK ปัจจุบัน',
@@ -164,12 +162,11 @@
       'ana.lossesPlural': 'LOSS ติดกัน',
 
       // Accounts / Portfolios
-      'acc.tag': 'MY PORTFOLIOS',
-      'acc.title': 'บัญชีเทรด (Accounts)',
+      'acc.title': 'บัญชีเทรด',
       'acc.newBtn': '+ สร้างพอร์ต',
       'acc.newBtnTitle': 'เพิ่มพอร์ตโฟลิโอใหม่',
       'acc.activeTag': 'กำลังใช้งาน',
-      'acc.balanceLabel': 'ยอดเงินในบัญชี (BALANCE)',
+      'acc.balanceLabel': 'ยอดเงินในบัญชี',
       'acc.newTrade': '+ บันทึกเทรดใหม่',
       'acc.importCsvTitle': 'นำเข้าจากไฟล์ CSV',
       'acc.exportCsvTitle': 'ส่งออกเป็นไฟล์ CSV',
@@ -187,7 +184,6 @@
       'acc.activeBadge': 'ใช้งานอยู่',
 
       // Recent Trades & Journal
-      'trd.tag': 'LIVE EXECUTION',
       'trd.title': 'ออเดอร์ล่าสุด',
       'trd.viewAll': 'ดูทั้งหมด',
       'trd.all': 'ทั้งหมด',
@@ -249,14 +245,14 @@
       'mdl.symCustomPh': 'เช่น BTCUSD',
       'mdl.contractSize': 'Contract size: {label}',
       'mdl.date': 'วันที่',
-      'mdl.dir': 'ทิศทาง (DIRECTION)',
+      'mdl.dir': 'ทิศทาง',
       'mdl.entry': 'ENTRY PRICE',
       'mdl.exit': 'EXIT PRICE',
       'mdl.sl': 'STOP LOSS (SL)',
       'mdl.tp': 'TAKE PROFIT (TP)',
       'mdl.optional': 'ไม่บังคับ',
       'mdl.size': 'POSITION SIZE',
-      'mdl.portBalance': 'เงินทุนพอร์ต (BALANCE)',
+      'mdl.portBalance': 'เงินทุนพอร์ต',
       'mdl.setupNotes': 'SETUP / บันทึกเพิ่มเติม',
       'mdl.setupPh': 'Breakout, Support bounce, Trend follow...',
       'mdl.tag': 'TAG',
@@ -277,8 +273,8 @@
       'mdl.deleted': 'ลบออเดอร์แล้ว',
 
       // Order Details Modal
-      'dtl.badge': 'ตรวจสอบออเดอร์ (INSPECTOR)',
-      'dtl.netPnl': 'กำไร-ขาดทุนสุทธิ (NET REALIZED P&L)',
+      'dtl.badge': 'ตรวจสอบออเดอร์',
+      'dtl.netPnl': 'กำไร-ขาดทุนสุทธิ',
       'dtl.returnR': '{pct} Return • {r}',
       'dtl.date': 'วันที่เทรด',
       'dtl.size': 'POSITION SIZE',
@@ -336,7 +332,7 @@
 
       // Ticker & Ticker Settings Modal
       'tkr.upcomingNews': 'ข่าวสำคัญที่กำลังมา',
-      'tkr.title': 'ตั้งค่าแถบข่าว FX (TICKER)',
+      'tkr.title': 'ตั้งค่าแถบข่าว FX',
       'tkr.sourceLbl': 'แหล่งข้อมูล',
       'tkr.sourceVal': 'ช่วงเวลาตลาด + ข่าวเศรษฐกิจสำคัญ',
       'tkr.rateLbl': 'ความถี่อัปเดต',
@@ -353,7 +349,7 @@
       'wlc.btn': 'สร้างพอร์ตของฉัน',
       'prt.newTitle': 'สร้างพอร์ตใหม่',
       'prt.settingsTitle': 'ตั้งค่าพอร์ตโฟลิโอ',
-      'prt.name': 'ชื่อพอร์ต (PORTFOLIO NAME)',
+      'prt.name': 'ชื่อพอร์ต',
       'prt.namePh': 'Crypto Main, Stock US, Futures...',
       'prt.balance': 'เงินทุนเริ่มต้น (STARTING BALANCE $)',
       'prt.deleteBtn': 'ลบพอร์ตนี้',
@@ -502,7 +498,6 @@
       'equity.tooltipEquity': 'Equity',
 
       // Heatmap
-      'hmap.tag': 'PERFORMANCE MATRIX',
       'hmap.title': 'Trading P&L heatmap',
       'hmap.prevMonth': 'Previous month',
       'hmap.nextMonth': 'Next month',
@@ -516,7 +511,6 @@
       'hmap.showingAll': 'Showing all recent trades',
 
       // Analytics
-      'ana.tag': 'EXECUTION INTELLIGENCE',
       'ana.title': 'Win/loss and symbols',
       'ana.symPerf': 'SYMBOL PERFORMANCE',
       'ana.win': 'WIN',
@@ -532,7 +526,6 @@
       'ana.lossesPlural': 'LOSSES',
 
       // Accounts / Portfolios
-      'acc.tag': 'MY PORTFOLIOS',
       'acc.title': 'Trading accounts',
       'acc.newBtn': '+ New',
       'acc.newBtnTitle': 'Add new portfolio',
@@ -555,7 +548,6 @@
       'acc.activeBadge': 'ACTIVE',
 
       // Recent Trades & Journal
-      'trd.tag': 'LIVE EXECUTION',
       'trd.title': 'Recent trades',
       'trd.viewAll': 'View all',
       'trd.all': 'ALL',

@@ -34,7 +34,6 @@ function initAppListeners() {
   });
 
   initEquityHover();
-  initBentoAnimations();
 }
 
 // ─── GLOBAL KEYBOARD SHORTCUTS ────────────────────────────────────────────────
@@ -236,23 +235,17 @@ function drawEquity() {
   ctx.lineWidth = 3.5;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.shadowColor = isLight ? 'rgba(37, 99, 235, 0.3)' : 'rgba(56, 189, 248, 0.55)';
-  ctx.shadowBlur = 10;
   ctx.stroke();
-  ctx.shadowBlur = 0;
 
   // Primary Endpoint Dot
   ctx.beginPath();
   ctx.arc(lastPt.x, lastPt.y, 5.5, 0, Math.PI * 2);
   ctx.fillStyle = '#00a8ff';
-  ctx.shadowColor = '#00a8ff';
-  ctx.shadowBlur = 12;
   ctx.fill();
   ctx.beginPath();
   ctx.arc(lastPt.x, lastPt.y, 2.5, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
-  ctx.shadowBlur = 0;
 
   // 8. Vertical Guideline & Right-Side Floating Glass Pills (matching Image 2)
   ctx.beginPath();
@@ -466,29 +459,12 @@ function initEquityHover() {
   document.addEventListener('touchstart', e => { if (e.target !== canvas) clearEquityHover(); }, { passive: true });
 }
 
-// ─── METRICS (StatsCard, glass card, lift on hover, icon badge, ▲▼ change) ───
-const STAT_ICONS = {
-  dollar: '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-  bars:   '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
-  trend:  '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
-  up:     '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
-  down:   '<path d="m7 7 10 10"/><path d="M17 7v10H7"/>',
-};
-const statSvg = (k, size = 16) =>
-  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${STAT_ICONS[k]}</svg>`;
-let _statsAnimated = false; // play the fade-up entrance only once, not on every render()
-
-function statCard({ title, value, change, note, icon, tone, up }, i) {
-  return `<div class="glass-card stat-card tone-${tone}" style="--i:${i}">
-    <div class="stat-top">
-      <div class="stat-body">
-        <p class="stat-title">${title}</p>
-        <h2 class="stat-value">${value}</h2>
-        <p class="stat-change ${up ? 'up' : 'down'}">${statSvg(up ? 'up' : 'down')} ${change}<span class="stat-note">${note}</span></p>
-      </div>
-      <div class="stat-icon">${statSvg(icon, 22)}</div>
-    </div>
+// ─── STAT CARDS ───────────────────────────────────────────────────────────────
+function statCard({ title, value, change, note, up }) {
+  return `<div class="stat-card">
+    <p class="stat-title">${title}</p>
+    <h2 class="stat-value">${value}</h2>
+    <p class="stat-change ${up ? 'up' : 'down'}">${change}<span class="stat-note">${note}</span></p>
   </div>`;
 }
 
@@ -512,16 +488,15 @@ function renderMetrics() {
 
   const cards = [
     { title: t('stats.totalPnl'),     value: fmtNum(totalPnl),
-      change: sgn(portRet), note: t('stats.onInitial'), icon: 'dollar', tone: 'accent', up: portRet >= 0 },
+      change: sgn(portRet), note: t('stats.onInitial'), up: portRet >= 0 },
     { title: t('stats.winRate'),      value: winRate.toFixed(1) + '%',
-      change: sgn(winRate - 50), note: t('stats.vs50', { w: wins.length, l: losses.length }), icon: 'target', tone: 'blue', up: winRate >= 50 },
+      change: sgn(winRate - 50), note: t('stats.vs50', { w: wins.length, l: losses.length }), up: winRate >= 50 },
     { title: t('stats.profitFactor'), value: pf === Infinity ? '∞' : (pf ? pf.toFixed(2) : '—'),
-      change: 'R:R ' + (rr ? rr.toFixed(2) : '—'), note: t('stats.avgWinLoss'), icon: 'bars', tone: 'violet', up: pf >= 1 },
+      change: 'R:R ' + (rr ? rr.toFixed(2) : '—'), note: t('stats.avgWinLoss'), up: pf >= 1 },
     { title: t('stats.bestTrade'),    value: fmtNum(best),
-      change: fmtNum(worst), note: t('stats.worstTrade'), icon: 'trend', tone: 'green', up: false },
+      change: fmtNum(worst), note: t('stats.worstTrade'), up: false },
   ];
   el.innerHTML = cards.map(statCard).join('');
-  if (!_statsAnimated && trades.length) { el.classList.add('animate'); _statsAnimated = true; }
 }
 
 // ─── TABLE + PAGINATION ───────────────────────────────────────────────────────
@@ -1129,24 +1104,3 @@ async function deleteFromDetails() {
 }
 
 // ─── BENTO MOUSE INTERACTION & ANIMATIONS ────────────────────────────────────
-function initBentoAnimations() {
-  const container = document.getElementById('bentoDashboardView');
-  if (!container) return;
-  // Only the hovered card is updated, at most once per frame (was: every card, every mousemove,
-  // with a forced layout read per card to layout thrashing).
-  let raf = 0, px = 0, py = 0, card = null;
-  const paint = () => {
-    raf = 0;
-    if (!card) return;
-    const r = card.getBoundingClientRect();
-    card.style.setProperty('--mouse-x', (px - r.left) + 'px');
-    card.style.setProperty('--mouse-y', (py - r.top) + 'px');
-  };
-  container.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return;           // no spotlight on touch
-    card = e.target.closest ? e.target.closest('.bento-card') : null;
-    if (!card) return;
-    px = e.clientX; py = e.clientY;
-    if (!raf) raf = requestAnimationFrame(paint);
-  }, { passive: true });
-}

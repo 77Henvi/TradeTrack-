@@ -823,63 +823,7 @@ html.intro-active { scroll-behavior: auto !important; }
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* ─── MOVING AMBIENT LIGHT MESH (GPU-ACCELERATED & FEATHERED) ────────── */
-.ambient-light-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 1;
-  contain: strict;
-  transform: translateZ(0);
-}
-.ambient-orb {
-  position: absolute;
-  border-radius: 50%;
-  will-change: transform;
-  pointer-events: none;
-  transform: translate3d(0, 0, 0);
-}
-.orb-1 {
-  width: 780px;
-  height: 780px;
-  background: radial-gradient(circle, rgba(255, 97, 41, 0.35) 0%, rgba(252, 59, 0, 0.16) 35%, rgba(255, 97, 41, 0.04) 55%, transparent 70%);
-  top: -140px;
-  left: 8%;
-  animation: orb-float-1 26s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-}
-.orb-2 {
-  width: 880px;
-  height: 880px;
-  background: radial-gradient(circle, rgba(252, 59, 0, 0.38) 0%, rgba(255, 97, 41, 0.18) 35%, rgba(252, 59, 0, 0.05) 55%, transparent 70%);
-  top: 15%;
-  right: -120px;
-  animation: orb-float-2 30s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-}
-.orb-3 {
-  width: 750px;
-  height: 750px;
-  background: radial-gradient(circle, rgba(255, 113, 69, 0.32) 0%, rgba(255, 97, 41, 0.14) 35%, rgba(255, 113, 69, 0.03) 55%, transparent 70%);
-  bottom: -120px;
-  left: 20%;
-  animation: orb-float-3 24s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-}
 
-@keyframes orb-float-1 {
-  0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(120px, 80px, 0); }
-  100% { transform: translate3d(-60px, 130px, 0); }
-}
-@keyframes orb-float-2 {
-  0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(-110px, -90px, 0); }
-  100% { transform: translate3d(60px, 80px, 0); }
-}
-@keyframes orb-float-3 {
-  0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(-90px, -70px, 0); }
-  100% { transform: translate3d(110px, -50px, 0); }
-}
 
 .app-layout {
   display: flex;
@@ -1440,21 +1384,6 @@ html.intro-active { scroll-behavior: auto !important; }
     0 20px 50px rgba(0, 0, 0, 0.6),
     inset 0 1px 1px rgba(255, 255, 255, 0.35),
     0 0 25px rgba(60, 255, 160, 0.2);
-}
-.virtual-trading-card::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(60deg, transparent 40%, rgba(255, 255, 255, 0.06) 50%, transparent 60%);
-  pointer-events: none;
-  animation: card-shimmer 12s ease-in-out infinite;
-}
-@keyframes card-shimmer {
-  0% { transform: translateX(-100%) rotate(25deg); }
-  25%, 100% { transform: translateX(100%) rotate(25deg); }
 }
 .card-chip-row {
   display: flex;
@@ -2428,78 +2357,8 @@ body.card-modal-open .bento-header {
 
 
 
-/* ─── GLASS STATS CARDS (adapted from "Glassy Dashboard V2" StatsCard) ─────── */
-.glass-card {
-  background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.015) 40%, rgba(10,14,22,0.55) 100%), rgba(13,17,26,0.74);
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
-}
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
-}
-.stat-card {
-  --tone: var(--accent);
-  --tone-dim: var(--accent-dim);
-  position: relative;
-  overflow: hidden;
-  padding: 24px;            /* p-6 */
-  border-radius: 24px;      /* rounded-2xl */
-  transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .25s;
-}
-.stat-card.tone-blue   { --tone: var(--blue);  --tone-dim: rgba(56,189,248,.16); }
-.stat-card.tone-violet { --tone: #a78bfa;      --tone-dim: rgba(167,139,250,.16); }
-.stat-card.tone-green  { --tone: var(--green); --tone-dim: var(--green-dim); }
-.stat-card::after {          /* soft tone glow, top-right */
-  content: ''; position: absolute; width: 140px; height: 140px; right: -50px; top: -60px;
-  background: radial-gradient(circle, var(--tone-dim), transparent 70%);
-  pointer-events: none;
-}
-.stat-card:hover {           /* whileHover={{ y: -5 }} */
-  transform: translateY(-5px);
-  border-color: rgba(255,255,255,0.22);
-  box-shadow: 0 22px 46px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.32);
-}
-.stat-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 1; }
-.stat-body { min-width: 0; }
-.stat-title { font-size: 12px; letter-spacing: .08em; color: rgba(255,255,255,0.6); margin: 0 0 6px; }  /* text-sm text-white/60 */
-.stat-value { font-size: 28px; line-height: 1.15; font-weight: 700; color: var(--text); margin: 0; font-family: var(--display); white-space: nowrap; }
-.stat-change { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 8px 0 0; font-size: 13px; font-weight: 600; }
-.stat-change.up   { color: #34d399; }   /* emerald-400 */
-.stat-change.down { color: var(--red); }
-.stat-note { font-weight: 400; color: var(--muted); margin-left: 4px; font-size: 12px; }
-.stat-icon {
-  flex-shrink: 0; width: 48px; height: 48px; border-radius: 16px;
-  display: grid; place-items: center; color: #fff;
-  background: linear-gradient(135deg, var(--tone), color-mix(in srgb, var(--tone) 45%, #000));
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--tone) 40%, transparent);
-}
-/* entrance: initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} with stagger */
-.stats-row.animate .stat-card { animation: statIn .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 80ms); }
-@keyframes statIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-
-:root.light .glass-card {
-  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.55)), rgba(255,255,255,0.6);
-  border-color: rgba(15,23,42,0.08);
-  box-shadow: 0 10px 28px rgba(15,23,42,0.08), inset 0 1px 1px #fff;
-}
-:root.light .stat-title { color: rgba(15,23,42,0.55); }
-:root.light .stat-change.up { color: #059669; }
-
-@media (max-width: 1280px) { .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px)  { .stats-row { grid-template-columns: 1fr; gap: 14px; } .stat-value { font-size: 24px; } }
-@media (prefers-reduced-motion: reduce) {
-  .stats-row.animate .stat-card { animation: none; }
-  .stat-card, .stat-card:hover { transition: none; transform: none; }
-}
-
-
 /* ─── PERFORMANCE LAYER ─────────────────────────────────────────────────────── */
 /* orbs are the only thing moving behind the UI: freeze them while an overlay is open */
-body:has(.modal-overlay.open) .ambient-orb,
-body:has(.card-expand-backdrop.active) .ambient-orb { animation-play-state: paused; }
-@media (max-width: 900px), (prefers-reduced-motion: reduce) { .ambient-orb { animation: none; } }
 @media (hover: none) { .bento-card:hover, .stat-card:hover { transform: none; } }
 
 /* ticker session badge: fixed width so OPEN ⇄ CLOSED never changes the tape's width (no jump) */
@@ -2668,9 +2527,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
   /* stats: compact 2×2 instead of four full-width cards */
   .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .stat-card { padding: 14px; border-radius: 18px; }
-  .stat-icon { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 9px; }
-  .stat-icon svg { width: 14px; height: 14px; }
-  .stat-title { font-size: 10px; letter-spacing: 0.05em; padding-right: 30px; margin-bottom: 18px; }
+  .stat-title { font-size: 10px; letter-spacing: 0.05em; margin-bottom: 6px; }
   .stat-value { font-size: 20px; }
   .stat-change { font-size: 11px; margin-top: 6px; }
   .stat-note { display: none; }
@@ -2759,3 +2616,78 @@ html[lang="th"] .btn-accent { letter-spacing: 0.02em; }
 
 
 .ticker-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FLAT SURFACES
+   One surface color, a 1px border and a 12px radius. No gradients, glows, shadows, lift on hover,
+   mouse spotlight or entrance animations. Orange is used for actions and the active state only.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --bg: #0d0e10; --bg2: #141517; --bg3: #1a1b1e; --panel: #141517;
+  --border: rgba(255, 255, 255, 0.08); --border2: rgba(255, 255, 255, 0.14);
+  --radius: 12px;
+}
+body { background: var(--bg); }
+.bento-card, .stat-card, .virtual-trading-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: none; transform: none;
+}
+.bento-card { padding: 20px 22px; }
+.bento-card::before, .bento-card::after, .virtual-trading-card::before, .virtual-trading-card::after { display: none; }
+.bento-card:hover, .virtual-trading-card:hover { transform: none; box-shadow: none; border-color: rgba(255, 255, 255, 0.16); }
+.virtual-trading-card { background: var(--bg3); padding: 20px; }
+.hmap-day-cell { border-radius: 6px; box-shadow: none; animation: none; }
+.hmap-day-pnl { text-shadow: none; }
+.feed-trade-item { box-shadow: none; }
+.hero-return-badge { border-radius: 4px; }
+
+.btn-accent { background: var(--accent); box-shadow: none; border-radius: 6px; }
+.btn-accent:hover:not(:disabled) { background: var(--accent2); box-shadow: none; transform: none; }
+.nav-rail-btn.active { background: rgba(255, 255, 255, 0.08); color: var(--text); box-shadow: none; }
+.mobile-tabbar { background: var(--bg2); border-radius: 16px; box-shadow: none; }
+.mtab-fab { background: var(--accent); box-shadow: 0 0 0 4px var(--bg2); }
+
+/* stat cards: label, number, change */
+.stats-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.stat-card { min-width: 0; padding: 16px 18px; }
+.stat-title { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.06em; color: var(--muted); }
+.stat-value { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 700; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stat-change { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 8px 0 0; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-change.up { color: var(--green); }
+.stat-change.down { color: var(--red); }
+.stat-note { font-weight: 400; color: var(--muted); }
+@media (max-width: 1280px) { .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .stats-row { gap: 10px; }
+  .stat-card { padding: 14px; }
+  .stat-value { font-size: 20px; }
+  .stat-note { display: none; }
+}
+
+/* light theme */
+:root.light .bento-card, :root.light .stat-card, :root.light .virtual-trading-card { background: #fff; border-color: rgba(15, 23, 42, 0.1); box-shadow: none; }
+:root.light .bento-card:hover, :root.light .virtual-trading-card:hover { border-color: rgba(15, 23, 42, 0.22); box-shadow: none; }
+:root.light .nav-rail-btn.active { background: rgba(15, 23, 42, 0.07); color: #0f172a; box-shadow: none; }
+:root.light .mobile-tabbar { background: #fff; box-shadow: none; }
+:root.light .mtab-fab { box-shadow: 0 0 0 4px #fff; }
+
+
+/* ─── FLAT SURFACES, part 2 ─────────────────────────────────────────────────── */
+.btn-primary-cta, .btn-enter { background: var(--accent); box-shadow: none; border-radius: 6px; }
+.btn-primary-cta:hover, .btn-enter:hover { background: var(--accent2); box-shadow: none; transform: none; filter: none; }
+.btn-accent:hover:not(:disabled) { filter: none; }
+.hmap-day-cell:hover { box-shadow: none; transform: none; border-color: rgba(255, 255, 255, 0.3); }
+.portfolio-grid-card.is-active-card { box-shadow: none !important; border-color: var(--accent) !important; }
+.bento-card.is-expanded { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6) !important; }
+
+/* layout bugs found while reviewing: the calendar grid ran past its card, and feed dates touched the P&L figure */
+.hmap-calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.hmap-day-cell { min-width: 0; overflow: hidden; }
+.feed-trade-item { gap: 8px; }
+.feed-item-left { flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.feed-date-text { white-space: nowrap; }
+
+.hmap-usd { display: none; }
+/* light theme keeps the account card dark, as before, but flat */
+:root.light .virtual-trading-card { background: #1b1f27; border-color: transparent; }

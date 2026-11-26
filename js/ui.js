@@ -563,9 +563,10 @@ function getDateFilteredTrades() {
 }
 function setDateFilter(type, el) {
   currentDateFilter = type; currentPage = 1;
-  document.querySelectorAll('.filter-btn[data-date-filter]').forEach(b => b.classList.remove('active'));
-  (el || document.querySelector(`.filter-btn[data-date-filter="${type}"]`))?.classList.add('active');
-  renderTable(); drawEquity();
+  document.querySelectorAll('.filter-btn[data-date-filter]').forEach(b => {
+    b.classList.toggle('active', b.dataset.dateFilter === type);
+  });
+  renderTable(); drawEquity(); renderRecentFeed();
 }
 
 // balance after each trade (start balance + cumulative P&L, date order), keyed by trade id
@@ -663,8 +664,13 @@ function renderTable() {
 function changePage(dir) { currentPage += dir; renderTable(); }
 function setFilter(f, el) {
   currentFilter = f; currentPage = 1;
-  document.querySelectorAll('.filter-btn:not([data-date-filter])').forEach(b => b.classList.remove('active'));
-  el.classList.add('active'); renderTable();
+  document.querySelectorAll('.filter-btn:not([data-date-filter])').forEach(b => {
+    const oc = b.getAttribute('onclick') || '';
+    b.classList.toggle('active', oc.includes(`'${f}'`));
+  });
+  if (el) el.classList.add('active');
+  renderTable();
+  renderRecentFeed();
 }
 function sortBy(key) {
   currentSort = { key, dir: currentSort.key === key ? currentSort.dir * -1 : -1 };
@@ -910,7 +916,7 @@ function renderRecentFeed() {
 }
 
 // ─── VIEW SWITCHER & NAVIGATION ───────────────────────────────────────────────
-function switchMainView(view) {
+function switchMainView(view, { scrollTop = true } = {}) {
   document.getElementById('mtabDash')?.classList.toggle('active', view !== 'journal');      // mobile tab bar
   document.getElementById('mtabJournal')?.classList.toggle('active', view === 'journal');
   const dashView = document.getElementById('bentoDashboardView');
@@ -925,7 +931,7 @@ function switchMainView(view) {
     if (btnJournal) btnJournal.classList.add('active');
     renderTable();
     enterView(journalView);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (scrollTop) window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     if (dashView) dashView.style.display = 'grid';
     if (journalView) journalView.style.display = 'none';
@@ -933,7 +939,7 @@ function switchMainView(view) {
     if (btnJournal) btnJournal.classList.remove('active');
     render();
     enterView(dashView);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (scrollTop) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 
@@ -949,15 +955,13 @@ function toggleMoreSheet(force) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleMoreSheet(false); });
 
 function scrollToBentoCard(cardId) {
-  switchMainView('dashboard');
+  switchMainView('dashboard', { scrollTop: false });
   const el = document.getElementById(cardId);
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    el.style.borderColor = 'var(--green)';
-    el.style.boxShadow = '0 0 25px rgba(60,255,160,0.3)';
+    el.style.borderColor = 'var(--accent)';
     setTimeout(() => {
       el.style.borderColor = '';
-      el.style.boxShadow = '';
     }, 1500);
   }
 }

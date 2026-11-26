@@ -25,27 +25,6 @@
   --sans: 'Helvetica Neue', 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-:root.light {
-  --bg: #f6f7fb;
-  --bg2: #ffffff;
-  --bg3: #f1f3f9;
-  --panel: #ffffff;
-  --border: rgba(0,0,0,0.08);
-  --border2: rgba(0,0,0,0.12);
-  --text: #0f172a;
-  --muted: #5b6373;
-  --muted2: #8b93a3;
-  --accent: #84cc16;
-  --accent-dim: rgba(132,204,22,0.12);
-  --accent-glow: rgba(132,204,22,0.25);
-  --green: #16a34a;
-  --green-dim: rgba(22,163,74,0.1);
-  --red: #dc2626;
-  --red-dim: rgba(220,38,38,0.1);
-  --blue: #2563eb;
-  --orange: #ea580c;
-}
-
 /* ─── RESET ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -87,10 +66,6 @@ body {
 }
 
 /* ─── TICKER TAPE ────────────────────────────────────────────────────────── */
-.ticker {
-  animation-play-state: paused;
-}
-
 .ticker {
   display: flex; align-items: center;
   height: 100%; white-space: nowrap;
@@ -437,7 +412,7 @@ body {
 
 /* ─── MODAL ──────────────────────────────────────────────────────────────── */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
+  position: fixed; inset: 0; z-index: 1100;
   background: rgba(8,10,14,0.8);
   backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
@@ -1085,7 +1060,7 @@ html.intro-active { scroll-behavior: auto !important; }
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.015) 35%, rgba(10, 14, 22, 0.55) 100%), rgba(13, 17, 26, 0.76);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  padding: 22px 24px;
+  padding: 20px 22px;
   position: relative;
   overflow: hidden;
   box-shadow: 
@@ -1678,7 +1653,7 @@ body.card-modal-open {
   overflow: hidden !important;
 }
 body.card-modal-open .app-layout {
-  z-index: 1000 !important;
+  z-index: auto !important;
 }
 body.card-modal-open .app-nav-rail,
 body.card-modal-open .bento-header {
@@ -1700,7 +1675,6 @@ body.card-modal-open .bento-header {
   background: #080605 !important; /* Arounda luxury deep black in dark mode */
   border: 1px solid rgba(255, 97, 41, 0.3) !important;
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 97, 41, 0.25) !important;
-  transform: none !important;
   contain: none !important;
   overflow-y: auto !important;
   animation: cardModalEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
@@ -2439,8 +2413,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
   .bento-container { padding: 14px; gap: 14px; }
   .bento-col-left, .bento-col-right { gap: 14px; }
   .bento-split-row { gap: 14px; }
-  .bento-card { padding: 16px; border-radius: 18px; }
-  .bento-card::after { border-radius: 18px; }
+  .bento-card { padding: 16px; }
   .bento-card-header { flex-wrap: wrap; gap: 10px; }
 
   /* hero chart card */
@@ -2452,7 +2425,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
 
   /* heatmap: 7 shrinkable columns so the grid can never be wider than its card */
   .hmap-calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-  .hmap-day-cell { min-width: 0; min-height: 46px; aspect-ratio: auto; padding: 4px 5px; border-radius: 8px; overflow: hidden; }
+  .hmap-day-cell { min-width: 0; min-height: 46px; aspect-ratio: auto; padding: 4px 5px; border-radius: 6px; overflow: hidden; }
   .hmap-day-num { font-size: 9px; }
   .hmap-day-pnl { font-size: 9px; letter-spacing: -0.02em; white-space: nowrap; }
   .hmap-usd, .hmap-day-dots { display: none; }
@@ -2525,7 +2498,7 @@ button, .filter-btn, .mtab, .more-item { touch-action: manipulation; -webkit-tap
 @media (max-width: 640px) {
   /* stats: compact 2×2 instead of four full-width cards */
   .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .stat-card { padding: 14px; border-radius: 18px; }
+  .stat-card { padding: 14px; }
   .stat-title { font-size: 10px; letter-spacing: 0.05em; margin-bottom: 6px; }
   .stat-value { font-size: 20px; }
   .stat-change { font-size: 11px; margin-top: 6px; }
@@ -2632,7 +2605,6 @@ body { background: var(--bg); }
   background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: none; transform: none;
 }
-.bento-card { padding: 20px 22px; }
 .bento-card::before, .bento-card::after, .virtual-trading-card::before, .virtual-trading-card::after { display: none; }
 .bento-card:hover, .virtual-trading-card:hover { transform: none; box-shadow: none; border-color: rgba(255, 255, 255, 0.16); }
 .virtual-trading-card { background: var(--bg3); padding: 20px; }

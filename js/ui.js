@@ -129,6 +129,7 @@ function render() {
   renderSymPerf();
   renderStreak();
   renderHeatmap();
+  if (typeof window.ScrollyIntro?.refreshStats === 'function') window.ScrollyIntro.refreshStats();
 }
 
 // ─── EQUITY CURVE (SMOOTH BEZIER SPLINE & HATCH SHADING) ─────────────────────

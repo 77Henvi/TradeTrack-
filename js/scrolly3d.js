@@ -1,18 +1,7 @@
-/* ════════════════════════════════════════════════════════════════════════════
-   TrackTrade: 16-scene 3D scrollytelling intro (engine v3)
-   A scroll-driven WebGL story. Scene order: glass coin, crystal, risk HUD, R multiples,
-   burst, warp, shockwave, exploded audit, multi-account, blueprint, dashboard dock.
-
-   Changes from v2:
-   - prepare() is idempotent. Auth events used to start the intro twice.
-   - The glass is built without `transmission`. That gives MSAA edges, costs about half as much and works on mobile.
-   - The triangle uses tube geometry with layered glow instead of 1px GL lines.
-   - Warp streaks, burst sparks and the grid terrain render.
-   - Adaptive quality (a DPR ladder) uses the measured frame time.
-   - The loader shows real progress and falls back to a second CDN. Lenis is optional.
-   - A chapter rail jumps between chapters. A final button and a curtain transition handle skipping.
-     Scroll position is kept when the intro hands over to the dashboard.
-   ════════════════════════════════════════════════════════════════════════════ */
+/*
+   TrackTrade: 9-scene linked 3D scrollytelling intro (story mode).
+   One coin, one camera on a Catmull-Rom spline, handing each scene directly to the next.
+*/
 (function () {
   'use strict';
 
@@ -32,18 +21,6 @@
   };
 
   const tr = (k, v) => (typeof window.t === 'function' ? window.t(k, v) : k);
-
-  // Story chapters. `t` is the timeline position (0 to 100) where the chapter text lands.
-  // One source of truth for the chapter rail, the live-region announcer and click-to-jump.
-  const CHAPTERS = [
-    { t: 11,   key: 'intro.ch1Name', fallback: 'Record'   },
-    { t: 20.5, key: 'intro.ch2Name', fallback: 'Risk'     },
-    { t: 33,   key: 'intro.ch3Name', fallback: 'Returns'  },
-    { t: 59,   key: 'intro.ch4Name', fallback: 'Audit'    },
-    { t: 72,   key: 'intro.ch5Name', fallback: 'Accounts' },
-    { t: 85,   key: 'intro.ch6Name', fallback: 'Overview' },
-  ];
-  const chName = c => (typeof window.t === 'function' ? window.t(c.key) : c.fallback);
 
   const $ = id => document.getElementById(id);
   const S = { phase: 'idle', finishing: false, skipping: false, run: null };
@@ -113,29 +90,6 @@
     return tex(c, 1);
   }
 
-  // 2× supersampled so the labels stay crisp when the camera pushes in
-  function labelTexture(text, color, bg = 'rgba(13,10,8,0.78)', borderColor = '#FF6129') {
-    const c = mkCanvas(640, 220), g = c.getContext('2d'); g.scale(2, 2);
-    rr(g, 8, 8, 304, 94, 20); g.fillStyle = bg; g.fill();
-    g.strokeStyle = borderColor; g.lineWidth = 3; g.stroke();
-    g.font = '800 48px Inter, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.shadowColor = color; g.shadowBlur = 14; g.fillStyle = color; g.fillText(text, 160, 56);
-    return tex(c);
-  }
-
-  function circularBadgeTexture(text, sub, color, borderColor = '#FF6129') {
-    const c = mkCanvas(512), g = c.getContext('2d'); g.scale(2, 2);
-    g.beginPath(); g.arc(128, 128, 116, 0, Math.PI * 2);
-    g.fillStyle = 'rgba(8,6,5,0.85)'; g.fill();
-    g.strokeStyle = borderColor; g.lineWidth = 6; g.stroke();
-    g.font = '800 50px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.shadowColor = color; g.shadowBlur = 12; g.fillStyle = color;
-    g.fillText(text, 128, 105);
-    g.font = '700 20px Inter, sans-serif'; g.fillStyle = '#a39791'; g.shadowBlur = 0;
-    g.fillText(sub, 128, 155);
-    return tex(c);
-  }
-
   // Coin face: dark dial with a faint chart grid, price line and bezel ticks (reads as glass over a chart)
   function dialTexture() {
     const N = 1024, c = mkCanvas(N), g = c.getContext('2d');
@@ -171,72 +125,6 @@
     rim.addColorStop(0, 'rgba(255,110,50,0)'); rim.addColorStop(1, 'rgba(255,110,50,0.30)');
     g.fillStyle = rim; g.fillRect(0, 0, N, N);
     return tex(c, 4);
-  }
-
-  // Scene 14: blueprint / circuit floor
-  function createBlueprintTexture() {
-    const c = mkCanvas(1024, 1024), g = c.getContext('2d');
-    g.fillStyle = '#05070d'; g.fillRect(0, 0, 1024, 1024);
-    g.strokeStyle = 'rgba(56, 189, 248, 0.10)'; g.lineWidth = 1;
-    for (let x = 0; x <= 1024; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 1024); g.stroke(); }
-    for (let y = 0; y <= 1024; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(1024, y); g.stroke(); }
-    g.strokeStyle = 'rgba(255, 97, 41, 0.85)'; g.lineWidth = 3; g.shadowColor = '#FF6129'; g.shadowBlur = 10;
-    const paths = [
-      [[512, 512], [512, 384], [384, 384], [384, 256], [256, 256]],
-      [[512, 512], [512, 640], [640, 640], [640, 768], [768, 768]],
-      [[512, 512], [640, 512], [640, 384], [768, 384]],
-      [[512, 512], [384, 512], [384, 640], [256, 640]],
-      [[416, 416], [608, 416], [608, 608], [416, 608], [416, 416]],
-      [[320, 320], [704, 320], [704, 704], [320, 704], [320, 320]],
-      [[128, 512], [256, 512], [256, 448], [320, 448]],
-      [[896, 512], [768, 512], [768, 576], [704, 576]],
-    ];
-    paths.forEach(p => {
-      g.beginPath(); g.moveTo(p[0][0], p[0][1]);
-      for (let i = 1; i < p.length; i++) g.lineTo(p[i][0], p[i][1]);
-      g.stroke();
-      p.forEach(pt => { g.beginPath(); g.arc(pt[0], pt[1], 5, 0, Math.PI * 2); g.fillStyle = '#FC3B00'; g.fill(); });
-    });
-    g.strokeStyle = '#38BDF8'; g.lineWidth = 2; g.shadowColor = '#38BDF8'; g.shadowBlur = 8;
-    g.strokeRect(460, 460, 104, 104);
-    return tex(c, 8);
-  }
-
-  // Scene 15: holographic dashboard tablet
-  function createDashboardTexture() {
-    const c = mkCanvas(1024, 640), g = c.getContext('2d');
-    g.fillStyle = '#080605'; g.fillRect(0, 0, 1024, 640);
-    g.strokeStyle = 'rgba(255, 97, 41, 0.45)'; g.lineWidth = 3; g.strokeRect(6, 6, 1012, 628);
-    g.fillStyle = 'rgba(255, 97, 41, 0.10)'; g.fillRect(6, 6, 1012, 64);
-    g.fillStyle = '#FF6129'; g.font = 'bold 22px Inter, sans-serif';
-    g.fillText('▲  TrackTrade', 36, 42);
-    g.font = '600 14px Inter, sans-serif'; g.fillStyle = '#a39791';
-    g.fillText('Multi-portfolio · live', 780, 42);
-    const kpis = [
-      { title: 'Net P&L', val: '+$48,150.00', col: '#22c55e' },
-      { title: 'Win rate', val: '71.4%', col: '#FF6129' },
-      { title: 'Profit factor', val: '2.41', col: '#38bdf8' },
-      { title: 'Avg R:R', val: '1:2.85', col: '#ffb347' },
-    ];
-    kpis.forEach((k, i) => {
-      const x = 36 + i * 240;
-      rr(g, x, 90, 220, 80, 8); g.fillStyle = 'rgba(255,255,255,0.04)'; g.fill();
-      g.strokeStyle = 'rgba(255,255,255,0.1)'; g.lineWidth = 1; g.stroke();
-      g.fillStyle = '#a39791'; g.font = '700 12px Inter, sans-serif'; g.fillText(k.title, x + 16, 115);
-      g.fillStyle = k.col; g.font = 'bold 22px Inter, sans-serif'; g.fillText(k.val, x + 16, 148);
-    });
-    g.strokeStyle = 'rgba(255, 97, 41, 0.25)'; g.lineWidth = 1; g.strokeRect(36, 190, 952, 410);
-    for (let i = 0; i < 28; i++) {
-      const cx = 60 + i * 33, cy = 380 - Math.sin(i * 0.28) * 85 - (i * 3.2), ch = 14 + ((i * 17) % 42), isUp = i % 3 !== 0;
-      g.strokeStyle = isUp ? '#FF6129' : '#FF7145'; g.lineWidth = 2;
-      g.beginPath(); g.moveTo(cx, cy - ch - 12); g.lineTo(cx, cy + ch + 12); g.stroke();
-      g.fillStyle = isUp ? '#FF6129' : '#FC3B00'; g.fillRect(cx - 7, cy - ch, 14, ch * 2);
-    }
-    g.strokeStyle = '#22c55e'; g.lineWidth = 4; g.shadowColor = '#22c55e'; g.shadowBlur = 12;
-    g.beginPath(); g.moveTo(40, 520);
-    for (let x = 40; x <= 980; x += 20) { const p = (x - 40) / 940; g.lineTo(x, 520 - p * 280 + Math.sin(p * 12) * 22); }
-    g.stroke();
-    return tex(c, 8);
   }
 
   // ─── GEOMETRY HELPERS ──────────────────────────────────────────────────────
@@ -402,137 +290,14 @@
 
     coinBody.add(frontLens, backPlate, rimMesh, neonBevelMesh, bevelGlow, milledMesh, centerCore);
 
-    // 5. CRYSTAL MONOLITH (Scene 03): glass frustum + glowing edges + a candle cluster suspended inside
-    const crystalGroup = new THREE.Group();
-    const crystalGeo = new THREE.CylinderGeometry(1.25, 1.9, 2.3, 4); crystalGeo.rotateY(Math.PI / 4);
-    crystalGroup.add(
-      new THREE.Mesh(crystalGeo, new THREE.MeshBasicMaterial({ color: 0x120805, transparent: true, opacity: 0.42, depthWrite: false, side: THREE.DoubleSide, toneMapped: false })),
-      new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.12, metalness: 0, envMapIntensity: 0.9, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })),
-      new THREE.LineSegments(new THREE.EdgesGeometry(crystalGeo), new THREE.LineBasicMaterial({ color: COL.peach, transparent: true, opacity: 0.9, toneMapped: false }))
-    );
-    const crystalCandles = createCandlestickGroup(); crystalCandles.scale.setScalar(1.25); crystalCandles.position.y = -0.1;
-    crystalGroup.add(crystalCandles);
-    crystalGroup.scale.setScalar(0.0001); parallax.add(crystalGroup);
-
-    // 6. HALO + BURST FLARE
+    // 5. HALO
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({
       map: glowSpriteTexture('rgba(255,97,41,0.62)', 'rgba(252,59,0,0.16)'),
       blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0
     }));
     halo.scale.set(6.4, 6.4, 1); halo.position.z = -0.7; parallax.add(halo);
-    const centerFlare = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: glowSpriteTexture('rgba(255,255,255,1)', 'rgba(255,97,41,0.3)'),
-      blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0
-    }));
-    centerFlare.scale.set(1.0, 1.0, 1); centerFlare.position.z = 0.25; coinBody.add(centerFlare);
 
-    // 7. HUD RISK RINGS (Scene 06): rings + rotating tick bezel + "1.0% RISK"
-    const hudGroup = new THREE.Group(); parallax.add(hudGroup);
-    const hudMat = (c) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-    const hudRing1 = new THREE.Mesh(new THREE.TorusGeometry(2.10, 0.012, 8, 160), hudMat(COL.sunset));
-    const hudRing2 = new THREE.Mesh(new THREE.TorusGeometry(2.38, 0.008, 8, 160), hudMat(COL.cyan));
-    const tickPts = [];
-    for (let i = 0; i < 90; i++) { const a = (i / 90) * Math.PI * 2, r1 = 2.52, r2 = i % 5 === 0 ? 2.72 : 2.62; tickPts.push(Math.cos(a) * r1, Math.sin(a) * r1, 0, Math.cos(a) * r2, Math.sin(a) * r2, 0); }
-    const tickGeo = new THREE.BufferGeometry(); tickGeo.setAttribute('position', new THREE.Float32BufferAttribute(tickPts, 3));
-    const hudTicks = new THREE.LineSegments(tickGeo, new THREE.LineBasicMaterial({ color: COL.cyan, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-    const riskLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture('1.0% RISK', '#FF6129', 'rgba(18,10,7,0.85)', '#FC3B00'), transparent: true, opacity: 0, depthWrite: false }));
-    riskLabel.scale.set(1.0, 0.34, 1); riskLabel.position.set(-2.75, 0.3, 0);
-    hudGroup.add(hudRing1, hudRing2, hudTicks, riskLabel);
-
-    // 8. ORBITAL R-MULTIPLE RINGS (Scene 07)
-    const ringsGroup = new THREE.Group(); parallax.add(ringsGroup);
-    const ringList = [];
-    [
-      [2.15, [1.15, 0.25, 0], COL.green, '+2.5R', '#22c55e', 0.58],
-      [2.65, [-0.85, -0.45, 0.3], COL.cyan, '+3.8R', '#38bdf8', -0.45]
-    ].forEach(([rad, tilt, hex, text, css, spin]) => {
-      const holder = new THREE.Group(); holder.rotation.set(tilt[0], tilt[1], tilt[2]);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(rad, 0.014, 10, 200), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false }));
-      const node = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false }));
-      node.position.set(rad, 0, 0);
-      const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(text, css, 'rgba(8,6,5,0.82)', css), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
-      label.scale.set(0.7, 0.24, 1); label.position.set(0.04, 0.26, 0); node.add(label);
-      ring.add(node); holder.add(ring); ringsGroup.add(holder); ringList.push({ ring, node, label, spin });
-    });
-    ringsGroup.scale.setScalar(0.4);
-
-    // 9. GRID TERRAIN (Scene 05): clean line grid displaced in the vertex shader, ember to cyan by height
-    const GN = 56, GS = 64, GSIZE = 44, tPos = [];
-    for (let i = 0; i <= GN; i++) {
-      const a = (i / GN - 0.5) * GSIZE;
-      for (let j = 0; j < GS; j++) {
-        const b0 = (j / GS - 0.5) * GSIZE, b1 = ((j + 1) / GS - 0.5) * GSIZE;
-        tPos.push(b0, 0, a, b1, 0, a);   // along X
-        tPos.push(a, 0, b0, a, 0, b1);   // along Z
-      }
-    }
-    const terrainGeo = new THREE.BufferGeometry(); terrainGeo.setAttribute('position', new THREE.Float32BufferAttribute(tPos, 3));
-    const terrainMat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 }, uAmp: { value: 0 }, uOpacity: { value: 0 }, uSunset: { value: new THREE.Color(1.0, 0.38, 0.16) }, uCyan: { value: new THREE.Color(0.22, 0.74, 0.97) } },
-      vertexShader: `
-        uniform float uTime, uAmp; varying float vH; varying float vD;
-        float field(vec2 p, float t){
-          float h = sin(p.x*0.42 + t*0.65)*0.5 + sin(p.y*0.36 - t*0.45)*0.5;
-          h += sin((p.x+p.y)*0.7 + t*0.95)*0.25; h += sin(length(p)*0.55 - t*0.8)*0.4; return h;
-        }
-        void main(){
-          vec3 pos = position; float h = field(pos.xz, uTime); pos.y += h*uAmp; vH = h; vD = length(pos.xz);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-        }`,
-      fragmentShader: `
-        uniform float uOpacity; uniform vec3 uSunset, uCyan; varying float vH; varying float vD;
-        void main(){
-          vec3 c = mix(uSunset, uCyan, smoothstep(-0.5, 0.7, vH));
-          float fade = 1.0 - smoothstep(6.0, 20.0, vD);
-          float a = uOpacity * fade * (0.30 + 0.70*smoothstep(-0.8, 0.9, vH));
-          gl_FragColor = vec4(c * 1.35, a);
-        }`,
-    });
-    const terrain = new THREE.LineSegments(terrainGeo, terrainMat);
-    terrain.position.set(0, -9, -2); terrain.frustumCulled = false; scene.add(terrain);
-
-    // 10. SHOCKWAVE (Scene 10)
-    const shockwaveRing = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.2, 96).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: COL.sunset, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-    shockwaveRing.position.set(0, -1.35, 0); scene.add(shockwaveRing);
-
-    // 11. ANALYTICS BADGES (Scene 12)
-    const winRateBadge = new THREE.Sprite(new THREE.SpriteMaterial({ map: circularBadgeTexture('70%', 'WIN RATE', '#22c55e', '#22c55e'), transparent: true, opacity: 0, depthWrite: false }));
-    winRateBadge.scale.set(1.0, 1.0, 1); winRateBadge.position.set(-2.5, 0.3, 0);
-    const pfBadge = new THREE.Sprite(new THREE.SpriteMaterial({ map: circularBadgeTexture('2.4', 'PROFIT FACTOR', '#38bdf8', '#38bdf8'), transparent: true, opacity: 0, depthWrite: false }));
-    pfBadge.scale.set(1.0, 1.0, 1); pfBadge.position.set(2.5, 0.3, 0);
-    parallax.add(winRateBadge, pfBadge);
-    const greenRing = new THREE.Mesh(new THREE.TorusGeometry(1.95, 0.022, 10, 160).rotateX(Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: COL.green, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    greenRing.position.y = -1.2; parallax.add(greenRing);
-
-    // 12. MULTI-PORTFOLIO PEDESTALS (Scene 13)
-    const pedestalGroup = new THREE.Group(); scene.add(pedestalGroup);
-    const pedGeo = new THREE.CylinderGeometry(1.2, 1.35, 0.35, 48);
-    const pedMat = new THREE.MeshStandardMaterial({ color: 0x110e0c, metalness: 0.85, roughness: 0.25 });
-    const pedRimMat = new THREE.MeshBasicMaterial({ color: COL.sunset, transparent: true, opacity: 0.8, toneMapped: false });
-    [-3.5, 0, 3.5].forEach(x => {
-      const p = new THREE.Mesh(pedGeo, pedMat); p.position.set(x, -1.9, 0); pedestalGroup.add(p);
-      const r = new THREE.Mesh(new THREE.TorusGeometry(1.24, 0.012, 8, 64).rotateX(Math.PI / 2), pedRimMat); r.position.set(x, -1.72, 0); pedestalGroup.add(r);
-    });
-    pedestalGroup.position.y = -6;
-    const cloneLeft = coinBody.clone(), cloneRight = coinBody.clone();
-    cloneLeft.scale.setScalar(0.0001); cloneRight.scale.setScalar(0.0001);
-    cloneLeft.position.set(-3.5, 0, 0); cloneRight.position.set(3.5, 0, 0);
-    parallax.add(cloneLeft, cloneRight);
-
-    // 13. BLUEPRINT FLOOR (Scene 14)
-    const blueprintFloor = new THREE.Mesh(new THREE.PlaneGeometry(28, 28).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ map: createBlueprintTexture(), transparent: true, opacity: 0, depthWrite: false }));
-    blueprintFloor.position.y = -1.35; scene.add(blueprintFloor);
-
-    // 14. DASHBOARD TABLET (Scene 15)
-    const dashboardTablet = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 5.2).rotateX(-Math.PI / 2.3),
-      new THREE.MeshStandardMaterial({ map: createDashboardTexture(), color: 0xffffff, emissive: COL.sunset, emissiveIntensity: 0.14, roughness: 0.25, metalness: 0.5, transparent: true, opacity: 0 }));
-    dashboardTablet.position.set(0, -1.75, -0.4); scene.add(dashboardTablet);
-
-    // 15. AMBIENT MOTES
+    // 6. AMBIENT MOTES
     const PN = 320, pPos = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3);
     const pr = mulberry32(77), gold = new THREE.Color(COL.gold), snt = new THREE.Color(COL.sunset), tmp = new THREE.Color();
     for (let i = 0; i < PN; i++) {
@@ -547,41 +312,10 @@
     }));
     particles.frustumCulled = false; scene.add(particles);
 
-    // 16. WARP STREAKS (Scene 09), v2 never initialised x/y so every streak collapsed into one line
-    const SN = 260, sPos = new Float32Array(SN * 6), sBase = new Float32Array(SN * 3), sr = mulberry32(2025);
-    for (let i = 0; i < SN; i++) {
-      const a = sr() * Math.PI * 2, r = 0.9 + Math.pow(sr(), 0.7) * 8, z = -22 + sr() * 30;
-      sBase[i * 3] = Math.cos(a) * r; sBase[i * 3 + 1] = Math.sin(a) * r * 0.62; sBase[i * 3 + 2] = z;
-    }
-    const sGeo = new THREE.BufferGeometry(); sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-    const streaks = new THREE.LineSegments(sGeo, new THREE.LineBasicMaterial({ color: 0xffa070, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    streaks.frustumCulled = false; scene.add(streaks);
-
-    // 17. BURST SPARKS (Scene 08)
-    const BN = 240, bDir = new Float32Array(BN * 4), bPos = new Float32Array(BN * 3), br = mulberry32(88);
-    for (let i = 0; i < BN; i++) {
-      const th = br() * Math.PI * 2, ph = Math.acos(2 * br() - 1);
-      bDir[i * 4] = Math.sin(ph) * Math.cos(th); bDir[i * 4 + 1] = Math.sin(ph) * Math.sin(th) * 0.8; bDir[i * 4 + 2] = Math.cos(ph) * 0.6;
-      bDir[i * 4 + 3] = 2.2 + br() * 5.5;
-    }
-    const bGeo = new THREE.BufferGeometry(); bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
-    const burst = new THREE.Points(bGeo, new THREE.PointsMaterial({
-      size: 0.16, sizeAttenuation: true, color: 0xffc27a, transparent: true, opacity: 0, depthWrite: false,
-      blending: THREE.AdditiveBlending, map: glowSpriteTexture('rgba(255,255,255,1)', 'rgba(255,140,60,0.55)'),
-    }));
-    burst.frustumCulled = false; burst.position.z = 0.4; rig.add(burst);
-
     return {
       renderer, scene, camera, envRT, rig, parallax, coinGroup, coinBody, lights: { lSunset, lVerm, lCyan },
-      frontLens, backPlate, rimMesh, neonBevelMesh, milledMesh, centerCore, tube,
-      tubeIdx: { count: tubeIdxCount, seg: TUBE_SEG, rad: TUBE_RAD },
-      neon: [{ set: neonOuter, from: new THREE.Color(COL.sunset), to: new THREE.Color(COL.green) },
-             { set: neonInner, from: new THREE.Color(COL.vermillion), to: new THREE.Color(COL.mint) }],
-      crystalGroup, halo, centerFlare, hudGroup, hudRing1, hudRing2, hudTicks, riskLabel,
-      ringsGroup, ringList, terrain, terrainMat, shockwaveRing, greenRing,
-      winRateBadge, pfBadge, pedestalGroup, cloneLeft, cloneRight,
-      blueprintFloor, dashboardTablet, particles, pGeo, pPos, PN,
-      streaks, sGeo, sPos, sBase, SN, burst, bGeo, bPos, bDir, BN, LENS_Z, COIN_R
+      frontLens, sheen, backPlate, rimMesh, neonBevelMesh, neonBevelMat, bevelGlow, milledMesh, centerCore, tube,
+      neonOuter, neonInner, halo, particles, pGeo, pPos, PN, LENS_Z, COIN_R
     };
   }
 
@@ -612,45 +346,14 @@
     return Array.from(el.querySelectorAll('.wi'));
   }
 
-  function buildChapterRail(run) {
-    const nav = $('scrolly-chapters'); if (!nav) return;
-    nav.innerHTML = '';
-    CHAPTERS.forEach((c, i) => {
-      const name = chName(c);
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'ch'; b.dataset.i = i;
-      b.setAttribute('aria-label', tr('intro.jumpChapter', { i: i + 1, name }));
-      b.innerHTML = `<span class="ch-n">${String(i + 1).padStart(2, '0')}</span><span class="ch-t">${name}</span>`;
-      b.addEventListener('click', () => jumpTo(run, c.t - 0.5));
-      nav.appendChild(b);
-    });
-    run.chBtns = Array.from(nav.children);
-    if (run.chIdx >= 0) {
-      run.chBtns.forEach((b, i) => { b.classList.toggle('on', i === run.chIdx); b.classList.toggle('past', i < run.chIdx); if (i === run.chIdx) b.setAttribute('aria-current', 'step'); });
-    }
-  }
-
-  function updateChapter(run, p) {
-    let idx = -1;
-    for (let i = 0; i < CHAPTERS.length; i++) if (p >= CHAPTERS[i].t - 1.5) idx = i;
-    const railOn = p <= 98;   // docking / handover: the rail steps aside
-    if (railOn !== run.railOn) { run.railOn = railOn; document.documentElement.classList.toggle('intro-rail-on', railOn); }
-    if (idx === run.chIdx) return;
-    run.chIdx = idx;
-    run.chBtns.forEach((b, i) => { b.classList.toggle('on', i === idx); b.classList.toggle('past', i < idx); if (i === idx) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
-    const live = $('scrolly-live'); if (live && idx >= 0) live.textContent = tr('intro.liveChapter', { i: idx + 1, n: CHAPTERS.length, name: chName(CHAPTERS[idx]) });
-  }
-
   function refreshLang() {
     const heroEl = document.querySelector('#frame-1 .hero-title');
     if (heroEl) splitWords(heroEl, true);
-    if (S.run) buildChapterRail(S.run);
+    if (S.run && S.run.story) S.run.story.refreshStats();
   }
 
-  function jumpTo(run, t) {
-    if (!run.st) return;
-    const y = run.st.start + (clamp(t, 0, 100) / 100) * (run.st.end - run.st.start);
-    if (run.lenis) run.lenis.scrollTo(y, { duration: 1.6 }); else window.scrollTo({ top: y, behavior: 'auto' });
+  function refreshStats() {
+    if (S.run && S.run.story) S.run.story.refreshStats();
   }
 
   function makeCurtain() {
@@ -659,9 +362,284 @@
     return c;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //  TIMELINE & 16-SCENE CONTINUOUS ANIMATION
-  // ═══════════════════════════════════════════════════════════════════════════
+  // Story mode: one coin, one camera on a Catmull-Rom spline with damped follow
+  const catmull = (a, b, c, d, u) => 0.5 * ((2 * b) + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
+  // keys: [percent of scroll, distance, azimuth deg, elevation deg, FOV deg, target x, target y]
+  function makeCameraPath(keys) {
+    return p => {
+      let i = keys.findIndex(k => k[0] > p);
+      if (i < 0) i = keys.length - 1; if (i < 1) i = 1;
+      const k0 = keys[Math.max(0, i - 2)], k1 = keys[i - 1], k2 = keys[i], k3 = keys[Math.min(keys.length - 1, i + 1)];
+      const u = clamp((p - k1[0]) / Math.max(1e-6, k2[0] - k1[0]), 0, 1);
+      return [1, 2, 3, 4, 5, 6].map(j => catmull(k0[j], k1[j], k2[j], k3[j], u));
+    };
+  }
+
+  function paintSpriteCanvas(c, lines, { w = 256, h = 64, bg = null } = {}) {
+    const x = c.getContext('2d');
+    x.save();
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.clearRect(0, 0, c.width, c.height);
+    x.scale(2, 2);
+    if (bg) {
+      x.fillStyle = bg.fill; x.strokeStyle = bg.stroke; x.lineWidth = 2; x.beginPath(); x.moveTo(14, 1);
+      x.arcTo(w - 1, 1, w - 1, h - 1, 14); x.arcTo(w - 1, h - 1, 1, h - 1, 14); x.arcTo(1, h - 1, 1, 1, 14); x.arcTo(1, 1, w - 1, 1, 14);
+      x.closePath(); x.fill(); x.stroke();
+    }
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    lines.forEach((l, i) => {
+      x.fillStyle = l.color;
+      x.font = `700 ${l.size}px 'Noto Sans Thai', Inter, system-ui, sans-serif`;
+      x.fillText(l.t, w / 2, h * (i + 1) / (lines.length + 1) + 1);
+    });
+    x.restore();
+  }
+
+  function textSprite(lines, opts = {}) {
+    const w = opts.w || 256, h = opts.h || 64, ppu = opts.ppu || 120;
+    const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+    paintSpriteCanvas(c, lines, opts);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0, depthTest: false, toneMapped: false }));
+    sp.scale.set(w / ppu, h / ppu, 1); sp.renderOrder = 10;
+    sp.userData = { canvas: c, opts };
+    return sp;
+  }
+
+  function updateTextSprite(sp, lines) {
+    const { canvas, opts } = sp.userData || {};
+    if (!canvas || !sp.material || !sp.material.map) return;
+    paintSpriteCanvas(canvas, lines, opts);
+    sp.material.map.needsUpdate = true;
+  }
+
+  // Read live portfolio metrics when logged in with trades, otherwise sample fallback values
+  function getStoryMetrics() {
+    const trades = typeof getActiveTrades === 'function' ? getActiveTrades() : [];
+    const portList = typeof portfolios !== 'undefined' && Array.isArray(portfolios) ? portfolios : [];
+    const fallbackTags = ['MAIN', 'PROP FIRM', 'DEMO'];
+    const tags = [0, 1, 2].map(i => (portList[i] && portList[i].name ? String(portList[i].name).toUpperCase().slice(0, 14) : fallbackTags[i]));
+
+    if (!trades.length || typeof pnl !== 'function') {
+      return { winRate: '54.3%', profitFactor: '1.45', maxDD: '3,118', tags };
+    }
+    const wins = trades.filter(t => pnl(t) > 0), losses = trades.filter(t => pnl(t) <= 0);
+    const wr = `${(wins.length / trades.length * 100).toFixed(1)}%`;
+    const grossW = wins.reduce((s, t) => s + pnl(t), 0);
+    const grossL = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
+    const pf = grossL ? (grossW / grossL).toFixed(2) : (wins.length ? 'INF' : '0.00');
+    const sorted = [...trades].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    let runBal = 0, peak = 0, maxDD = 0;
+    sorted.forEach(t => { runBal += pnl(t); if (runBal > peak) peak = runBal; const dd = peak - runBal; if (dd > maxDD) maxDD = dd; });
+    return { winRate: wr, profitFactor: pf, maxDD: Math.round(maxDD).toLocaleString('en-US'), tags };
+  }
+
+  function buildStoryActors(sc) {
+    const OR = 0xff6a2b, GR = 0x2fbf71, RD = 0xef5350, GY = 0x8a8e96, PANEL = 0x141517, EDGE = 0x3a3d44;
+    const V = p => new THREE.Vector3(...p);
+    const C = hex => new THREE.Color(hex).convertSRGBToLinear();   // unlit materials skip the sRGB to linear step in r128
+    const lineMat = (hex, op = 0) => new THREE.LineBasicMaterial({ color: C(hex), transparent: true, opacity: op, depthWrite: false });
+    const dashMat = hex => new THREE.LineDashedMaterial({ color: C(hex), transparent: true, opacity: 0.95, dashSize: 0.1, gapSize: 0.07 });
+    const flat = (hex, op = 0) => new THREE.MeshBasicMaterial({ color: C(hex), transparent: true, opacity: op, depthWrite: false, toneMapped: false });
+    const line = (pts, mat, loop) => new (loop ? THREE.LineLoop : THREE.Line)(new THREE.BufferGeometry().setFromPoints(pts.map(V)), mat);
+    const dashed = (x2, hex) => { const l = line([[0, 0, 0], [x2, 0, 0]], dashMat(hex)); l.computeLineDistances(); return l; };
+    const lvl = (y, hex) => { const g = new THREE.Group(); g.position.set(1.9, y, -0.05); g.scale.x = 0.0001; g.add(dashed(3.4, hex)); return g; };
+    const tag = (t, color, x, y) => { const sp = textSprite([{ t, color, size: 34 }]); sp.scale.multiplyScalar(0.75); sp.position.set(x, y, 0); return sp; };
+    const bracket = (x, y1, y2) => line([[x - 0.1, y1, 0], [x, y1, 0], [x, y2, 0], [x - 0.1, y2, 0]], lineMat(OR));
+    const card = (w, h, op = 0) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), flat(PANEL, op));
+      m.add(line([[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, 0.5, 0], [-0.5, 0.5, 0]], lineMat(EDGE), true)); m.scale.set(w, h, 1); return m;
+    };
+
+    // grid: lies flat as a floor in scene 1, stands up into the chart in scene 2
+    const pts = [], N = 22;
+    for (let i = -N; i <= N; i++) pts.push(i, -N, 0, i, N, 0, -N, i, 0, N, i, 0);
+    const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    const plane = new THREE.Group();
+    plane.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ color: C(EDGE), transparent: true, opacity: 0.5, depthWrite: false })));
+    plane.rotation.x = -Math.PI / 2; plane.position.set(0, -1.3, 0);
+
+    // notes: everything drawn around the first trade; folds back into the coin in scene 5
+    const notes = new THREE.Group();
+    const green = new THREE.MeshBasicMaterial({ color: C(0x1fa863), transparent: true });
+    const candle = new THREE.Group(); candle.position.set(1.7, 0.5, -0.05); candle.scale.y = 0.0001;
+    candle.add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 0.3), green), new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.9, 0.035), green));
+    const connector = dashed(0.6, OR); connector.position.set(0.95, 0.5, 0); connector.material.opacity = 0;
+    const levels = [lvl(1.55, GR), lvl(0.5, GY), lvl(-0.45, RD)], exitLvl = lvl(2.21, GR);
+    const tags = [tag('TP', '#2fbf71', 5.75, 1.55), tag('ENTRY', '#aeb1b7', 5.8, 0.5), tag('SL', '#ef5350', 5.75, -0.45), tag('EXIT', '#2fbf71', 5.8, 2.21)];
+    const br1 = bracket(6.35, 0.5, -0.45), br2 = bracket(6.35, 0.5, 2.21);
+    const brTags = [tag('1R', '#ff6a2b', 6.95, 0.02), tag('+1.8R', '#2fbf71', 7.05, 1.36)];
+    notes.add(candle, connector, ...levels, exitLvl, ...tags, br1, br2, ...brTags);
+
+    // chart: equity curve, glass frame and three stat chips
+    const m = getStoryMetrics();
+    const chart = new THREE.Group(); chart.position.set(0, 0.5, 0);
+    const kx = [-4.5, -3.5, -2.5, -1.5, -0.7, 0, 0.9, 1.9, 3, 4.2], ky = [-1.2, -0.7, -0.95, -0.3, -0.45, 0.5, 0.7, 0.45, 1.1, 1.5];
+    const knots = kx.map((x, i) => new THREE.Vector3(x, ky[i] - 0.5, 0));
+    const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(knots), 200, 0.03, 6, false);
+    const curve = new THREE.Mesh(tube, flat(GR, 1)); curve.geometry.setDrawRange(0, 0);
+    const dots = knots.map(k => { const d = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), flat(GR, 1)); d.position.copy(k); d.scale.setScalar(0.0001); return d; });
+    const frame = new THREE.Group(); frame.scale.setScalar(1.3);
+    frame.add(line([[-5, -2.2, 0], [5, -2.2, 0], [5, 2.2, 0], [-5, 2.2, 0]], lineMat(0x5a5e66), true));
+    const frameFill = new THREE.Mesh(new THREE.PlaneGeometry(10, 4.4), flat(0xffffff)); frameFill.position.z = -0.05; frame.add(frameFill);
+    const chipDefs = [['WIN RATE', 'winRate', -3.3], ['PROFIT FACTOR', 'profitFactor', 0], ['MAX DRAWDOWN', 'maxDD', 3.3]];
+    const chips = chipDefs.map(([label, key, x]) => {
+      const sp = textSprite([{ t: label, color: '#8a8e96', size: 20 }, { t: m[key], color: '#ffffff', size: 34 }], { w: 256, h: 96, ppu: 100, bg: { fill: '#141517', stroke: '#3a3d44' } });
+      sp.position.set(x, -2.75, 0); return sp;
+    });
+    chart.add(curve, ...dots, frame, ...chips);
+
+    // cards: scene 7 stacks them, scene 8 slides them into the dashboard grid
+    const cards = [card(4.4, 2.6), card(4.4, 2.6), card(4.4, 2.6)];
+    cards[0].position.set(0, 0.5, -0.04); cards[1].position.set(0, 0.5, -0.3); cards[2].position.set(0, 0.5, -0.55);
+    const cardTags = [
+      tag(m.tags[0], '#e8e9eb', -1.35, 1.55),
+      tag(m.tags[1], '#8a8e96', -1.0, 1.9),
+      tag(m.tags[2], '#8a8e96', -0.6, 2.2),
+    ];
+    const stats = [-3.9, -1.3, 1.3, 3.9].map(x => { const c = card(2.35, 0.8); c.position.set(x, 2.65, -0.06); c.scale.set(0.0001, 0.0001, 1); return c; });
+
+    sc.scene.add(plane, notes, chart, ...cards, ...cardTags, ...stats);
+    const draw = { v: 0, apply() { const n = tube.index.count; curve.geometry.setDrawRange(0, Math.floor(n * draw.v / 6) * 6); } };
+    const refreshStats = () => {
+      const cur = getStoryMetrics();
+      chipDefs.forEach(([label, key], i) => updateTextSprite(chips[i], [{ t: label, color: '#8a8e96', size: 20 }, { t: cur[key], color: '#ffffff', size: 34 }]));
+      cardTags.forEach((sp, i) => updateTextSprite(sp, [{ t: cur.tags[i], color: i === 0 ? '#e8e9eb' : '#8a8e96', size: 34 }]));
+    };
+    return { plane, notes, candle, connector, levels, exitLvl, tags, br1, br2, brTags, chart, curve, dots, frame, frameFill, chips, cards, cardTags, stats, draw, refreshStats };
+  }
+
+  function buildStory(run, sc, tl, baseZ) {
+    run.container.style.height = '800vh';
+    const nav = $('scrolly-chapters'); if (nav) nav.style.display = 'none';
+    gsap.set(['#frame-3', '#frame-5', '#frame-7', '#frame-11', '#frame-13', '#frame-15', '#frame-16'], { autoAlpha: 0 });
+
+    const A = buildStoryActors(sc), camP = { v: 0 };
+    const path = makeCameraPath([
+      [0, 9.0, -30, 35, 60, 0, 0.5], [7, 7.4, -20, 30, 60, 0, 0.5],             // 01 open: 3/4 high, dolly in, orbit +10
+      [8, 7.4, -20, 30, 60, 0, 0.5], [17, 6.6, -20, 8, 50, 0, 0.5],             // 02 record: drops to 8 degrees as floor stands up
+      [18, 6.6, -20, 8, 50, 0, 0.5], [27, 15, -15, 3, 28, 0, 0.5],              // 03 risk: dolly out, narrow lens
+      [28, 15, -15, 3, 28, 0, 0.5], [37, 14.5, -12, 3, 28, 1.8, 0.5],           // 04 measure: truck right to read R brackets
+      [38, 14.5, -12, 3, 28, 1.8, 0.5], [48, 10, -25, 22, 46, 0, 0.5],          // 05 curve: crane up and back
+      [49, 10, -25, 22, 46, 0, 0.5], [59, 10.6, -8, 6, 42, 0, -0.55],           // 06 statistics: front-on, lift frame and chips above caption
+      [60, 10.6, -8, 6, 42, 0, -0.55], [70, 10.6, 26, 14, 48, -1.65, 0.35],      // 07 portfolios: shift target left on landscape so stack sits right
+      [71, 10.6, 26, 14, 48, -1.65, 0.35], [85, 11.4, 0, 0, 42, 0, -0.35],      // 08 dashboard: pull back and lift grid clear of caption
+      [88, 9, 0, 0, 40, 0, 0.5], [100, 9, 0, 0, 40, 0, 0.5],                    // 09 dock: locked head-on
+    ]);
+    const st = { d: 9, az: -30, el: 35, fov: 60, tx: 0, ty: 0.5 }, target = new THREE.Vector3(0, 0.5, 0), rad = THREE.MathUtils.degToRad;
+    run.story = {
+      refreshStats: A.refreshStats,
+      apply(camera, dt) {
+        const [d, az, el, fov, txRaw, ty] = path(camP.v), k = 1 - Math.exp(-dt * 10), asp = sc.renderer.domElement.clientWidth / Math.max(1, sc.renderer.domElement.clientHeight);
+        const f = baseZ() / 7, tx = txRaw < 0 ? txRaw * clamp((asp - 0.45) / 0.75, 0.18, 1) : txRaw;
+        st.d += (d * f - st.d) * k; st.az += (az - st.az) * k; st.el += (el - st.el) * k;
+        st.fov += (fov - st.fov) * k; st.tx += (tx - st.tx) * k; st.ty += (ty - st.ty) * k;
+        target.set(st.tx, st.ty, 0);
+        camera.position.set(target.x + st.d * Math.sin(rad(st.az)) * Math.cos(rad(st.el)), target.y + st.d * Math.sin(rad(st.el)), target.z + st.d * Math.cos(rad(st.az)) * Math.cos(rad(st.el)));
+        camera.lookAt(target);
+        if (Math.abs(camera.fov - st.fov) > 1e-3) { camera.fov = st.fov; camera.updateProjectionMatrix(); }
+      },
+    };
+    const canvasEl = () => sc.renderer.domElement;
+    // Where the coin lands so it aligns with the real nav logo from the final head-on camera
+    const storyDock = () => {
+      const els = ['.app-nav-rail .nav-logo.logo-mark', '.nav-logo', '.logo-block .logo-mark', '.logo-mark'].map(q => document.querySelector(q));
+      const el = els.find(e => e && e.getBoundingClientRect().width > 0);
+      if (!el) return { x: -3.2, y: 2.6, s: 0.2 };
+      const r = el.getBoundingClientRect(), W = canvasEl().clientWidth, H = canvasEl().clientHeight;
+      const halfH = 9 * (baseZ() / 7) * Math.tan(rad(40 / 2)), halfW = halfH * (W / H);
+      const nx = ((r.left + r.width / 2) / W) * 2 - 1, ny = -(((r.top + r.height / 2) / H) * 2 - 1);
+      return { x: nx * halfW, y: 0.5 + ny * halfH, s: (Math.max(r.width, r.height) * (2 * halfH / H)) / (sc.COIN_R * 2) };
+    };
+
+    // Place story captions inside .scrolly-sections (above #webgl-canvas z-index 50)
+    const capHost = run.container.querySelector('.scrolly-sections') || run.container;
+    const cap = (tKey, dKey, { right = false, bottom = right ? '5vh' : '12vh', maxW = 440 } = {}) => {
+      const el = document.createElement('div');
+      el.style.cssText = `position:fixed;bottom:${bottom};${right ? 'right:6vw;text-align:right;' : 'left:6vw;'}max-width:min(${maxW}px,86vw);color:#fff;pointer-events:none;z-index:60;opacity:0;visibility:hidden;text-shadow:0 2px 14px rgba(0,0,0,0.9)`;
+      const h = document.createElement('div'); h.setAttribute('data-i18n', tKey); h.style.cssText = 'font-size:clamp(24px,3.6vw,44px);font-weight:800;line-height:1.1'; h.textContent = tr(tKey);
+      const p = document.createElement('div'); p.setAttribute('data-i18n', dKey); p.style.cssText = 'margin-top:10px;font-size:clamp(13px,1.25vw,16px);line-height:1.5;color:#c2c6ce'; p.textContent = tr(dKey);
+      el.append(h, p); capHost.appendChild(el); return el;
+    };
+    const show = (el, at, out) => {
+      tl.fromTo(el, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 2.5, ease: 'power2.out' }, at);
+      tl.to(el, { autoAlpha: 0, y: -16, duration: 2.5, ease: 'power2.in' }, out);
+    };
+    const op = (o, at, v = 1, dur = 2.5) => tl.to((o.material || o), { opacity: v, duration: dur, ease: 'power2.out' }, at);
+    const grow = (o, at, dur = 4) => tl.to(o.scale, { x: 1, duration: dur, ease: 'power3.out' }, at);
+    const zero = { x: 0.0001, y: 0.0001, z: 0.0001 };
+
+    tl.to(camP, { v: 100, duration: 100, ease: 'none' }, 0);
+    tl.to('#frame-1', { autoAlpha: 0, y: -40, duration: 3 }, 5);
+
+    // 02 record (8 to 18)
+    tl.to(A.plane.rotation, { x: 0, duration: 10, ease: 'power2.inOut' }, 8);
+    tl.to(A.plane.position, { y: 0.5, z: -0.9, duration: 10, ease: 'power2.inOut' }, 8);
+    op(A.connector, 10, 0.9, 2); tl.to(A.candle.scale, { y: 1, duration: 4, ease: 'power3.out' }, 11);
+    show(cap('intro.ch1Title', 'intro.ch1Desc'), 9, 17);
+
+    // 03 risk (18 to 28)
+    A.levels.forEach((g, i) => grow(g, 20 + i * 1.2)); [0, 1, 2].forEach(i => op(A.tags[i], 23 + i * 0.8));
+    show(cap('intro.ch2Title', 'intro.ch2Desc'), 19, 27);
+
+    // 04 measure (28 to 38)
+    op(A.levels[0].children[0].material, 29, 0.25); op(A.tags[0], 29, 0.25);
+    grow(A.exitLvl, 29.5); op(A.tags[3], 32); op(A.br1, 31, 1); op(A.brTags[0], 32.5); op(A.br2, 33.5, 1); op(A.brTags[1], 35);
+    show(cap('intro.ch3Title', 'intro.ch3Desc', { right: true, bottom: '6vh' }), 29, 37);
+
+    // 05 curve (38 to 49)
+    tl.to(A.notes.scale, { ...zero, duration: 3, ease: 'power3.in' }, 38.5);
+    tl.to(A.plane.children[0].material, { opacity: 0.22, duration: 6 }, 40);
+    tl.to(A.draw, { v: 0.556, duration: 8, ease: 'none', onUpdate: A.draw.apply }, 40);
+    A.dots.slice(0, 6).forEach((d, i) => tl.to(d.scale, { x: 1, y: 1, z: 1, duration: 1, ease: 'back.out(3)' }, 40 + i * 1.5));
+
+    // 06 statistics (49 to 60)
+    tl.to(A.draw, { v: 1, duration: 5, ease: 'none', onUpdate: A.draw.apply }, 50);
+    A.dots.slice(6).forEach((d, i) => tl.to(d.scale, { x: 1, y: 1, z: 1, duration: 1, ease: 'back.out(3)' }, 50 + i * 1.2));
+    tl.to(A.frame.scale, { x: 1, y: 1, z: 1, duration: 5, ease: 'power3.out' }, 52);
+    op(A.frame.children[0].material, 52, 1, 4); op(A.frameFill.material, 52, 0.035, 4);
+    A.chips.forEach((c, i) => op(c, 56 + i * 1.2));
+    show(cap('intro.ch4Title', 'intro.ch4Desc', { bottom: '5vh', maxW: 400 }), 50, 59);
+
+    // 07 portfolios (60 to 71): cards shifted right via camera tx, caption stays clear on bottom-left
+    A.chips.forEach(c => op(c, 60, 0, 1.5));
+    tl.to(A.chart.scale, { x: 0.42, y: 0.42, z: 0.42, duration: 7, ease: 'power3.inOut' }, 61);
+    A.cards.forEach((c, i) => { op(c, 62 + i * 0.6, 1, 3); op(c.children[0], 62 + i * 0.6, 1, 3); });
+    tl.to(A.cards[1].position, { x: 0.5, y: 0.8, duration: 5, ease: 'power3.out' }, 63.5);
+    tl.to(A.cards[2].position, { x: 1.0, y: 1.1, duration: 5, ease: 'power3.out' }, 64.2);
+    A.cardTags.forEach((t, i) => op(t, 67 + i * 0.5));
+    show(cap('intro.ch5Title', 'intro.ch5Desc', { bottom: '8vh', maxW: 360 }), 61, 70);
+
+    // 08 dashboard (71 to 86): grid pulled high via camera distance and ty, caption stays clear below
+    A.cardTags.forEach(t => op(t, 71.5, 0, 1.5));
+    tl.to(A.chart.scale, { x: 0.92, y: 0.55, z: 1, duration: 9, ease: 'power3.inOut' }, 72);
+    tl.to(A.cards[0].scale, { x: 10, y: 2.8, duration: 9, ease: 'power3.inOut' }, 72);
+    tl.to(A.cards[1].position, { x: -2.55, y: -1.85, duration: 9, ease: 'power3.inOut' }, 72);
+    tl.to(A.cards[1].scale, { x: 4.9, y: 1.4, duration: 9, ease: 'power3.inOut' }, 72);
+    tl.to(A.cards[2].position, { x: 2.55, y: -1.85, duration: 9, ease: 'power3.inOut' }, 72);
+    tl.to(A.cards[2].scale, { x: 4.9, y: 1.4, duration: 9, ease: 'power3.inOut' }, 72);
+    A.stats.forEach((c, i) => { tl.to(c.scale, { x: 2.35, y: 0.8, duration: 3.5, ease: 'power3.out' }, 73 + i * 0.9); op(c, 73 + i * 0.9, 1, 2.5); op(c.children[0], 73 + i * 0.9, 1, 2.5); });
+    show(cap('intro.ch6Title', 'intro.ch6Desc', { bottom: '4.5vh', maxW: 480 }), 72, 81);
+
+    // 09 dock (86 to 100): fade neon bloom/glow and dock onto real UI logo
+    tl.to(sc.rig.position, { x: () => storyDock().x, y: () => storyDock().y, z: 0, duration: 10, ease: 'power3.inOut' }, 88);
+    tl.to(sc.rig.scale, { x: () => storyDock().s, y: () => storyDock().s, z: () => storyDock().s, duration: 10, ease: 'power3.inOut' }, 88);
+    [...A.cards, ...A.stats].forEach(c => { op(c, 88, 0, 5); op(c.children[0], 88, 0, 5); });
+    [A.curve, A.frameFill].forEach(m => op(m, 88, 0, 5)); op(A.frame.children[0].material, 88, 0, 5);
+    A.dots.forEach(d => op(d, 88, 0, 5));
+    tl.to(A.plane.children[0].material, { opacity: 0, duration: 5 }, 88);
+    tl.to(run.PK, { v: 0, duration: 7 }, 88);
+    op(sc.halo, 88, 0, 6); op(sc.particles, 88, 0, 6);
+    op(sc.bevelGlow, 88, 0, 6); op(sc.sheen, 88, 0, 6); op(sc.milledMesh, 88, 0, 6);
+    [sc.neonOuter.mats[1], sc.neonOuter.mats[2], sc.neonOuter.hot,
+     sc.neonInner.mats[1], sc.neonInner.mats[2], sc.neonInner.hot].forEach(m => tl.to(m, { opacity: 0, duration: 6 }, 88));
+    ['lSunset', 'lVerm', 'lCyan'].forEach(k => { if (sc.lights[k]) tl.to(sc.lights[k], { intensity: 0.45, duration: 8 }, 88); });
+    tl.fromTo('#frame-16', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 2.5, ease: 'power2.out' }, 96.5);
+    tl.to('.nav-logo', { opacity: 1, duration: 2.5 }, 96.5);
+    tl.to(run.canvas, { opacity: 0, duration: 2.5 }, 97);
+  }
+
+  // Timeline and render loop
   const QUALITY_DPR = [2, 1.5, 1, 0.75];   // adaptive ladder, index = level
 
   function start() {
@@ -670,54 +648,28 @@
     const forced = qs.get('q');
     let level = forced !== null ? clamp(parseInt(forced, 10) || 0, 0, 3) : (isSmall || (navigator.hardwareConcurrency || 8) <= 4 ? 1 : 0);
 
-    if (qs.get('debug')) window.__TT = S;   // dev hook: inspect the scene graph from the console
+    if (qs.get('debug')) window.__TT = S;
     const run = S.run = {
       container, canvas, raf: 0, last: performance.now(), t: 0, renderOn: true,
       listeners: [], mouse: { x: 0, y: 0, tx: 0, ty: 0 }, ema: 1 / 60, frames: 0,
-      q: { level, locked: forced !== null }, chIdx: -2, chBtns: [], grade: { g: 0, applied: -1 },
+      q: { level, locked: forced !== null },
     };
     const sc = run.sc = buildScene(canvas, QUALITY_DPR[level]), { renderer, scene, camera } = sc;
     const aspect = () => canvas.clientWidth / canvas.clientHeight;
-    // Landscape: coin ≈ 57% of viewport height. Portrait: widen until the coin fits ~62% of the width.
     const baseZ = () => Math.max(7.0, 6.4 / aspect());
-    // Side-by-side layout offset: on portrait screens the cards sit at the bottom, so the object stays centred
-    const sideX = () => (aspect() < 1 ? 0 : 1.9);
 
-    const cam = run.cam = { x: 0, y: 0, z: baseZ(), lookY: 0 };
-    const PK = run.PK = { v: 1.0 };      // mouse parallax strength
-    const RS = run.RS = { speed: 0.9 };  // ring spin
-    const RF = run.RF = { v: 0 };        // ring fade
-    const P = run.P = { speed: 0.9 };    // particle speed
-    const DRAW = run.DRAW = { v: 0 };    // equity tube draw
-    const BURST = run.BURST = { v: 0, a: 0 };
-    const WARP = run.WARP = { v: 0 };
-
-    // Dock target (nav logo) to world position/scale, so the coin lands exactly on the real logo
-    function dockInfo() {
-      const target = document.querySelector('.app-nav-rail .nav-logo.logo-mark') || document.querySelector('.nav-logo') || document.querySelector('.logo-mark');
-      if (!target) return { x: -2.2, y: 1.8, s: 0.18 };
-      const r = target.getBoundingClientRect();
-      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const dc = new THREE.PerspectiveCamera(camera.fov, aspect(), camera.near, camera.far);
-      dc.position.set(0, 0, baseZ()); dc.lookAt(0, 0, 0); dc.updateMatrixWorld(true); dc.updateProjectionMatrix();
-      const ndc = new THREE.Vector3((cx / canvas.clientWidth) * 2 - 1, -(cy / canvas.clientHeight) * 2 + 1, 0.5).unproject(dc);
-      const dir = ndc.sub(dc.position).normalize(), t = -dc.position.z / dir.z, w = dc.position.clone().add(dir.multiplyScalar(t));
-      const upx = (2 * Math.tan(THREE.MathUtils.degToRad(dc.fov / 2)) * dc.position.z) / canvas.clientHeight;
-      return { x: w.x, y: w.y, s: (Math.max(r.width, r.height) * upx) / (sc.COIN_R * 2) };
-    }
+    run.PK = { v: 1.0 };      // mouse parallax strength
+    run.P = { speed: 0.9 };   // particle speed
 
     sc.rig.position.set(0, 0.5, 0);
-    buildChapterRail(run);
     const heroWords = splitWords(document.querySelector('#frame-1 .hero-title'));
 
-    // ─── MASTER SCRUB TIMELINE (positions are 0 to 100 = % of scroll) ──────────
     const tl = run.tl = gsap.timeline({
       defaults: { ease: 'power2.inOut' },
       scrollTrigger: {
         trigger: container, start: 'top top', end: 'bottom bottom', scrub: 0.8, invalidateOnRefresh: true,
         onUpdate: self => {
           const bar = $('scrolly-progress'); if (bar) bar.style.transform = `scaleX(${self.progress})`;
-          updateChapter(run, self.progress * 100);
         },
         onToggle: self => { run.renderOn = self.isActive; },
         onLeave: () => finish({ seen: true }),
@@ -725,145 +677,14 @@
     });
     run.st = tl.scrollTrigger;
 
-    const rot = sc.coinGroup.rotation, rp = sc.rig.position, rs = sc.rig.scale;
-    const fade = (sel, at, dur = 3, out = at + 8) => {
-      tl.fromTo(sel, { autoAlpha: 0, y: 36 }, { autoAlpha: 1, y: 0, duration: dur, ease: 'power2.out' }, at);
-      tl.to(sel, { autoAlpha: 0, y: -28, duration: dur, ease: 'power2.in' }, out);
-    };
+    buildStory(run, sc, tl, baseZ);
 
-    // 01 to 02 (0 to 6.5): awaken + 3D tilt. Hero copy leaves early so it never fights the coin.
-    tl.to('#frame-1', { autoAlpha: 0, y: -40, duration: 4 }, 2);
-    tl.to(rot, { x: 0.16, y: -0.5, z: 0.08, duration: 6.5 }, 0);
-    tl.to(rp, { y: 0.15, duration: 6.5 }, 0);
-
-    // 02 to 03 (6.5 to 13): coin dissolves into a crystal monolith; macro push-in
-    tl.to(cam, { z: () => baseZ() * 0.84, duration: 6.5 }, 6.5);
-    tl.to(rot, { x: 0.06, y: -0.2, z: 0.02, duration: 6.5 }, 6.5);
-    tl.to(sc.coinGroup.scale, { x: 0.0001, y: 0.0001, z: 0.0001, duration: 3.6, ease: 'power3.in' }, 7);
-    tl.to(sc.crystalGroup.scale, { x: 1, y: 1, z: 1, duration: 4, ease: 'power3.out' }, 8);
-    tl.to(sc.crystalGroup.rotation, { y: Math.PI * 1.5, duration: 12, ease: 'none' }, 7.5);
-    fade('#frame-3', 10.5, 2.5, 17.5);
-    tl.to(rp, { x: () => sideX(), duration: 5 }, 8);            // Record (card left) to object right
-
-    // 03 to 04 (13 to 19.5): crystal resolves back into the coin, isometric tilt, low horizon
-    tl.to(sc.crystalGroup.scale, { x: 0.0001, y: 0.0001, z: 0.0001, duration: 3.4, ease: 'power3.in' }, 13.4);
-    tl.to(sc.coinGroup.scale, { x: 1, y: 1, z: 1, duration: 4.2, ease: 'back.out(1.5)' }, 14.4);
-    tl.to(cam, { z: () => baseZ() * 0.98, duration: 6.5 }, 13);
-    tl.to(rot, { x: 0.38, y: -0.92, z: 0.18, duration: 6.5 }, 13);
-
-    // 04 to 05 (19.5 to 26): lift-off over the topographic grid
-    tl.to(rp, { y: 0.3, duration: 6.5 }, 19.5);
-    tl.to(sc.terrain.position, { y: -2.6, duration: 6.5 }, 19.5);
-    tl.to(sc.terrainMat.uniforms.uAmp, { value: 1.0, duration: 6.5 }, 19.5);
-    tl.to(sc.terrainMat.uniforms.uOpacity, { value: 1.0, duration: 5 }, 19.5);
-    fade('#frame-5', 20, 2.5, 27);
-
-    // 05 to 06 (26 to 32.5): risk HUD, then it clears before the next chapter's text
-    tl.to(rot, { x: 0.05, y: -0.1, z: 0, duration: 6.5 }, 26);
-    tl.to([sc.hudRing1.material, sc.hudRing2.material, sc.hudTicks.material, sc.riskLabel.material], { opacity: 1, duration: 4 }, 26);
-    tl.to([sc.hudRing1.material, sc.hudRing2.material, sc.hudTicks.material, sc.riskLabel.material], { opacity: 0, duration: 3 }, 33);
-
-    // 06 to 07 (32.5 to 39): +2.5R / +3.8R orbital rings
-    tl.to(RF, { v: 1, duration: 4 }, 32.5);
-    tl.to(sc.ringsGroup.scale, { x: 1, y: 1, z: 1, duration: 6.5 }, 32.5);
-    tl.to(RS, { speed: 2.2, duration: 6.5 }, 32.5);
-    tl.to(rot, { x: 0.22, y: 0.5, z: 0.05, duration: 6.5 }, 32.5);
-    fade('#frame-7', 33, 2.5, 40);
-    tl.to(rp, { x: () => -sideX(), duration: 5 }, 30.5);        // Returns (card right) to object left
-    tl.to(rp, { x: 0, duration: 4 }, 40.5);           // burst + warp stay centred
-
-    // 07 to 08 (39 to 45.5): centrifugal burst
-    tl.to(RF, { v: 0, duration: 3 }, 41.5);
-    tl.to(sc.centerFlare.material, { opacity: 1, duration: 2.5 }, 39);
-    tl.to(sc.centerFlare.scale, { x: 5.2, y: 5.2, duration: 4 }, 39);
-    tl.to(BURST, { v: 1, duration: 6.5, ease: 'power2.out' }, 39);
-    tl.fromTo(BURST, { a: 0 }, { a: 1, duration: 1.2, ease: 'none', immediateRender: false }, 39);
-    tl.to(BURST, { a: 0, duration: 4, ease: 'none' }, 42.5);
-    tl.to(P, { speed: 6.0, duration: 6.5 }, 39);
-
-    // 08 to 09 (45.5 to 52): hyperspace warp
-    tl.to(sc.centerFlare.material, { opacity: 0, duration: 2 }, 45.5);
-    tl.to(WARP, { v: 1, duration: 3, ease: 'power2.out' }, 45.5);
-    tl.to(sc.streaks.material, { opacity: 0.95, duration: 2 }, 45.5);
-    tl.to(P, { speed: 14.0, duration: 6.5 }, 45.5);
-    tl.to(cam, { z: () => baseZ() * 0.78, duration: 6.5 }, 45.5);
-
-    // 09 to 10 (52 to 58.5): deceleration + shockwave
-    tl.to(P, { speed: 0.5, duration: 4 }, 52);
-    tl.to(WARP, { v: 0, duration: 4 }, 52);
-    tl.to(sc.streaks.material, { opacity: 0, duration: 3 }, 52);
-    tl.to(cam, { z: () => baseZ() * 0.95, duration: 6 }, 52);
-    tl.to(sc.shockwaveRing.material, { opacity: 0.9, duration: 1.5 }, 52);
-    tl.to(sc.shockwaveRing.scale, { x: 30, y: 30, z: 30, duration: 6 }, 52);
-    tl.to(sc.shockwaveRing.material, { opacity: 0, duration: 4 }, 54);
-
-    // 10 to 11 (58.5 to 65): exploded 3-layer audit; neon turns green
-    tl.to(sc.frontLens.position, { z: () => sc.LENS_Z + 1.25, duration: 6.5 }, 58.5);
-    tl.to(sc.backPlate.position, { z: () => -sc.LENS_Z - 1.25, duration: 6.5 }, 58.5);
-    tl.to(sc.centerCore.scale, { z: 2.8, duration: 6.5 }, 58.5);
-    tl.to(DRAW, { v: 1, duration: 6.5, ease: 'none', onUpdate: () => {
-      const n = Math.floor(DRAW.v * sc.tubeIdx.seg) * sc.tubeIdx.rad * 6; sc.tube.geometry.setDrawRange(0, n);
-    } }, 58.5);
-    tl.to(run.grade, { g: 1, duration: 4 }, 59);
-    tl.to(rot, { x: 0.34, y: -1.0, z: 0.12, duration: 6.5 }, 58.5);
-    fade('#frame-11', 59, 2.5, 66);
-    tl.to(rp, { x: () => sideX(), duration: 4 }, 57.5);         // Audit (card left) to object right
-    tl.to(rp, { x: 0, duration: 4 }, 66.5);
-
-    // 11 to 12 (65 to 71.5): win-rate & profit-factor badges; layers re-assemble
-    tl.to([sc.winRateBadge.material, sc.pfBadge.material], { opacity: 1, duration: 3 }, 66);
-    tl.to(sc.greenRing.material, { opacity: 0.85, duration: 3 }, 66);
-    tl.to(sc.frontLens.position, { z: sc.LENS_Z, duration: 4, ease: 'power3.in' }, 67.5);
-    tl.to(sc.backPlate.position, { z: -sc.LENS_Z, duration: 4, ease: 'power3.in' }, 67.5);
-    tl.to(sc.centerCore.scale, { z: 1.0, duration: 4, ease: 'power3.in' }, 67.5);
-    tl.to(run.grade, { g: 0, duration: 4 }, 68);
-
-    // 12 to 13 (71.5 to 78): triplicate on pedestals
-    tl.to([sc.winRateBadge.material, sc.pfBadge.material, sc.greenRing.material], { opacity: 0, duration: 2 }, 71.5);
-    tl.to(rot, { x: 0.04, y: 0, z: 0, duration: 5 }, 71.5);
-    tl.to(sc.pedestalGroup.position, { y: 0, duration: 6.5 }, 71.5);
-    tl.to(sc.cloneLeft.scale, { x: 1, y: 1, z: 1, duration: 5, ease: 'back.out(1.6)' }, 72.5);
-    tl.to(sc.cloneRight.scale, { x: 1, y: 1, z: 1, duration: 5, ease: 'back.out(1.6)' }, 73.5);
-    fade('#frame-13', 72, 2.5, 79);
-    tl.to(cam, { z: () => baseZ() * 1.22, duration: 5 }, 71.5);   // pull back: three coins + headline above
-    tl.to(rp, { y: -0.45, duration: 5 }, 71.5);
-
-    // 13 to 14 (78 to 84.5): blueprint circuit floor
-    tl.to([sc.cloneLeft.scale, sc.cloneRight.scale], { x: 0.0001, y: 0.0001, z: 0.0001, duration: 4 }, 78);
-    tl.to(sc.pedestalGroup.position, { y: -6, duration: 5 }, 78);
-    tl.to(sc.blueprintFloor.material, { opacity: 0.85, duration: 6.5 }, 78);
-    tl.to(sc.terrainMat.uniforms.uOpacity, { value: 0, duration: 4 }, 78);
-    tl.to(cam, { y: 2.5, lookY: -0.4, z: () => baseZ() * 0.9, duration: 6.5 }, 78);
-    tl.to(rp, { y: 0.25, duration: 6 }, 78);
-    tl.to(rot, { x: -1.2, y: 0, z: 0, duration: 6.5 }, 78);
-
-    // 14 to 15 (84.5 to 91): approach the dashboard plane
-    tl.to(sc.dashboardTablet.material, { opacity: 0.92, duration: 5 }, 84.5);
-    tl.to(rp, { y: 0.25, duration: 6.5 }, 84.5);
-    fade('#frame-15', 85, 2.5, 90.5);
-
-    // 15 to 16 (91 to 100): dock into the real nav logo
-    tl.to(cam, { x: 0, y: 0, z: () => baseZ(), lookY: 0, duration: 8 }, 91);
-    tl.to(rot, { x: 0, y: 0, z: 0, duration: 7 }, 91);
-    tl.to(rp, { x: () => dockInfo().x, y: () => dockInfo().y, z: 0, duration: 9, ease: 'power3.inOut' }, 91);
-    tl.to(rs, { x: () => dockInfo().s, y: () => dockInfo().s, z: () => dockInfo().s, duration: 9, ease: 'power3.inOut' }, 91);
-    tl.to(sc.blueprintFloor.material, { opacity: 0, duration: 4 }, 91);
-    tl.to(sc.dashboardTablet.material, { opacity: 0, duration: 4 }, 91);
-    tl.to(sc.particles.material, { opacity: 0, duration: 4 }, 93);
-    tl.to(sc.halo.material, { opacity: 0, duration: 5 }, 93);
-    tl.to(PK, { v: 0, duration: 8 }, 91);
-    tl.fromTo('#frame-16', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 2.5, ease: 'power2.out' }, 96.5);
-    tl.to('.nav-logo', { opacity: 1, duration: 2 }, 98);
-    tl.to(canvas, { opacity: 0, duration: 2 }, 98);
-    tl.set({}, {}, 100);
-
-    // Smooth scrolling (optional): lerp-based so it doesn't stack on top of the scrub smoothing
     if (window.Lenis) {
       run.lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
       run.lenis.on('scroll', ScrollTrigger.update);
     }
 
-    // ─── BOOT: one orchestrated entrance (coin spins in, hero words rise) ─────
+    // Boot entrance: coin spins in, hero words rise
     sc.coinBody.scale.setScalar(0.0001); sc.coinBody.rotation.y = -Math.PI * 1.4;
     gsap.set('.scroll-indicator', { autoAlpha: 0 });
     gsap.set(heroWords, { yPercent: 115 });
@@ -876,7 +697,6 @@
         .to('.scroll-indicator', { autoAlpha: 1, duration: 0.8 }, 1.6);
     gsap.set('#frame-1 .hero-subtitle', { autoAlpha: 0, y: 12 });
 
-    // ─── Listeners ──────────────────────────────────────────────────────────
     const on = (t, e, f, o) => { t.addEventListener(e, f, o); run.listeners.push([t, e, f, o]); };
     on(window, 'pointermove', e => {
       run.mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -897,7 +717,6 @@
     run.raf = requestAnimationFrame(frame);
   }
 
-  // ─── ADAPTIVE QUALITY ───────────────────────────────────────────────────────
   function applyQuality(run) {
     const { renderer, camera } = run.sc, c = run.canvas;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QUALITY_DPR[run.q.level]));
@@ -905,7 +724,6 @@
     camera.aspect = c.clientWidth / c.clientHeight; camera.updateProjectionMatrix();
   }
 
-  // ─── PER-FRAME RENDER LOOP ──────────────────────────────────────────────────
   function frame(now) {
     const run = S.run; if (!run) return;
     run.raf = requestAnimationFrame(frame);
@@ -914,18 +732,15 @@
     if (!run.renderOn) return;
 
     run.t += dt;
-    const sc = run.sc, { scene, camera, renderer, parallax, ringList, terrainMat, pPos, PN, sPos, sBase, SN, bPos, bDir, BN } = sc;
+    const sc = run.sc, { scene, camera, renderer, parallax, pPos, PN } = sc;
 
-    // Adaptive quality: step the pixel-ratio ladder down when the frame time stays high
     run.ema += (dt - run.ema) * 0.08; run.frames++;
     if (!run.q.locked && run.frames > 50 && run.ema > 1 / 27 && run.q.level < QUALITY_DPR.length - 1) {
       run.q.level++; applyQuality(run); run.frames = 0; run.ema = 1 / 60;
     }
 
-    camera.position.set(run.cam.x, run.cam.y, run.cam.z);
-    camera.lookAt(0, run.cam.lookY, 0);
+    run.story.apply(camera, dt);
 
-    // Mouse parallax + a slow idle float
     run.mouse.x += (run.mouse.tx - run.mouse.x) * 0.08;
     run.mouse.y += (run.mouse.ty - run.mouse.y) * 0.08;
     const pk = run.PK.v;
@@ -934,53 +749,9 @@
     parallax.rotation.y = run.mouse.x * 0.18 * pk;
     parallax.rotation.x = -run.mouse.y * 0.12 * pk;
 
-    // Neon colour grade (orange ↔ green in the audit chapter)
-    if (run.grade.g !== run.grade.applied) {
-      run.grade.applied = run.grade.g;
-      sc.neon.forEach(n => n.set.mats.forEach(m => m.color.copy(n.from).lerp(n.to, run.grade.g)));
-      sc.lights.lSunset.color.setHex(COL.sunset).lerp(new THREE.Color(COL.green), run.grade.g * 0.5);
-    }
-
-    // HUD
-    sc.hudRing1.rotation.z += dt * 0.25; sc.hudTicks.rotation.z -= dt * 0.18;
-    sc.greenRing.rotation.y += dt * 0.6;
-
-    // Rings
-    ringList.forEach(r => {
-      r.ring.rotation.z += dt * run.RS.speed * r.spin;
-      r.ring.material.opacity = run.RF.v * 0.85; r.node.material.opacity = run.RF.v * 0.95; r.label.material.opacity = run.RF.v * 0.95;
-    });
-
-    terrainMat.uniforms.uTime.value = run.t;
-
-    // Motes
     const pSpeed = run.P.speed;
     for (let i = 0; i < PN; i++) { let z = pPos[i * 3 + 2] + dt * pSpeed; if (z > 9) z = -16; pPos[i * 3 + 2] = z; }
     sc.pGeo.attributes.position.needsUpdate = true;
-
-    // Warp streaks: every streak flies toward the camera; length grows with WARP
-    if (sc.streaks.material.opacity > 0.01) {
-      const len = 0.8 + run.WARP.v * 5.5;
-      for (let i = 0; i < SN; i++) {
-        let z = sBase[i * 3 + 2] + dt * (6 + pSpeed * 2.4); if (z > 9) z = -22;
-        sBase[i * 3 + 2] = z;
-        const x = sBase[i * 3], y = sBase[i * 3 + 1];
-        sPos[i * 6] = x; sPos[i * 6 + 1] = y; sPos[i * 6 + 2] = z;
-        sPos[i * 6 + 3] = x; sPos[i * 6 + 4] = y; sPos[i * 6 + 5] = z - len;
-      }
-      sc.sGeo.attributes.position.needsUpdate = true;
-    }
-
-    // Burst sparks
-    if (run.BURST.a > 0.01) {
-      const bt = run.BURST.v;
-      for (let i = 0; i < BN; i++) {
-        const k = bDir[i * 4 + 3] * bt;
-        bPos[i * 3] = bDir[i * 4] * k; bPos[i * 3 + 1] = bDir[i * 4 + 1] * k; bPos[i * 3 + 2] = bDir[i * 4 + 2] * k;
-      }
-      sc.bGeo.attributes.position.needsUpdate = true;
-    }
-    sc.burst.material.opacity = run.BURST.a;
 
     renderer.render(scene, camera);
   }
@@ -1019,6 +790,7 @@
     }
 
     document.documentElement.classList.remove('intro-active', 'intro-loading', 'intro-rail-on');
+    const navLogo = document.querySelector('.nav-logo'); if (navLogo) navLogo.style.opacity = '';
     container && container.remove();
     document.body.style.overflow = '';
     window.scrollTo(0, carry);
@@ -1037,7 +809,7 @@
   }
   window.skipToDashboard = skip;
 
-  // ─── PREPARE / BOOT (idempotent: auth events call this repeatedly) ──────────
+  // Prepare / boot (idempotent: auth events call this repeatedly)
   async function prepare() {
     if (S.phase !== 'idle') return;
     if (!shouldPlay()) { S.phase = 'done'; const c = $('scrolly-container'); c && c.remove(); return; }
@@ -1045,7 +817,7 @@
     document.documentElement.classList.add('intro-active', 'intro-loading');
     try {
       await loadLibs(makeLoader(5));
-      if (S.phase !== 'loading') return;      // skipped / torn down while loading
+      if (S.phase !== 'loading') return;      // skipped or torn down while loading
       start();
       S.phase = 'playing';
     } catch (err) {
@@ -1054,8 +826,5 @@
     }
   }
 
-  // Exposed for auth.js
-  // teardown = "user logged out mid-intro". While idle it must do nothing, so a first-time user who
-  // registers in this very session still gets the intro after login (v2 removed the container instead).
-  window.ScrollyIntro = { prepare, skip, refreshLang, teardown: () => { if (S.phase === 'loading' || S.phase === 'playing') finish({ seen: false }); } };
+  window.ScrollyIntro = { prepare, skip, refreshLang, refreshStats, teardown: () => { if (S.phase === 'loading' || S.phase === 'playing') finish({ seen: false }); } };
 })();
